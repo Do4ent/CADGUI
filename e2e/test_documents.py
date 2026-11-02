@@ -1,5 +1,6 @@
 """Document isolation, unsaved-change protection and JSON compatibility."""
 import json
+import math
 from playwright.sync_api import expect
 from test_regression import BASE, browser, page, items
 from test_workflows import open_box
@@ -54,6 +55,33 @@ def test_invalid_import_preserves_active_content(page):
     expect(page.get_by_role('alert')).to_be_visible()
     assert items(page) == before
     expect(tabs(page).get_by_role('tab')).to_have_count(count)
+
+
+def test_invalid_property_edit_cannot_corrupt_document_recovery(page):
+    dialog = open_box(page)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(page.locator('[role="treeitem"]')).to_have_count(9)
+    before = items(page)
+    page.get_by_label('Имя компонента', exact=True).fill('')
+    expect(page.get_by_role('alert')).to_be_visible()
+    assert items(page) == before
+    page.reload(wait_until='domcontentloaded')
+    page.locator('.environment-panel').wait_for()
+    expect(page.locator('[role="treeitem"]')).to_have_count(9)
+    assert items(page) == before
+    # Numeric inputs may sanitize overflow to an empty string or zero. Either
+    # behavior must leave a persistable scene with finite vectors after editing.
+    created_id = before[-1]['id']
+    page.locator(f'[role="treeitem"][data-tree-id="{created_id}"]').click()
+    numeric = page.locator('[data-property-editor] input[type="number"]').first
+    numeric.fill('1e309')
+    for item in items(page):
+        assert all(isinstance(n, (int, float)) and math.isfinite(n) for n in item['pos'] + item['size'])
+    persisted = items(page)
+    page.reload(wait_until='domcontentloaded')
+    page.locator('.environment-panel').wait_for()
+    expect(page.locator('[role="treeitem"]')).to_have_count(9)
+    assert items(page) == persisted
 
 
 def test_legacy_import_export_and_reopen_roundtrip(page, tmp_path):
