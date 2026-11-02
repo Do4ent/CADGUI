@@ -95,7 +95,8 @@ def test_legacy_import_export_and_reopen_roundtrip(page, tmp_path):
     target = tmp_path / 'roundtrip.json'
     download_info.value.save_as(target)
     saved = json.loads(target.read_text())
-    assert saved['schemaVersion'] == 1
+    # V1 files migrate explicitly; all new exports include drawing schema V2.
+    assert saved['schemaVersion'] == 2
     assert saved['items'] == legacy_items
     page.get_by_label('Импорт документа JSON', exact=True).set_input_files(str(target))
     expect(tabs(page).get_by_role('tab')).to_have_count(3)
