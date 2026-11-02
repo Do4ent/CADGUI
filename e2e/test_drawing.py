@@ -149,6 +149,12 @@ def test_all_twelve_groups_expose_the_102_catalog_commands(page):
         for feature in group['features']:
             button = section.locator(f'[data-drawing-command="{feature["id"]}"]')
             expect(button).to_have_accessible_name(re.compile(re.escape(feature['id'])))
+    search = panel.get_by_label('Поиск текстовых команд', exact=True)
+    search.fill('TXT-075')
+    expect(panel.locator('[data-drawing-command]')).to_have_count(1)
+    expect(panel.locator('[data-drawing-command="TXT-075"]')).to_be_visible()
+    search.fill('')
+    expect(panel.locator('[data-drawing-command]')).to_have_count(102)
 
 
 def test_leader_table_title_fields_and_technical_requirements_are_real_entities(page, tmp_path):
