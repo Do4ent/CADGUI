@@ -323,3 +323,85 @@ def test_dictionary_spellcheck_reports_an_actual_unknown_word(page):
     report = page.get_by_role('region', name='Проверка чертежа')
     expect(report).to_contain_text('mispelingxyz', timeout=60000)
     expect(sheet(page)).to_contain_text('mispelingxyz')
+
+
+def test_selection_sensitive_commands_are_disabled_until_a_real_entity_exists(page):
+    workspace(page)
+    for identifier in ['TXT-009', 'TXT-084', 'TXT-097', 'TXT-102']:
+        expect(page.locator(f'[data-drawing-command="{identifier}"]')).to_be_disabled()
+    create_text(page, 'Выбранный объект')
+    for identifier in ['TXT-009', 'TXT-084', 'TXT-097', 'TXT-102']:
+        expect(page.locator(f'[data-drawing-command="{identifier}"]')).to_be_enabled()
+
+
+def test_document_field_creates_structured_text_without_existing_selection(page, tmp_path):
+    workspace(page)
+    expect(entities(page)).to_have_count(0)
+    dialog = command_dialog(page, 'TXT-059')
+    dialog.get_by_label('Источник поля', exact=True).select_option('document')
+    dialog.get_by_label('Свойство поля', exact=True).select_option('name')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(entities(page)).to_have_count(1)
+    saved = save_document(page, tmp_path)
+    expect(sheet(page)).to_contain_text(saved['name'])
+    entity = saved['drawing']['sheets'][0]['entities'][0]
+    fields = [run['field'] for paragraph in entity['paragraphs'] for run in paragraph['runs'] if 'field' in run]
+    assert len(fields) == 1
+    assert fields[0]['kind'] == 'document'
+    assert fields[0]['key'] == 'name'
+
+
+def test_balloon_renders_its_number_without_internal_mode_metadata(page, tmp_path):
+    workspace(page)
+    dialog = command_dialog(page, 'TXT-056')
+    dialog.get_by_label('Номер позиции', exact=True).fill('7')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    graphic = entities(page).last.locator('[data-annotation-type="balloon"]')
+    expect(graphic).to_contain_text('7')
+    expect(graphic).not_to_contain_text('manual')
+    saved = save_document(page, tmp_path)
+    annotation = saved['drawing']['sheets'][0]['entities'][-1]['annotation']
+    assert annotation['number'] == '7'
+    assert annotation['fields']['mode'] == 'manual'
+
+
+def test_plain_clipboard_paste_preserves_literal_text_without_html_execution(page):
+    workspace(page)
+    create_text(page, 'Заменяемый текст')
+    page.context.grant_permissions(['clipboard-read', 'clipboard-write'])
+    payload = '<script>window.drawingPasteExecuted=true</script>\nКириллица Ø25'
+    page.evaluate('(text) => navigator.clipboard.writeText(text)', payload)
+    dialog = command_dialog(page, 'TXT-084')
+    field = dialog.get_by_label('Текст', exact=True)
+    field.focus()
+    field.press('Control+a')
+    field.press('Control+v')
+    expect(field).to_have_value(payload)
+    dialog.get_by_label('Сбросить оформление', exact=True).check()
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(sheet(page)).to_contain_text('<script>window.drawingPasteExecuted=true</script>')
+    expect(sheet(page)).to_contain_text('Кириллица Ø25')
+    assert page.evaluate('window.drawingPasteExecuted === undefined')
+
+
+def test_line_dimension_prefix_suffix_preserve_actual_source_measurement(page, tmp_path):
+    workspace(page)
+    page.get_by_role('button', name='Опорная линия', exact=True).click()
+    source_id = entities(page).last.get_attribute('data-drawing-id')
+    page.get_by_role('button', name='Размер линии', exact=True).click()
+    expect(entities(page)).to_have_count(2)
+    dialog = command_dialog(page, 'TXT-047')
+    dialog.get_by_label('Префикс', exact=True).fill('Ø')
+    dialog.get_by_label('Суффикс', exact=True).fill(' ±0.1')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    graphic = entities(page).last.locator('[data-annotation-type="dimension"]')
+    expect(graphic).to_contain_text('100')
+    expect(graphic).to_contain_text('Ø')
+    expect(graphic).to_contain_text('±0.1')
+    expect(graphic).not_to_contain_text('manual')
+    saved = save_document(page, tmp_path)
+    dimension = saved['drawing']['sheets'][0]['entities'][-1]['annotation']
+    assert dimension['type'] == 'dimension'
+    assert dimension['sourceId'] == source_id
+    assert dimension['prefix'] == 'Ø'
+    assert dimension['suffix'] == ' ±0.1'
