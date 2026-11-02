@@ -1,4 +1,4 @@
-import type {DrawingDocument, DrawingEntity, DrawingContext, TextStyle, FieldRef, TextParagraph, TextRun, DrawingSheetModel} from './types';
+import type {DrawingDocument, DrawingEntity, DrawingContext, TextStyle, FieldRef, TextParagraph, TextRun, DrawingSheetModel, Point2} from './types';
 
 export const emptyContext: DrawingContext = {documentName: '', documentId: '', modelItems: []};
 let sequence = 0;
@@ -70,9 +70,32 @@ export function runText(run:TextRun,doc?:DrawingDocument,context:DrawingContext=
  if(run.stack)return run.stack.kind==='tolerance'?`${run.stack.top}/${run.stack.bottom}`:`${run.stack.top}/${run.stack.bottom}`;
  return run.text;
 }
+/** Geometry points are local to their owning sheet entity. */
+export function geometryLineEndpoints(entity:DrawingEntity):[Point2,Point2]|null {
+ if(entity.kind!=='geometry'||entity.geometry?.type!=='line'||entity.geometry.points?.length!==2)return null;
+ const angle=entity.rotation*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle);
+ const points=entity.geometry.points.map(([x,y])=>[entity.x+x*c-y*s,entity.y+x*s+y*c] as Point2);
+ return points.every(point=>point.every(Number.isFinite))?points as [Point2,Point2]:null;
+}
 export function plainText(entity:DrawingEntity,doc?:DrawingDocument,context:DrawingContext=emptyContext):string {
  const body=entity.kind==='table'&&entity.rows?entity.rows.map(row=>row.map(cell=>cell.map(p=>p.runs.map(r=>runText(r,doc,context)).join('')).join('\n')).join('\t')).join('\n'):entity.paragraphs.map(p=>p.runs.map(r=>runText(r,doc,context)).join('')).join('\n');
- if(entity.annotation){const a=entity.annotation;return (a.prefix??'')+(a.number??body)+(a.suffix??'');}
+ if(entity.annotation){
+  const a=entity.annotation;let label:string;
+  if(a.type==='dimension'&&a.sourceId){
+   const source=doc?.sheets.flatMap(sheet=>sheet.entities).find(source=>source.id===a.sourceId);
+   const points=source?geometryLineEndpoints(source):null;
+   // Rigid translation/rotation preserves length; local deltas avoid cancellation
+   // when a valid source is translated far from the paper origin.
+   const local=points?source!.geometry!.points!:null;
+   const length=local?Math.hypot(local[1][0]-local[0][0],local[1][1]-local[0][1]):NaN;
+   const precision=Number(a.fields.precision??3);
+   label=Number.isFinite(length)?String(Number(length.toFixed(Number.isInteger(precision)?Math.max(0,Math.min(8,precision)):3))):'⟦нет источника⟧';
+  }else {
+   const values=['symbol','value','number'].map(key=>a.fields[key]).filter(Boolean);
+   label=a.number??(values.length?values.join(' '):body);
+  }
+  return (a.prefix??'')+label+(a.suffix??'');
+ }
  return body;
 }
 
