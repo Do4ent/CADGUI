@@ -36,7 +36,7 @@ jobs:
       - name: Browser E2E tests
         env:
           BENDCORE_URL: http://127.0.0.1:4173
-        run: python -m pytest e2e/test_ui.py -v --junitxml=test-results/playwright.xml
+        run: python -m pytest e2e/test_ui.py e2e/test_regression.py -v --junitxml=test-results/playwright.xml
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v4
