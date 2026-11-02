@@ -4,6 +4,7 @@ import re
 import base64
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from playwright.sync_api import expect
@@ -219,7 +220,8 @@ def test_svg_dxf_exports_and_invalid_json_diagnostics_preserve_drawing(page, tmp
     svg_download.value.save_as(svg_target)
     svg = svg_target.read_text()
     assert '<svg' in svg and '<text' in svg
-    assert 'Экспортируемый текст' in svg
+    extracted = ''.join(ET.fromstring(svg).itertext())
+    assert 'Экспортируемый текст' in extracted
     assert '<script' not in svg.lower()
     with page.expect_download() as dxf_download:
         page.get_by_role('button', name='Экспорт DXF', exact=True).click()
