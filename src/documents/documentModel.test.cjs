@@ -93,3 +93,28 @@ hook.drawingRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.drawing.pro
 state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old.id,tabs:[{document:old,saved:JSON.stringify(['Before edit',old.items])}]}));
 hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,true);
 console.log('PASS consecutive drawing undo/redo and dirty v1 workspace recovery');
+
+// Async operations retain their render's source tab and drawing snapshot.
+const sourceId=hook.activeId;
+const delayed=hook.setDrawing;
+const sourceDrawing=plain(hook.drawing);
+hook.newDocument();hook=useEditorDocuments(()=>[]);
+const otherId=hook.activeId,otherDrawing=plain(hook.drawing);
+const imported=plain(sourceDrawing);imported.properties.title='Delayed import';
+delayed(imported);hook=useEditorDocuments(()=>[]);
+assert.deepEqual(plain(hook.drawing),otherDrawing);
+assert.equal(hook.drawingHistoryCount,0);
+hook.activate(sourceId);hook=useEditorDocuments(()=>[]);
+assert.deepEqual(plain(hook.drawing),sourceDrawing);
+const olderSetter=hook.setDrawing;
+const newer=plain(hook.drawing);newer.properties.title='Newer edit';
+hook.setDrawing(newer);hook=useEditorDocuments(()=>[]);
+const historyCount=hook.drawingHistoryCount;
+olderSetter(imported);hook=useEditorDocuments(()=>[]);
+assert.equal(hook.drawing.properties.title,'Newer edit');
+assert.equal(hook.drawingHistoryCount,historyCount);
+// Closing a source document also invalidates its outstanding callback.
+const closedSetter=hook.setDrawing;hook.close(sourceId);hook=useEditorDocuments(()=>[]);
+assert.equal(hook.activeId,otherId);closedSetter(imported);hook=useEditorDocuments(()=>[]);
+assert.deepEqual(plain(hook.drawing),otherDrawing);
+console.log('PASS async drawing guards: tab switch, closed source and stale same-document callbacks');

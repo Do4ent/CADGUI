@@ -50,9 +50,18 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  const setDrawing=(next:DrawingDocument,_label?:string)=>{
   // Validate before entering React's updater: errors leave history and autosave untouched.
   const drawing=validateDrawingDocument(next);
-  updateActive(tab=>JSON.stringify(tab.document.drawing)===JSON.stringify(drawing)?tab:{...tab,
-   document:{...tab.document,drawing,modifiedAt:new Date().toISOString()},
-   drawingHistory:[...tab.drawingHistory.slice(-49),tab.document.drawing],drawingFuture:[]});
+  const sourceId=active.document.id;
+  const sourceDrawing=active.document.drawing;
+  setWorkspace(workspace=>{
+   // A delayed import must never target a newly active tab or overwrite newer work.
+   if(workspace.activeId!==sourceId)return workspace;
+   const source=workspace.tabs.find(tab=>tab.document.id===sourceId);
+   if(!source||source.document.drawing!==sourceDrawing)return workspace;
+   if(JSON.stringify(sourceDrawing)===JSON.stringify(drawing))return workspace;
+   return {...workspace,tabs:workspace.tabs.map(tab=>tab.document.id!==sourceId?tab:{...tab,
+    document:{...tab.document,drawing,modifiedAt:new Date().toISOString()},
+    drawingHistory:[...tab.drawingHistory.slice(-49),sourceDrawing],drawingFuture:[]})};
+  });
  };
  const drawingUndo=()=>updateActive(tab=>{
   const drawing=tab.drawingHistory.at(-1);if(!drawing)return tab;
