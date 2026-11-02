@@ -39,7 +39,7 @@ def test_confirm_creates_one_part_and_supports_undo_redo(page):
     page.locator('.command-search input').blur()
     page.keyboard.press('Control+z')
     page.wait_for_function('(n) => JSON.parse(localStorage.getItem("bendcore-items")).length === n', arg=len(before))
-    page.keyboard.press('Control+Shift+z')
+    page.keyboard.press('Control+y')
     page.wait_for_function('(n) => JSON.parse(localStorage.getItem("bendcore-items")).length === n', arg=len(before) + 1)
     assert items(page)[-1] == added
 
