@@ -1,0 +1,2028 @@
+{
+  "catalogVersion": 1,
+  "reviewedOn": "2026-11-02",
+  "scope": "drawing-dimensions-tolerances-and-datum-annotations",
+  "runtimeIntegration": false,
+  "baseline": {
+    "codeCommit": "e804ed2b679f13ef73a22e055e3d84b3d6d0d921",
+    "textPullRequest": 10,
+    "tableCatalogPullRequest": 11
+  },
+  "coverage": {
+    "cadProducts": 4,
+    "sources": 26,
+    "exhaustive": false
+  },
+  "notice": "Исследование и спецификация. Все DIM ID planned; currentSupport означает только существующую ограниченную основу, не готовую команду. Источник подтверждает образец, не все детали контракта или функцию у каждой CAD.",
+  "currentSupportLegend": {
+    "missing": "Нет требуемого workflow/модели.",
+    "foundation": "Есть общий примитив или частичная отрисовка; полный контракт размера не реализован.",
+    "partial": "Есть ограниченный путь в текущем интерфейсе/модели; полного DIM workflow нет."
+  },
+  "phases": {
+    "A": "Измеряемые 2D-размеры, геометрия оформления, стили/единицы/ссылки и сохранность",
+    "B": "Группы размеров, допуски, читаемость, массовые действия и документация",
+    "C": "Истинная 3D-геометрия, solver/feature backend, нормативные вычисления, PMI и сложные адаптеры"
+  },
+  "sources": [
+    {
+      "id": "S01",
+      "product": "GstarCAD",
+      "version": "2026",
+      "title": "User Guide §9.1, печатные стр. 127–132",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD_2026_User_Guide.pdf",
+      "evidence": "pdf_text",
+      "note": "Линейные, aligned/rotated, baseline/chain, угловые, R/Ø, jogged, ordinate, quick и arc length. PDF прочитан локально."
+    },
+    {
+      "id": "S02",
+      "product": "GstarCAD",
+      "version": "2026",
+      "title": "User Guide §9.2, стр. 132–137",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD_2026_User_Guide.pdf",
+      "evidence": "pdf_text",
+      "note": "Размерные стили, стрелки, fit, позиция текста, primary/alternate units, допуски и масштаб. Не нормативная сертификация."
+    },
+    {
+      "id": "S03",
+      "product": "GstarCAD",
+      "version": "2026",
+      "title": "User Guide §9.3, стр. 138–140",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD_2026_User_Guide.pdf",
+      "evidence": "pdf_text",
+      "note": "Переопределения стиля, oblique/jogged linear, inspection и DIMSPACE."
+    },
+    {
+      "id": "S04",
+      "product": "GstarCAD",
+      "version": "2026",
+      "title": "User Guide §9.4, стр. 140–142",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD_2026_User_Guide.pdf",
+      "evidence": "pdf_text",
+      "note": "Feature control frames, material conditions, datums, projected zones и composite tolerances. Правила конкретной редакции ISO/ASME не верифицированы."
+    },
+    {
+      "id": "S05",
+      "product": "FreeCAD",
+      "version": "Документация main, содержит различия 0.21/1.0",
+      "title": "TechDraw LengthDimension",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_LengthDimension.md",
+      "evidence": "official_repository",
+      "note": "Линия/точки/перпендикулярные расстояния; projected/true, допуски, формат, overrides; ограничения topological naming."
+    },
+    {
+      "id": "S06",
+      "product": "FreeCAD",
+      "version": "Документация main",
+      "title": "TechDraw AngleDimension",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_AngleDimension.md",
+      "evidence": "official_repository",
+      "note": "Внутренний угол двух прямых рёбер; ссылки на 2D/3D и свойства размера."
+    },
+    {
+      "id": "S07",
+      "product": "FreeCAD",
+      "version": "Документация main",
+      "title": "TechDraw RadiusDimension",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_RadiusDimension.md",
+      "evidence": "official_repository",
+      "note": "Радиус окружности/круговой дуги; эллипс или B-spline, выглядящий кругом, не подходит."
+    },
+    {
+      "id": "S08",
+      "product": "FreeCAD",
+      "version": "Документация main",
+      "title": "TechDraw Workbench — Dimensions",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_Workbench.md",
+      "evidence": "official_repository",
+      "note": "Список видов размеров, горизонтальные/вертикальные extents, цепочки, координатные серии, фаски и форматирование."
+    },
+    {
+      "id": "S09",
+      "product": "FreeCAD",
+      "version": "С версии 0.21 по документу",
+      "title": "TechDraw DimensionRepair",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_DimensionRepair.md",
+      "evidence": "official_repository",
+      "note": "Замена 2D/3D геометрических ссылок после topological naming/hidden-line изменений."
+    },
+    {
+      "id": "S10",
+      "product": "FreeCAD",
+      "version": "В описании GD&T указаны ограничения 0.20",
+      "title": "TechDraw GD&T",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_Geometric_dimensioning_and_tolerancing.md",
+      "evidence": "official_repository",
+      "note": "Формат и допуски; для части GD&T применяются обходные приёмы через balloons. Не доказательство полноценного семантического GD&T."
+    },
+    {
+      "id": "S11",
+      "product": "FreeCAD",
+      "version": "0.21/0.22 по документу",
+      "title": "TechDraw AxoLengthDimension",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_AxoLengthDimension.md",
+      "evidence": "official_repository",
+      "note": "Направления размерной и выносных линий в аксонометрии; true measurement требует исходных ссылок."
+    },
+    {
+      "id": "S12",
+      "product": "FreeCAD",
+      "version": "С версии 0.20 по документу",
+      "title": "Horizontal Coordinate Dimensions",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_ExtensionCreateHorizCoordDimension.md",
+      "evidence": "official_repository",
+      "note": "Несколько равномерно размещённых размеров от общей базы. Название coordinate здесь не делает их автоматически ordinate X/Y."
+    },
+    {
+      "id": "S13",
+      "product": "LibreCAD",
+      "version": "Руководство 2.2.x, main",
+      "title": "Drawing Tools — Dimension",
+      "url": "https://github.com/LibreCAD/docs/blob/main/ref/tools.rst",
+      "evidence": "official_repository",
+      "note": "Aligned/linear/horizontal/vertical/radius/diameter/angular. Открытая документация отмечена как развиваемая."
+    },
+    {
+      "id": "S14",
+      "product": "LibreCAD",
+      "version": "Руководство 2.2.x, main",
+      "title": "Drawing Preferences — Dimensions",
+      "url": "https://github.com/LibreCAD/docs/blob/main/ref/draw-prefs.rst",
+      "evidence": "official_repository",
+      "note": "General scale отдельно от length factor; text/extension/arrow параметры, format units, точность и подавление нулей."
+    },
+    {
+      "id": "S15",
+      "product": "LibreCAD",
+      "version": "Руководство 2.2.x, main",
+      "title": "Snapping",
+      "url": "https://github.com/LibreCAD/docs/blob/main/ref/snaps.rst",
+      "evidence": "official_repository",
+      "note": "Концы, центры, середины, пересечения, координатные ограничения; это механизм выбора, а не гарантия ассоциативности размера."
+    },
+    {
+      "id": "S16",
+      "product": "QCAD",
+      "version": "master на дату проверки; редакция лицензии не аудирована",
+      "title": "Dimension Tools",
+      "url": "https://github.com/qcad/qcad/blob/master/scripts/Draw/Dimension/doc/Dimension_en.html",
+      "evidence": "official_repository",
+      "note": "Размер состоит из значения, линий, стрелок и допусков; параметры вводятся на contextual toolbar."
+    },
+    {
+      "id": "S17",
+      "product": "QCAD",
+      "version": "master на дату проверки",
+      "title": "Aligned",
+      "url": "https://github.com/qcad/qcad/blob/master/scripts/Draw/Dimension/DimAligned/doc/DimAligned_en.html",
+      "evidence": "official_repository",
+      "note": "Две точки выносных линий и положение размерной линии; линия параллельна измеряемому отрезку."
+    },
+    {
+      "id": "S18",
+      "product": "QCAD",
+      "version": "master на дату проверки",
+      "title": "Ordinate — описание",
+      "url": "https://github.com/qcad/qcad/blob/master/scripts/Draw/Dimension/DimOrdinate/doc/DimOrdinate_desc_en.mdx",
+      "evidence": "official_repository",
+      "note": "Координата X или Y относительно начала."
+    },
+    {
+      "id": "S19",
+      "product": "QCAD",
+      "version": "master на дату проверки",
+      "title": "Ordinate — порядок работы",
+      "url": "https://github.com/qcad/qcad/blob/master/scripts/Draw/Dimension/DimOrdinate/doc/DimOrdinate_proc_en.mdx",
+      "evidence": "official_repository",
+      "note": "Выбор точки/полки; origin можно менять перетаскиванием или свойствами."
+    },
+    {
+      "id": "S20",
+      "product": "QCAD",
+      "version": "master на дату проверки",
+      "title": "Angular",
+      "url": "https://github.com/qcad/qcad/blob/master/scripts/Draw/Dimension/DimAngular/doc/DimAngular_en.html",
+      "evidence": "official_repository",
+      "note": "Две опорные линии и положение размерной дуги."
+    },
+    {
+      "id": "S21",
+      "product": "QCAD",
+      "version": "master на дату проверки",
+      "title": "Radial",
+      "url": "https://github.com/qcad/qcad/blob/master/scripts/Draw/Dimension/DimRadial/doc/DimRadial_en.html",
+      "evidence": "official_repository",
+      "note": "Окружность или дуга; положение радиальной линии."
+    },
+    {
+      "id": "S22",
+      "product": "QCAD",
+      "version": "master на дату проверки",
+      "title": "Diametric",
+      "url": "https://github.com/qcad/qcad/blob/master/scripts/Draw/Dimension/DimDiametric/doc/DimDiametric_en.html",
+      "evidence": "official_repository",
+      "note": "Диаметр окружности или дуги; не подстановка символа к длине линии."
+    },
+    {
+      "id": "S23",
+      "product": "FreeCAD",
+      "version": "С версии 0.20 по документу",
+      "title": "Horizontal Chamfer Dimension",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_ExtensionCreateHorizChamferDimension.md",
+      "evidence": "official_repository",
+      "note": "Размер фаски как горизонтальный размер и угол по двум вершинам."
+    },
+    {
+      "id": "S24",
+      "product": "FreeCAD",
+      "version": "С версии 0.16 по документу",
+      "title": "Sketcher ToggleDrivingConstraint",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/Sketcher_ToggleDrivingConstraint.md",
+      "evidence": "official_repository",
+      "note": "Отличает driving constraints и reference/driven. Это Sketcher, не команда TechDraw."
+    },
+    {
+      "id": "S25",
+      "product": "FreeCAD",
+      "version": "С версии 0.20 по документу",
+      "title": "Arc Length Dimension",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_ExtensionCreateLengthArc.md",
+      "evidence": "official_repository",
+      "note": "Длина круговой дуги как отдельная величина, не хорда."
+    },
+    {
+      "id": "S26",
+      "product": "FreeCAD",
+      "version": "С версии 0.20 по документу",
+      "title": "Cascade Horizontal Dimensions",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_ExtensionCascadeHorizDimension.md",
+      "evidence": "official_repository",
+      "note": "Равномерные интервалы относительно первого размера и центрирование текста."
+    }
+  ],
+  "groups": [
+    {
+      "id": "linear",
+      "label": "Линейные размеры",
+      "dependencies": [
+        "geometry-2d-adapter",
+        "dimension-model"
+      ],
+      "features": [
+        {
+          "label": "Горизонтальный размер",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S13"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерять абсолютную проекцию разности опор на ось X выбранной системы координат, а не полную длину отрезка.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-001"
+        },
+        {
+          "label": "Вертикальный размер",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S13"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерять проекцию на ось Y с явной системой координат и политикой знака.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-002"
+        },
+        {
+          "label": "Параллельный размер по двум точкам",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S05",
+            "S17"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Полная длина между опорами; размерная линия параллельна отрезку, выносные связаны с его концами.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-003"
+        },
+        {
+          "label": "Размер по заданному направлению",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S13"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проекция на пользовательскую ось; угол размерной линии не подменяет произвольное вращение подписи.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-004"
+        },
+        {
+          "label": "Перпендикуляр от точки до линии",
+          "phase": "A",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выбрать конечный отрезок либо бесконечную опорную прямую; правило ближайшей точки задаётся явно.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-005"
+        },
+        {
+          "label": "Расстояние между параллельными линиями",
+          "phase": "A",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проверить параллельность с численным допуском и вычислить кратчайшее расстояние.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-006"
+        },
+        {
+          "label": "Габаритный размер по X/Y",
+          "phase": "B",
+          "sources": [
+            "S08"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерять экстремумы выбранной геометрии в системе вида; bbox текста и рамка выделения не источник размера.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-007"
+        },
+        {
+          "label": "Контекстное создание размера",
+          "phase": "B",
+          "sources": [
+            "S08"
+          ],
+          "currentSupport": "missing",
+          "behavior": "По типу выбранной геометрии предложить совместимый вид; показать выбор до создания, не угадывать тип молча.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-008"
+        }
+      ],
+      "order": 1
+    },
+    {
+      "id": "angular-radial",
+      "label": "Углы, радиусы, диаметры и дуги",
+      "dependencies": [
+        "circle-arc-geometry",
+        "angle-policy"
+      ],
+      "features": [
+        {
+          "label": "Радиус окружности или дуги",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S07",
+            "S21"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерять радиус реальной круговой геометрии; эллипс и визуально похожий сплайн отклонять.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-009"
+        },
+        {
+          "label": "Диаметр окружности или дуги",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S22"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Получать диаметр из окружности; префикс Ø к длине линии не является диаметральным измерением.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-010"
+        },
+        {
+          "label": "Угол между двумя прямыми",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S06",
+            "S20"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Опорные направления и выбранный сектор определяют внутренний/внешний угол; вырожденные линии отклоняются.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-011"
+        },
+        {
+          "label": "Угол по трём точкам",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S08"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Средняя точка — вершина, остальные задают лучи; обработать совпадения и переход через 0/360°.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-012"
+        },
+        {
+          "label": "Угловой размер круговой дуги",
+          "phase": "B",
+          "sources": [
+            "S01"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерять центральный угол конкретного параметрического участка с учётом направления дуги.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-013"
+        },
+        {
+          "label": "Длина круговой дуги",
+          "phase": "B",
+          "sources": [
+            "S01",
+            "S25"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерять r·угол в радианах, а не хорду или длину полного круга; хранить участок источника.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-014"
+        },
+        {
+          "label": "Радиус с изломом",
+          "phase": "B",
+          "sources": [
+            "S01"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Вынести условный центр и добавить jog без изменения истинного значения и ссылки на окружность.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-015"
+        },
+        {
+          "label": "Сферические радиус и диаметр",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Требуется подтверждённая сферическая поверхность/3D-источник; текст SR/SØ сам по себе не измеряет сферу.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-016"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "id": "sets",
+      "label": "Цепочки, базы и координатные системы размеров",
+      "dependencies": [
+        "dimension-sets",
+        "datum-origin"
+      ],
+      "features": [
+        {
+          "label": "Размерная цепочка",
+          "phase": "B",
+          "sources": [
+            "S01",
+            "S08"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Последовательные интервалы имеют общие опоры; добавление звена сохраняет смысл предыдущих размеров.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-017"
+        },
+        {
+          "label": "Размеры от общей базы",
+          "phase": "B",
+          "sources": [
+            "S01",
+            "S12"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Все размеры используют одну базовую опору и независимые конечные опоры; не путать с последовательной цепочкой.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-018"
+        },
+        {
+          "label": "Ординатные размеры X/Y",
+          "phase": "B",
+          "sources": [
+            "S01",
+            "S18",
+            "S19"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выводить координату точки от заданного нуля; явная ось и знак, начало хранится как общая опора.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-019"
+        },
+        {
+          "label": "Полярные координатные размеры",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Задать начало, нулевое направление, радиус и угол; явно выбрать поддерживаемую семантику представления.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-020"
+        },
+        {
+          "label": "Изменение нуля координатной группы",
+          "phase": "B",
+          "sources": [
+            "S19",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Переназначить общую опору с предпросмотром всех изменившихся координат и одним undo-шагом.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-021"
+        },
+        {
+          "label": "Редактирование состава цепочки/базы",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Вставить, удалить или переупорядочить звено без дублирования источников и скрытого разрыва группы.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-022"
+        },
+        {
+          "label": "Полки и изломы ординатных размеров",
+          "phase": "B",
+          "sources": [
+            "S01",
+            "S19",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Маршрут выноски изменяет читаемость, но не начало отсчёта, знак или измеряемую координату.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-023"
+        }
+      ],
+      "order": 3
+    },
+    {
+      "id": "sources",
+      "label": "Выбор геометрии и опор",
+      "dependencies": [
+        "stable-reference",
+        "snap-service",
+        "coordinate-frame"
+      ],
+      "features": [
+        {
+          "label": "Привязки к концам, серединам и центрам",
+          "phase": "A",
+          "sources": [
+            "S15"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Различать тип привязки и хранить связь с сущностью/параметром; просто скопированные XY не являются ассоциативной опорой.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-024"
+        },
+        {
+          "label": "Касательная и виртуальное пересечение",
+          "phase": "B",
+          "sources": [
+            "S15",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Хранить правило построения виртуальной опоры и зависимые объекты, а не случайную экранную точку.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-025"
+        },
+        {
+          "label": "Локальная система координат",
+          "phase": "B",
+          "sources": [
+            "S01",
+            "S18"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выбрать origin и базис для координат, углов и проекций; сохранять матрицу/ID контекста.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-026"
+        },
+        {
+          "label": "Подсветка кандидатов источника",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Перед подтверждением показать обе опоры, измеряемый участок и единицы, исключить случайный выбор текстовой рамки.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-027"
+        },
+        {
+          "label": "Ссылки на исходную 3D-геометрию",
+          "phase": "C",
+          "sources": [
+            "S05",
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Использовать устойчивую ссылку на ребро/вершину/поверхность и view context; не считать pos/size примитива точной топологией.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-028"
+        },
+        {
+          "label": "Неассоциативный размер по точкам",
+          "phase": "A",
+          "sources": [
+            "S17",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Разрешить ручные координаты как явно несвязанный источник; индикатор отличает его от ассоциативного размера.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-029"
+        },
+        {
+          "label": "Проверка пригодности опор",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S07"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Отсекать NaN, бесконечность, недопустимые типы, совпавшие опоры и неразрешимые случаи до изменения документа.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-030"
+        }
+      ],
+      "order": 4
+    },
+    {
+      "id": "placement",
+      "label": "Размещение и читаемость",
+      "dependencies": [
+        "dimension-layout",
+        "text-metrics",
+        "hit-testing"
+      ],
+      "features": [
+        {
+          "label": "Положение размерной линии",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S17"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Перемещать линию как геометрический offset относительно опор, автоматически перестраивая выносные.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-031"
+        },
+        {
+          "label": "Перемещение текста размера",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S05"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Текст перемещается отдельно от измерения и при необходимости получает соединительную линию.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-032"
+        },
+        {
+          "label": "Текст и стрелки внутри/снаружи",
+          "phase": "A",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проверять доступное место по метрикам и выбранной fit-политике; не менять измеряемые опоры.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-033"
+        },
+        {
+          "label": "Разворот стрелок",
+          "phase": "A",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Независимый flip наконечников без инверсии знака или изменения длины.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-034"
+        },
+        {
+          "label": "Выравнивание размерных линий",
+          "phase": "B",
+          "sources": [
+            "S03",
+            "S08"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выбранный размер задаёт базовую линию; совместимые размеры выравниваются без пересчёта геометрии источника.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-035"
+        },
+        {
+          "label": "Равномерные интервалы между размерами",
+          "phase": "B",
+          "sources": [
+            "S03",
+            "S26"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Задать расстояние на бумаге, сохранить первый размер и развести остальные с одним подтверждением.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-036"
+        },
+        {
+          "label": "Разрыв и излом размерной линии",
+          "phase": "B",
+          "sources": [
+            "S03"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Локальные графические разрывы/jog не меняют значение; отличать их от разрыва вида и удаления источника.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-037"
+        },
+        {
+          "label": "Пересечения линий и маска текста",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Проверять коллизии и область маски; маска не скрывает предупреждение о сломанной ссылке.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-038"
+        }
+      ],
+      "order": 5
+    },
+    {
+      "id": "associativity",
+      "label": "Ассоциативность и восстановление связей",
+      "dependencies": [
+        "reference-resolver",
+        "dependency-graph"
+      ],
+      "features": [
+        {
+          "label": "Устойчивые ссылки на опоры",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S09",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Хранить ID сущности и тип/параметр опоры; числовой индекс ребра без политики перестроения недостаточен.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-039"
+        },
+        {
+          "label": "Пересчёт при изменении источника",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Перестроить и значение, и размерные/выносные линии; обновления только числа недостаточно.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-040"
+        },
+        {
+          "label": "Диагностика потерянной ссылки",
+          "phase": "A",
+          "sources": [
+            "S09",
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Показать причину и подсветить размер; не выдавать сохранённый кэш за актуальный результат.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-041"
+        },
+        {
+          "label": "Перепривязка размера",
+          "phase": "B",
+          "sources": [
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выбрать новые совместимые опоры и показать изменившееся значение до применения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-042"
+        },
+        {
+          "label": "Заморозить результат снимком",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранить значение, геометрию и происхождение как явно устаревающий снимок, не менять исходный объект.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-043"
+        },
+        {
+          "label": "Разорвать ассоциативность",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Преобразовать связь в явные опоры/снимок с предупреждением и возможностью отмены.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-044"
+        },
+        {
+          "label": "Показать геометрию и зависимости",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Выделение размера подсвечивает источники, базу и контекст вида; обратный переход выбирает зависимые размеры.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-045"
+        },
+        {
+          "label": "Изменившийся тип или топология источника",
+          "phase": "B",
+          "sources": [
+            "S05",
+            "S09",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Существующий ID с неподходящим типом считается ошибкой связи; попытка восстановления не выбирает похожее ребро молча.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-046"
+        }
+      ],
+      "order": 6
+    },
+    {
+      "id": "styles",
+      "label": "Размерные стили и наследование",
+      "dependencies": [
+        "dimension-style-schema",
+        "style-library"
+      ],
+      "features": [
+        {
+          "label": "Менеджер размерных стилей",
+          "phase": "A",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Именованный стиль связывает линии, стрелки, текст, единицы, fit и допуски; хранится в документе.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-047"
+        },
+        {
+          "label": "Варианты стиля по типу размера",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отдельные параметры линейных, угловых и радиальных размеров без несогласованного копирования стиля.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-048"
+        },
+        {
+          "label": "Локальные переопределения",
+          "phase": "A",
+          "sources": [
+            "S03"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Показать отличие от стиля и источник каждого эффективного значения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-049"
+        },
+        {
+          "label": "Копировать оформление размера",
+          "phase": "A",
+          "sources": [
+            "S03",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Передать стиль/переопределения без замены опор, измерения, допусков и ручного override значения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-050"
+        },
+        {
+          "label": "Сбросить переопределения",
+          "phase": "A",
+          "sources": [
+            "S03"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Восстановить наследуемые параметры с предпросмотром; номинал и источник остаются прежними.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-051"
+        },
+        {
+          "label": "Профили ISO, ASME и ГОСТ",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Явно выбрать стандарт и редакцию; профиль оформления не является заявлением о сертифицированном соответствии.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-052"
+        },
+        {
+          "label": "Импорт и конфликты стилей",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сравнить одинаковые имена/разные параметры; сохранить ссылки или создать отдельный стиль без скрытой замены.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-053"
+        }
+      ],
+      "order": 7
+    },
+    {
+      "id": "values",
+      "label": "Значения, единицы и числовой формат",
+      "dependencies": [
+        "typed-measurement",
+        "unit-conversion",
+        "number-format"
+      ],
+      "features": [
+        {
+          "label": "Основные единицы размера",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Линейные и угловые величины имеют размерность и формат; единица источника не берётся из суффикса подписи.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-054"
+        },
+        {
+          "label": "Точность отображения",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S05",
+            "S14"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Задать число десятичных знаков независимо от точности вычисления, включая обязательные завершающие нули.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-055"
+        },
+        {
+          "label": "Правило округления",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Задать шаг и способ округления; арифметические пограничные случаи проверяются отдельно от форматирования строки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-056"
+        },
+        {
+          "label": "Альтернативные единицы",
+          "phase": "B",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Второй согласованный вывод имеет собственную точность/скобки; ограничения по типу величины явные.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-057"
+        },
+        {
+          "label": "Конвертация единиц и коэффициент значения",
+          "phase": "B",
+          "sources": [
+            "S14",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отделить физическую конвертацию, user length factor и масштаб оформления; каждый коэффициент имеет происхождение.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-058"
+        },
+        {
+          "label": "Подавление ведущих/замыкающих нулей",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S14"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Независимые настройки сохраняют знак и значение; 5 и 5.000 являются разными форматами одного результата.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-059"
+        },
+        {
+          "label": "Дроби, футы/дюймы и угловые форматы",
+          "phase": "B",
+          "sources": [
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Поддерживать явный формат и знаменатель/точность; градусы-минуты-секунды не хранить как неразобранный текст.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-060"
+        },
+        {
+          "label": "Исходное измерение и отображаемое значение",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Хранить raw measurement отдельно от format/override/cache; форматирование и текст не изменяют геометрию.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-061"
+        }
+      ],
+      "order": 8
+    },
+    {
+      "id": "text",
+      "label": "Текст, символы и ручная подмена",
+      "dependencies": [
+        "rich-text-adapter",
+        "measurement-placeholder"
+      ],
+      "features": [
+        {
+          "label": "Префикс и суффикс",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S16"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Добавлять текст вокруг вычисленного значения, не теряя ссылку на источник и номинал.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-062"
+        },
+        {
+          "label": "Плейсхолдер вычисленного значения",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Шаблон содержит структурированный слот числа; замена видимого текста не уничтожает измерение.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-063"
+        },
+        {
+          "label": "Фрагменты, дроби и многострочность",
+          "phase": "B",
+          "sources": [
+            "S10",
+            "S16",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Переиспользовать rich-text движок для подписи размера; дробь/индекс не превращается автоматически в допуск.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-064"
+        },
+        {
+          "label": "Инженерные символы подписи",
+          "phase": "A",
+          "sources": [
+            "S08",
+            "S16"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Ø, R, □ и другие символы вводятся явно; семантика типа размера проверяется отдельно от глифа.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-065"
+        },
+        {
+          "label": "Ориентация и читаемость текста",
+          "phase": "A",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Текст вдоль размерной линии или горизонтально; правило переворота чтения задаётся стилем.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-066"
+        },
+        {
+          "label": "Ручная подмена подписи",
+          "phase": "B",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранить вычисленное число и показать override-индикатор в редакторе/отчёте; не выдавать текст за измерение.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-067"
+        },
+        {
+          "label": "Вернуть вычисленную подпись",
+          "phase": "B",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Снять override без пересоздания геометрии, восстановив текущий результат и формат.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-068"
+        },
+        {
+          "label": "Шрифт и недостающие символы",
+          "phase": "A",
+          "sources": [
+            "S10",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Проверять выбранный шрифт и явную подстановку, включая ±/Ø/знаки допуска; glyph coverage не считать доказанной эвристикой.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-069"
+        }
+      ],
+      "order": 9
+    },
+    {
+      "id": "tolerances",
+      "label": "Допуски размеров и посадки",
+      "dependencies": [
+        "typed-tolerance",
+        "standard-profile"
+      ],
+      "features": [
+        {
+          "label": "Симметричный допуск",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S05",
+            "S16"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Хранить величину ±t отдельно от номинала; t конечен и неотрицателен.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-070"
+        },
+        {
+          "label": "Раздельные верхнее/нижнее отклонения",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Хранить signed deviations, проверить порядок предельных значений и знак каждого отклонения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-071"
+        },
+        {
+          "label": "Предельные размеры",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Вычислить lower/upper из номинала и отклонений; вывод пределов не меняет исходный номинал.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-072"
+        },
+        {
+          "label": "Обозначение поля допуска/посадки",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Хранить структурированное обозначение, стандарт, редакцию и сторону отверстие/вал; неизвестный код не вычислять догадкой.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-073"
+        },
+        {
+          "label": "Расчёт числовых отклонений посадки",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Нужен проверенный нормативный набор данных по диапазонам и версии стандарта; без него доступно только явно ручное обозначение.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-074"
+        },
+        {
+          "label": "Формат и точность допуска",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S05",
+            "S10"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отдельные precision/scale/alignment верхней и нижней величин с согласованным знаком и единицами.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-075"
+        },
+        {
+          "label": "Теоретически точный размер",
+          "phase": "B",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Рамка basic dimension — типизированная семантика; обычные ± отклонения с этим режимом несовместимы.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-076"
+        },
+        {
+          "label": "Справочный размер",
+          "phase": "B",
+          "sources": [
+            "S24",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отделить обозначение справочного размера на чертеже от режима driven в solver; одно не включает другое автоматически.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-077"
+        }
+      ],
+      "order": 10
+    },
+    {
+      "id": "lines",
+      "label": "Размерные линии, выносные и стрелки",
+      "dependencies": [
+        "dimension-layout",
+        "line-style"
+      ],
+      "features": [
+        {
+          "label": "Типы наконечников и засечки",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Стрелка/засечка задаётся параметром размера, возможны разные наконечники первого и второго конца.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-078"
+        },
+        {
+          "label": "Размер стрелок",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Задавать в единицах бумаги, не изменяя длину измеряемого объекта.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-079"
+        },
+        {
+          "label": "Отступ выносной от источника",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранять разрыв между геометрией и выносной линией по стилю.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-080"
+        },
+        {
+          "label": "Выход выносной за размерную линию",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отдельный параметр overshoot; направление следует геометрии размерной линии.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-081"
+        },
+        {
+          "label": "Линии: толщина, тип и цвет",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Размерные/выносные параметры раздельны; экран, SVG и PDF используют одну компоновку.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-082"
+        },
+        {
+          "label": "Скрыть отдельную линию/стрелку",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Скрывать графический компонент без удаления опоры и без подмены полного размера половинным.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-083"
+        },
+        {
+          "label": "Осевые линии и центровые отметки",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Согласовать размер с отдельными осевыми объектами; центр метки не вычислять по bbox подписи.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-084"
+        }
+      ],
+      "order": 11
+    },
+    {
+      "id": "views",
+      "label": "Масштаб, виды и плоскости измерения",
+      "dependencies": [
+        "view-context",
+        "projection-adapter",
+        "coordinate-frames"
+      ],
+      "features": [
+        {
+          "label": "Размер текста на бумаге",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Сохранять физическую высоту подписи независимо от экранного zoom и величины объекта.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-085"
+        },
+        {
+          "label": "Аннотативные представления",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Один размер может иметь размещение для нескольких масштабов; источники и результат не дублируются как разные измерения.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-086"
+        },
+        {
+          "label": "Масштаб вида и коэффициент значения",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Явно связать бумажное представление с координатами вида; не применять view scale повторно к уже модельному результату.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-087"
+        },
+        {
+          "label": "Проекция или истинная 3D-величина",
+          "phase": "C",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Projected использует геометрию вида, True — исходную 3D-геометрию; обратный масштаб 2D не восстанавливает скрытую компоненту.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-088"
+        },
+        {
+          "label": "Размер в аксонометрии",
+          "phase": "C",
+          "sources": [
+            "S11"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Плоскость, направления выносных и источник измерения заданы явно; нельзя угадать true value по экранному отрезку.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-089"
+        },
+        {
+          "label": "Укороченный/разорванный вид",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерение идёт по исходной геометрии, а не видимому разрыву; сохраняется контекст специального представления.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-090"
+        },
+        {
+          "label": "Разрезы, сечения и местные виды",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Опора принадлежит исходному объекту и конкретному виду; скрытые и обрезанные участки имеют определённую политику выбора.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-091"
+        },
+        {
+          "label": "Видимость размера по листу/виду",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Не путать скрыто, непечатно и удалено; перенос между видами требует совместимости ссылок и плоскости.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-092"
+        }
+      ],
+      "order": 12
+    },
+    {
+      "id": "editing",
+      "label": "Редактирование и массовые действия",
+      "dependencies": [
+        "dimension-selection",
+        "validated-transactions"
+      ],
+      "features": [
+        {
+          "label": "Параметрический диалог размера",
+          "phase": "A",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выбрать тип, опоры, offset, стиль, формат и допуск; черновик подтверждается или отменяется целиком.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-093"
+        },
+        {
+          "label": "Переместить или скопировать размер",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Перемещать оформление отдельно от источника; копия получает свой ID и явно сохраняет/заменяет опоры.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-094"
+        },
+        {
+          "label": "Смена типа размера",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Преобразовывать только совместимые типы с предпросмотром; Ø длины линии запрещено выдавать за новый диаметр.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-095"
+        },
+        {
+          "label": "Массовая смена стиля/слоя",
+          "phase": "B",
+          "sources": [
+            "S03",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Показать смешанные значения и затронутые объекты; не переносить случайно номиналы или допуски.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-096"
+        },
+        {
+          "label": "Выбор по типу, стилю и состоянию",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Отбирать размеры по измерению/виду/ошибке/override, а не только по видимому тексту.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-097"
+        },
+        {
+          "label": "Удалить размер, сохранив геометрию",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Удаляется только аннотация и её группа представления; источник, другой размер и constraint не затрагиваются.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-098"
+        },
+        {
+          "label": "OK/Cancel, Undo/Redo и пакетная транзакция",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Все изменения размера и групп отменяются одним шагом; ошибка/Cancel не меняет dirty или autosave.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-099"
+        }
+      ],
+      "order": 13
+    },
+    {
+      "id": "special",
+      "label": "Специальные размерные команды",
+      "dependencies": [
+        "feature-adapters",
+        "geometry-2d-adapter"
+      ],
+      "features": [
+        {
+          "label": "Размер фаски",
+          "phase": "B",
+          "sources": [
+            "S23"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Горизонтальный/вертикальный размер и угол по явной геометрии; обозначение размера×угол не вводить как несвязанный текст без пометки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-100"
+        },
+        {
+          "label": "Размер отверстия и зенковки",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Получать диаметр, глубину и тип из feature backend; ручной текст отделять от автоматического callout.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-101"
+        },
+        {
+          "label": "Резьба и её глубина",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Нужны подтверждённые параметры резьбы и стандарт обозначения; не выводить резьбу из вида окружности.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-102"
+        },
+        {
+          "label": "Повторяющиеся элементы и количество",
+          "phase": "C",
+          "sources": [
+            "S08",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "n× берётся из явной группы/массива либо отмеченного ручного значения; одинаковый вид не доказывает одинаковую геометрию.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-103"
+        },
+        {
+          "label": "Делительная окружность и шаг",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранять источник PCD/углового шага и выбранные элементы; не подменять диаметром bbox группы.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-104"
+        },
+        {
+          "label": "Уклон и конусность",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Задать ось, измеряемые сечения и формулу; нужны совместимые геометрические данные.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-105"
+        },
+        {
+          "label": "Длина произвольной кривой",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Численное измерение требует curve adapter с диапазоном параметров и оценкой погрешности; не длина контрольного многоугольника.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-106"
+        },
+        {
+          "label": "Управляющий размер и solver",
+          "phase": "C",
+          "sources": [
+            "S24"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Ввод значения меняет геометрию только через constraint solver с проверкой разрешимости; без solver команда недоступна.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-107"
+        }
+      ],
+      "order": 14
+    },
+    {
+      "id": "gdt",
+      "label": "Геометрические допуски, базы и PMI",
+      "dependencies": [
+        "gdt-schema",
+        "standard-rule-set",
+        "feature-references"
+      ],
+      "features": [
+        {
+          "label": "Обозначение базы",
+          "phase": "B",
+          "sources": [
+            "S04",
+            "S10"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Хранить идентификатор и опору datum feature отдельно от обычной текстовой рамки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-108"
+        },
+        {
+          "label": "Базовые точки и участки",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Datum targets имеют тип, область и координаты; требуют проверенной модели привязки.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-109"
+        },
+        {
+          "label": "Рамка геометрического допуска",
+          "phase": "B",
+          "sources": [
+            "S04"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Структурированные ячейки characteristic/value/modifiers/datums; визуальная рамка сама по себе не семантический FCF.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-110"
+        },
+        {
+          "label": "Порядок и состав баз",
+          "phase": "B",
+          "sources": [
+            "S04"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Первичная/вторичная/третичная базы имеют явный порядок и типизированные ссылки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-111"
+        },
+        {
+          "label": "Модификаторы и проецируемая зона",
+          "phase": "C",
+          "sources": [
+            "S04"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Материальные условия, форма зоны и высота проекции валидируются по выбранному стандарту/редакции.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-112"
+        },
+        {
+          "label": "Составные и многоуровневые рамки",
+          "phase": "C",
+          "sources": [
+            "S04"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранять связь сегментов и различия требований баз, а не склеивать строки произвольным символом.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-113"
+        },
+        {
+          "label": "Проверка корректности обозначения",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проверять допустимые сочетания/ссылки нормативным rule set; это не проверка соответствия изготовленной геометрии допуску.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-114"
+        },
+        {
+          "label": "Семантическая 3D PMI-аннотация",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Нужны 3D-опоры, плоскость аннотации, виды и семантика; надпись на SVG-листе не является PMI.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-115"
+        }
+      ],
+      "order": 15
+    },
+    {
+      "id": "automation-exchange",
+      "label": "Автоматизация, обмен и контроль",
+      "dependencies": [
+        "capability-gates",
+        "export-adapters",
+        "validation-report"
+      ],
+      "features": [
+        {
+          "label": "Получить размеры модели на чертёж",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Импортировать существующие model dimensions с ID/видами; не угадывать управляющие параметры по рамке примитива.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-116"
+        },
+        {
+          "label": "Автоматическое нанесение по правилам",
+          "phase": "C",
+          "sources": [
+            "S01",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Предложить кандидаты по выбранной геометрии и правилам; пользователь подтверждает результат, полнота не гарантируется автоматически.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-117"
+        },
+        {
+          "label": "Дубли, коллизии и лишние размеры",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сравнивать семантические опоры/тип и геометрию оформления; одинаковая подпись не означает дубликат.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-118"
+        },
+        {
+          "label": "Инспекционные номера и частота контроля",
+          "phase": "B",
+          "sources": [
+            "S03"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранять ID характеристики, номер, номинал и частоту; рамка контроля не заменяет фактическое измерение.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "DIM-119"
+        },
+        {
+          "label": "Отчёт о полноте размерного описания",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Правила полноты объявляются явно; без feature/constraint анализа не выдавать заключение о полной определённости детали.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-120"
+        },
+        {
+          "label": "Сопоставить номинал и результат контроля",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Метрологический адаптер хранит измеренное значение, единицы, источник и неопределённость отдельно от CAD-номинала.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-121"
+        },
+        {
+          "label": "Семантический JSON round-trip",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Сохранить тип измерения, опоры, context, стиль, допуски и overrides с версией схемы и миграцией старых аннотаций.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-122"
+        },
+        {
+          "label": "Обмен DXF/DWG DIMENSION",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проверенный адаптер сохраняет поддержанные размерные сущности и стили; отчёт отдельно перечисляет утраты связей/контекста.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-123"
+        },
+        {
+          "label": "Статический SVG/PDF и DXF-снимок",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Экспортировать текущее представление с предупреждениями; TEXT/LINE не называть DIMENSION round-trip, PDF не обещает CAD-семантики.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-124"
+        },
+        {
+          "label": "PMI / STEP AP242",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отдельный семантический адаптер с проверкой поддержанных сущностей; наличие картинки/текста не доказывает PMI-совместимость.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-125"
+        },
+        {
+          "label": "Доступность, диагностика и восстановление",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Keyboard/focus, адресуемые ошибки, безопасные лимиты и восстановление документов; неверные значения не сохраняются как корректные измерения.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "DIM-126"
+        }
+      ],
+      "order": 16
+    }
+  ]
+}
