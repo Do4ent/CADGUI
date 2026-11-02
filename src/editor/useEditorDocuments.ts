@@ -1,19 +1,31 @@
 import {useEffect,useState,type Dispatch,type SetStateAction} from 'react';
 import {createDocument,parseDocument,serializeDocument,type CadDocument,type CadItem} from '../documents/documentModel';
+import {validateDrawingDocument} from '../drawing/model';
+import {type DrawingDocument} from '../drawing/types';
 import {type SelectionState} from '../selection/selectionModel';
 
-type EditorTab={document:CadDocument;saved:string|null;history:CadItem[][];future:CadItem[][];selection:SelectionState};
+type EditorTab={document:CadDocument;saved:string|null;history:CadItem[][];future:CadItem[][];selection:SelectionState;drawingHistory:DrawingDocument[];drawingFuture:DrawingDocument[];drawingSelection:string[]};
 type Workspace={tabs:EditorTab[];activeId:string;recoveryError:string|null};
 const KEY='bendcore-documents-v1';
-const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items]);
-const makeTab=(document:CadDocument,saved:string|null=null):EditorTab=>({document,saved,history:[],future:[],selection:{selectedIds:[],anchorId:null}});
+const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items,doc.drawing]);
+const makeTab=(document:CadDocument,saved:string|null=null):EditorTab=>({document,saved,history:[],future:[],drawingHistory:[],drawingFuture:[],drawingSelection:[],selection:{selectedIds:[],anchorId:null}});
+
+/** Upgrade old clean fingerprints while leaving old dirty tabs dirty. */
+function restoreTab(raw:unknown,saved:unknown):EditorTab{
+ const document=parseDocument(JSON.stringify(raw));
+ let migratedSaved=typeof saved==='string'?saved:null;
+ if((raw as {schemaVersion?:unknown})?.schemaVersion===1&&typeof saved==='string'){
+  try{const old=JSON.parse(saved);if(Array.isArray(old)&&old.length===2)migratedSaved=JSON.stringify([...old,document.drawing]);}catch{/* Corrupt saved marker remains dirty. */}
+ }
+ return makeTab(document,migratedSaved);
+}
 function loadWorkspace(initial:()=>CadItem[]):Workspace{
  try{
   const raw=localStorage.getItem(KEY);
   if(raw){
    const data=JSON.parse(raw);
    if(data.version!==1||!Array.isArray(data.tabs)||!data.tabs.length)throw Error('Unsupported workspace');
-   const tabs:EditorTab[]=data.tabs.map((tab:{document:unknown;saved:unknown})=>makeTab(parseDocument(JSON.stringify(tab.document)),typeof tab.saved==='string'?tab.saved:null));
+   const tabs:EditorTab[]=data.tabs.map((tab:{document:unknown;saved:unknown})=>restoreTab(tab.document,tab.saved));
    if(new Set(tabs.map(t=>t.document.id)).size!==tabs.length)throw Error('Duplicate document identifiers');
    return {tabs,activeId:tabs.some(t=>t.document.id===data.activeId)?data.activeId:tabs[0].document.id,recoveryError:null};
   }
@@ -30,10 +42,26 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  const [workspace,setWorkspace]=useState(()=>loadWorkspace(initial));
  const active=workspace.tabs.find(t=>t.document.id===workspace.activeId)!;
  const updateActive=(update:(tab:EditorTab)=>EditorTab)=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===w.activeId?update(t):t)}));
- function setter<K extends 'history'|'future'|'selection'>(key:K):Dispatch<SetStateAction<EditorTab[K]>>{
+ function setter<K extends 'history'|'future'|'selection'|'drawingSelection'>(key:K):Dispatch<SetStateAction<EditorTab[K]>>{
   return value=>updateActive(tab=>({...tab,[key]:typeof value==='function'?(value as (v:EditorTab[K])=>EditorTab[K])(tab[key]):value}));
  }
  const setItems:Dispatch<SetStateAction<CadItem[]>>=value=>updateActive(tab=>({...tab,document:{...tab.document,modifiedAt:new Date().toISOString(),items:typeof value==='function'?value(tab.document.items):value}}));
+
+ const setDrawing=(next:DrawingDocument,_label?:string)=>{
+  // Validate before entering React's updater: errors leave history and autosave untouched.
+  const drawing=validateDrawingDocument(next);
+  updateActive(tab=>JSON.stringify(tab.document.drawing)===JSON.stringify(drawing)?tab:{...tab,
+   document:{...tab.document,drawing,modifiedAt:new Date().toISOString()},
+   drawingHistory:[...tab.drawingHistory.slice(-49),tab.document.drawing],drawingFuture:[]});
+ };
+ const drawingUndo=()=>updateActive(tab=>{
+  const drawing=tab.drawingHistory.at(-1);if(!drawing)return tab;
+  return {...tab,document:{...tab.document,drawing,modifiedAt:new Date().toISOString()},drawingHistory:tab.drawingHistory.slice(0,-1),drawingFuture:[...tab.drawingFuture,tab.document.drawing],drawingSelection:[]};
+ });
+ const drawingRedo=()=>updateActive(tab=>{
+  const drawing=tab.drawingFuture.at(-1);if(!drawing)return tab;
+  return {...tab,document:{...tab.document,drawing,modifiedAt:new Date().toISOString()},drawingHistory:[...tab.drawingHistory,tab.document.drawing],drawingFuture:tab.drawingFuture.slice(0,-1),drawingSelection:[]};
+ });
  const isDirty=(tab:EditorTab)=>tab.saved!==fingerprint(tab.document);
  const dirty=workspace.tabs.some(isDirty);
  useEffect(()=>{
@@ -56,5 +84,5 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  });
  const exportDocument=()=>({id:active.document.id,json:serializeDocument(active.document),fingerprint:fingerprint(active.document)});
  const markSaved=(snapshot:{id:string;fingerprint:string})=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===snapshot.id?{...t,saved:snapshot.fingerprint}:t)}));
- return {items:active.document.items,setItems,history:active.history,setHistory:setter('history'),future:active.future,setFuture:setter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,activate,open,newDocument,close,exportDocument,markSaved};
+ return {drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history,setHistory:setter('history'),future:active.future,setFuture:setter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,activate,open,newDocument,close,exportDocument,markSaved};
 }
