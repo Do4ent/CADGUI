@@ -43,16 +43,52 @@ no matching backend exists. Restricted DXF support does not establish native DWG
 support; that requires a separate SDK. Browser print or SVG text export does not
 establish searchable, font-embedded PDF fidelity.
 
-## Verification at catalog delivery
+## Integrated implementation and limits
 
-- Catalog metadata created for 102 IDs / 12 groups. This is metadata coverage,
-  not 102 verified implementations.
-- TypeScript check, all six npm suites and the production build passed locally.
-- Executed catalog checks passed for all exact IDs, source label/phase parity,
+The root integration now mounts a separate SVG drawing sheet with the 102-entry,
+12-group toolbox, explicit parameter editors, selection/placement and validated
+schema-2 document persistence. Drawing history and selection are isolated per
+CAD document. This is implementation coverage, not 102 completed acceptance gates.
+
+| Capability | Actual integrated route | Limits |
+| --- | --- | --- |
+| Text, style, paragraph and placement operations | Exact TXT-ID operation dispatcher, detached drafts, SVG renderer | Font metrics, wrapping and layout checks remain approximate |
+| Fields, title blocks, technical requirements and templates | Structured references, fields, tables and saved templates | Missing source data is reported; no invented measurements |
+| Engineering symbols | Manual semantic annotations and geometry-linked drawing data | No normative certification or exact geometric CAD kernel |
+| SVG | Real SVG serialization retaining text | Consumer font availability affects appearance |
+| PDF | jsPDF export adapter | Verify extracted text and font behavior independently; not inferred from browser preview |
+| DXF | Restricted TEXT/MTEXT/LINE writer/parser | Partial interchange with loss warnings; native DWG unavailable without an SDK |
+| Font outlines | opentype.js adapter using a user-supplied TTF/OTF | Requires usable licensed font; output copy loses text semantics |
+| OCR and review | Tesseract.js with local language assets and image/result review | Recognition errors require user review; source image is session-only |
+| Spelling | nspell with local ru/en dictionaries | Engineering vocabulary needs user dictionary; no external text upload |
+| Font substitution | Explicit persisted font mapping, renderer resolution and browser probes | Availability detection is heuristic; full Unicode glyph coverage and embedding rights are not certified |
+| Vertical and RTL text | Native SVG/browser text shaping route | Approximate wrapping; complex-script/export fidelity still requires acceptance checks |
+
+Two entire command routes are explicitly blocked with an explanation: TXT-050
+needs absent hole/thread/bend topology, and TXT-091 needs an SHX-to-PDF-geometry
+matching engine. TXT-089 exposes actual DXF interchange while explaining the DWG
+limitation. OCR and outline export are runtime adapter operations, not permanent
+catalog placeholders. TXT-099/TXT-101 describe the implemented editor history and
+keyboard contract rather than inventing a document mutation for help commands.
+
+Other partial behavior must remain visible: technical-requirement pagination is
+by item count rather than automatic physical page fitting; drawing geometry and
+manufacturing notes do not imply model topology; unsupported spline leaders,
+SHX font fidelity, glyph coverage and complex layout must not be advertised as
+complete. Command registration cannot hide these limits.
+
+## Verification status
+
+- Catalog checks passed for 102 exact IDs / 12 groups, source label/phase parity,
   group membership and unknown-ID rejection.
-- Drawing operations, renderer, persistence integration and browser acceptance
-  remain pending review at this update.
-- No new implementation CI result or complete feature claim is recorded here.
+- The root integrator reports twelve npm suites and the TypeScript/Vite build
+  passing during integration. This does not establish browser acceptance.
+- Browser E2E is being executed and reviewed; this update does **not** claim a
+  completed drawing E2E run or successful current-head CI.
+- Local review found and root fixed stale callbacks overwriting another tab or
+  newer drawing state. Regression execution remains part of the browser gate.
+- Record final command coverage, latest head and CI URL only after those checks
+  complete. Do not mark all 102 catalog capabilities verified from route counts.
 
 ## Acceptance review before delivery
 
