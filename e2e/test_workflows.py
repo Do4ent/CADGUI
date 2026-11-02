@@ -21,6 +21,7 @@ def test_open_and_escape_do_not_mutate_model(page):
     dialog.get_by_label('Ширина', exact=True).fill('25')
     page.keyboard.press('Escape')
     expect(dialog).not_to_be_visible()
+    expect(page.locator('.command-search input')).to_be_focused()
     assert items(page) == before
 
 
