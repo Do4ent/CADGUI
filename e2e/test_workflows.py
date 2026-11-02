@@ -58,6 +58,23 @@ def test_invalid_dimension_cannot_confirm_and_shortcuts_stay_in_dialog(page):
     assert items(page) == before
 
 
+def test_each_history_shortcut_moves_exactly_one_transaction(page):
+    count = len(items(page))
+    for expected in [count + 1, count + 2]:
+        dialog = open_box(page)
+        dialog.get_by_role('button', name='ОК', exact=True).click()
+        page.wait_for_function('(n) => JSON.parse(localStorage.getItem("bendcore-items")).length === n', arg=expected)
+    page.locator('.command-search input').blur()
+    for shortcut, expected in [
+        ('Control+z', count + 1),
+        ('Control+z', count),
+        ('Control+y', count + 1),
+        ('Control+y', count + 2),
+    ]:
+        page.keyboard.press(shortcut)
+        page.wait_for_function('(n) => JSON.parse(localStorage.getItem("bendcore-items")).length === n', arg=expected)
+
+
 @pytest.mark.parametrize('theme', ['dark', 'light'])
 def test_dialog_square_controls_and_keyboard_focus_in_both_themes(page, theme):
     page.evaluate('(theme) => localStorage.setItem("bendcore-theme", theme)', theme)
