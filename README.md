@@ -1,26 +1,37 @@
-# BendCore CAD Pro v2.7 — UI regression and persistence hardening
+# BendCore CAD Pro
 
-React + TypeScript + Three.js user-interface prototype, **without a CAD geometry kernel**.
+React + TypeScript + Three.js CAD interface prototype, **without a geometric CAD kernel**.
 
-## Changes
-- Added `tests/functional-check.cjs`: executes the actual UI settings loader in an isolated VM, exercises environment/layout/section persistence and command enablement combinations, and checks key Ribbon/tree/properties/docking integration contracts.
-- Rejected unknown persisted work-environment names.
-- Strengthened validation of persisted docking layout, including floating-panel coordinates and sizes.
-- Guarded writes to shortcut and docking preferences against unavailable/quota-limited localStorage.
-- Filtered malformed shortcut mappings from persisted storage.
+Active implementation PRs add square-corner parameter dialogs with technical SVG icons, validated primitive creation, synchronized tree/viewport multiselection and versioned document tabs with dirty-state protection. These changes are under review and have not merged into `main`. See [delivery status](docs/DELIVERY_STATUS.md) for commits, CI results and remaining acceptance work.
 
-## Run
+Primitive meshes are demonstrations. Pipe wall thickness is validated but not persisted/rendered; exact geometry and previews are unavailable. Viewport box selection, validated edit/transform forms and theme visual snapshots remain outstanding.
+
+## Run and check
+
+Use Node.js 22 and Python 3.12, matching CI. On branches with the committed lockfile:
+
 ```bash
-npm install
+npm ci
 npm test
 npm run build
 npm run dev
 ```
 
-## Test results in the packaging environment
-- `npm test`: **PASS** — 111 existing static assertions plus 337 state-functional and UI-contract assertions.
-- 5 TS/TSX files passed syntax transpilation.
-- Dependency installation did not complete in this environment (timed out); **full type-check, Vite build, and real browser E2E interactions remain unverified**.
+For browser tests, install Chromium and start the production preview:
 
-## Test coverage caveat
-These are real state-level tests for the persisted settings loader and command registry, plus structural integration checks for Ribbon, tree, property panels and DockManager. They are **not** browser E2E tests: no mouse/keyboard event simulation against a running React application, screenshots, accessibility audit, or viewport drag/drop tests were run. For genuine browser E2E coverage, install dependencies and add Playwright tests with a local dev server.
+```bash
+python -m pip install -r e2e/requirements.txt
+python -m playwright install --with-deps chromium
+npm run build
+npm run preview -- --port 4173 --strictPort
+```
+
+In another terminal:
+
+```bash
+BENDCORE_URL=http://127.0.0.1:4173 python -m pytest e2e/ -v
+```
+
+`CHROMIUM_PATH` selects an existing Chromium executable. Run the full `e2e/` directory to include new suites. `npm test` covers static, functional and module checks; it does not replace browser tests.
+
+Verified baseline: [`920fe95`, CI 41439426314](https://github.com/Do4ent/CADGUI/actions/runs/41439426314). Later results are recorded separately in the delivery status. Required checks must pass on the applicable head before integration.
