@@ -35,6 +35,16 @@ assert.throws(() => v.draftToSize(pipe));
 assert.deepEqual(plain(v.draftToSize(v.createCommandDraft('box'))), [1,1,1]);
 const cylinder = v.createCommandDraft('cylinder'); cylinder.parameters[0].value=3;
 assert.deepEqual(plain(v.draftToSize(cylinder)), [6,1,6], 'radius converts to renderer diameter');
+for (const kind of ['cylinder', 'pipe']) {
+ const overflow = v.createCommandDraft(kind);
+ const radius = overflow.parameters.find(p => p.name === (kind === 'pipe' ? 'outerRadius' : 'radius'));
+ radius.value = Number.MAX_VALUE;
+ assert.ok(v.validateCommandDraft(overflow).includes(radius.name + ': diameter must be finite'));
+ assert.throws(() => v.draftToSize(overflow), /diameter must be finite/);
+ radius.value = Number.MAX_VALUE / 2;
+ assert.equal(v.validateCommandDraft(overflow).length, 0, 'finite derived diameters remain valid');
+ assert.ok(v.draftToSize(overflow).every(Number.isFinite));
+}
 assert.ok(v.validateNumericParameter({name:'width',value:1,unit:'mm',min:2,max:1}));
 assert.ok(v.validateNumericParameter({name:'width',value:1,unit:'mm',max:NaN}));
 const draft = v.createCommandDraft('box');
