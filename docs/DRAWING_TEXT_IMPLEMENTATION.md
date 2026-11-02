@@ -47,7 +47,9 @@ establish searchable, font-embedded PDF fidelity.
 
 - Catalog metadata created for 102 IDs / 12 groups. This is metadata coverage,
   not 102 verified implementations.
-- TypeScript check passed locally on the catalog worktree.
+- TypeScript check, all six npm suites and the production build passed locally.
+- Executed catalog checks passed for all exact IDs, source label/phase parity,
+  group membership and unknown-ID rejection.
 - Drawing operations, renderer, persistence integration and browser acceptance
   remain pending review at this update.
 - No new implementation CI result or complete feature claim is recorded here.
