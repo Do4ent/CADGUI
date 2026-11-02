@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import type {Diagnostic,DrawingCommandInput,DrawingContext,DrawingDocument,DrawingEntity} from './types';
-import {activeDrawingSheet,cloneDrawing,createTextEntity,drawingId,plainText,validateDrawingDocument} from './model';
+import {activeDrawingSheet,cloneDrawing,createTextEntity,drawingId,geometryLineEndpoints,plainText,validateDrawingDocument} from './model';
 import {executeDrawingCommand} from './operations';
 import {diagnoseDrawing} from './diagnostics';
 import {drawingCommands,drawingCommandGroups,getDrawingCommand,type DrawingCommand} from './toolkitCatalog';
@@ -110,7 +110,17 @@ export function DrawingWorkspace(props:DrawingWorkspaceProps){
  };
  const addSheet=()=>{const next=cloneDrawing(doc);const id=drawingId('sheet');next.sheets.push({id,name:`Лист ${next.sheets.length+1}`,width:297,height:210,scale:1,entities:[]});next.activeSheetId=id;commit(next,'Добавлен лист',[]);};
  const addReferenceLine=()=>{const next=cloneDrawing(doc);const entity=createTextEntity('geometry','');entity.name='Опорная линия';entity.x=20;entity.y=80;entity.width=100;entity.height=1;entity.geometry={type:'line',points:[[0,0],[100,0]]};activeDrawingSheet(next).entities.push(entity);commit(next,'Создана опорная линия',[entity.id]);};
- const addDimension=()=>{const source=selected.find(e=>e.geometry?.type==='line');if(!source)return;const points=source.geometry!.points!;const length=Math.hypot(points[1][0]-points[0][0],points[1][1]-points[0][1]);const next=cloneDrawing(doc);const entity=createTextEntity('symbol',String(length));entity.name='Размер линии';entity.x=source.x;entity.y=source.y+10;entity.annotation={type:'dimension',sourceId:source.id,fields:{value:String(Number(length.toFixed(3)))}};activeDrawingSheet(next).entities.push(entity);commit(next,'Создан размер опорной линии',[entity.id]);};
+ const addDimension=()=>{try{
+  const source=selected.find(e=>e.kind==='geometry'&&e.geometry?.type==='line');
+  if(!source||!geometryLineEndpoints(source))throw new Error('Для размера нужна линия, содержащая ровно две точки');
+  const [a,b]=source.geometry!.points!;
+  const length=Math.hypot(b[0]-a[0],b[1]-a[1]);
+  if(!Number.isFinite(length)||length<=0)throw new Error('Для размера нужна линия ненулевой длины');
+  const next=cloneDrawing(doc),entity=createTextEntity('symbol',String(length));
+  entity.name='Размер линии';entity.x=source.x;entity.y=source.y+10;
+  entity.annotation={type:'dimension',sourceId:source.id,fields:{value:String(Number(length.toFixed(3)))}};
+  activeDrawingSheet(next).entities.push(entity);commit(next,'Создан размер опорной линии',[entity.id]);
+ }catch(e){fail(e)}};
  const filtered=(definition:DrawingCommand)=>!query||`${definition.id} ${definition.label} ${definition.description}`.toLocaleLowerCase().includes(query.toLocaleLowerCase());
  const blockReason=(definition:DrawingCommand)=>unavailable[definition.id]??((definition.requiresSelection||['TXT-009','TXT-084','TXT-097','TXT-102'].includes(definition.id))&&!selection.length&&!['TXT-063','TXT-070','TXT-071'].includes(definition.id)?'Выберите объект на листе':undefined);
  return <div className="drawing-workspace" ref={root} role="region" aria-label="Инструменты текста чертежа">
