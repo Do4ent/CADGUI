@@ -1,0 +1,26 @@
+/** Regressions from PR #10 review: execute real geometry helpers and SVG renderer. */
+const fs=require('node:fs'),ts=require('typescript'),assert=require('node:assert/strict');
+require.extensions['.ts']=(module,file)=>module._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React,esModuleInterop:true}}).outputText,file);
+require.extensions['.tsx']=require.extensions['.ts'];
+const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+const m=require('../src/drawing/model.ts'),r=require('../src/drawing/render/layout.ts'),{EntityGraphic}=require('../src/drawing/render/EntityGraphic.tsx');
+const doc=m.createDrawingDocument(),context={documentName:'Review',documentId:'review',modelItems:[]};
+const render=(entity,ctx=context)=>renderToStaticMarkup(React.createElement('svg',null,React.createElement(EntityGraphic,{entity,document:doc,context:ctx})));
+const tags=markup=>Array.from(markup.matchAll(/<text\b([^>]*)>/g),match=>Object.fromEntries(Array.from(match[1].matchAll(/([\w:-]+)="([^"]*)"/g),m=>[m[1],m[2]])));
+let entity=m.createTextEntity('geometry');Object.assign(entity,{x:15,y:20,width:30,height:10,geometry:{type:'line',points:[[0,0],[-30,10]]}});doc.sheets[0].entities=[entity];
+assert.deepEqual(r.entityBounds(entity,doc),{x:-15,y:20,right:15,bottom:30});assert.deepEqual(r.intersectingIds([entity],doc,[-16,29],[-14,31]),[entity.id]);assert.deepEqual(r.intersectingIds([entity],doc,[30,20],[40,25]),[]);
+entity.rotation=90;let bounds=r.entityBounds(entity,doc);assert.ok(Math.abs(bounds.x-5)<1e-10);assert.ok(Math.abs(bounds.y+10)<1e-10);assert.ok(Math.abs(bounds.right-15)<1e-10);assert.ok(Math.abs(bounds.bottom-20)<1e-10);
+entity=m.createTextEntity('text');entity.paragraphs=[{runs:[{text:'small',format:{height:3.5}},{text:'large',format:{height:7}},{text:'2',script:'super',format:{height:7}},{text:'i',script:'sub'}]}];doc.sheets[0].entities=[entity];
+let markup=render(entity),texts=tags(markup);assert.equal(texts.length,4);assert.ok(texts.every(text=>Number(text.y)===7));assert.ok(markup.includes('baseline-shift="super"'));assert.ok(markup.includes('baseline-shift="sub"'));assert.ok(markup.includes('font-size="4.8999999999999995"')||markup.includes('font-size="4.9"'));
+const richParagraphs=entity.paragraphs;
+entity.paragraphs=[{runs:[{text:'x'},{text:'2',script:'super'}]}];markup=render(entity);texts=tags(markup);assert.equal(texts.length,2);assert.equal(Number(texts[0].y),3.5);assert.equal(texts[0].y,texts[1].y);const superTag=markup.match(/<tspan[^>]*baseline-shift="super"[^>]*>/)?.[0];assert.ok(superTag,'superscript is shifted above the shared baseline by SVG');assert.ok(Math.abs(Number(superTag.match(/font-size="([^"]+)/)[1])-2.45)<1e-10,'superscript has reduced glyph height');
+entity.paragraphs=richParagraphs;
+entity.overrides.direction='rtl';entity.paragraphs=[{runs:[{text:'שלום '},{text:'CAD',format:{height:7}}]}];texts=tags(render(entity));assert.equal(texts.length,1);assert.equal(Number(texts[0].y),7);
+entity.paragraphs=[{align:'left',runs:[{text:'שלום'}]}];const left=Number(tags(render(entity))[0].x);entity.paragraphs[0].align='center';const center=Number(tags(render(entity))[0].x);entity.paragraphs[0].align='right';const right=Number(tags(render(entity))[0].x);assert.ok(left<center&&center<right);assert.equal(right,entity.width);
+entity.paragraphs[0].align='left';entity.paragraphs[0].indent=8;assert.ok(Math.abs(Number(tags(render(entity))[0].x)-(left+8))<1e-10);
+entity.width=80;entity.height=4.2;entity.columns={count:2,gap:10,dynamic:false};entity.paragraphs=[{runs:[{text:'א'}]},{runs:[{text:'ב'}]}];texts=tags(render(entity));assert.equal(texts.length,2);assert.ok(Number(texts[1].x)>Number(texts[0].x)+40);assert.equal(texts[0].y,texts[1].y);
+entity=m.createTextEntity('leader');Object.assign(entity,{x:20,y:20,leaders:[{id:'branch',points:[[1,2],[20,20]],attachment:{modelItemId:'model'},shape:'polyline',arrow:'closed',arrowSize:2,landing:0}]});doc.sheets[0].entities=[entity];
+const model={id:'model',name:'Model',pos:[100,200,0],size:[1,1,1],kind:'box',color:'#ffffff',visible:true,group:'g'},ctx={...context,modelItems:[model]};const original=JSON.stringify(entity);
+markup=render(entity,ctx);assert.ok(markup.includes('d="M 80 180 L 0 0"'));assert.ok(!markup.includes('data-broken-link="true"'));model.pos=[120,230,0];assert.ok(render(entity,ctx).includes('d="M 100 210 L 0 0"'));assert.equal(JSON.stringify(entity),original);
+markup=render(entity,context);assert.ok(markup.includes('data-broken-link="true"'));assert.ok(markup.includes('d="M -19 -18 L 0 0"'));
+console.log('PASS review regressions: negative/rotated line bounds, shared mixed/script baseline, RTL alignment/indent/columns and live model leader anchors');

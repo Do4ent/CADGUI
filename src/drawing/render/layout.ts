@@ -4,6 +4,14 @@ import {resolveStyle,runText as resolveRunText} from '../model';
 export function entityStyle(entity:DrawingEntity,document:DrawingDocument):TextStyle{return resolveStyle(document,entity);}
 export function runText(run:TextRun,document:DrawingDocument,context:DrawingContext):string{return resolveRunText(run,document,context);}
 export function anchorOffset(entity:DrawingEntity,style:TextStyle):Point2{const [vertical,horizontal]=style.anchor.split('-');return [horizontal==='center'?-entity.width/2:horizontal==='right'?-entity.width:0,vertical==='middle'?-entity.height/2:vertical==='bottom'?-entity.height:vertical==='baseline'?-style.height:0];}
-export function entityBounds(entity:DrawingEntity,document:DrawingDocument){const style=entityStyle(entity,document),[ox,oy]=anchorOffset(entity,style),r=entity.rotation*Math.PI/180;const points=[[ox,oy],[ox+entity.width,oy],[ox,oy+entity.height],[ox+entity.width,oy+entity.height]].map(([x,y])=>[entity.x+x*Math.cos(r)-y*Math.sin(r),entity.y+x*Math.sin(r)+y*Math.cos(r)]);return {x:Math.min(...points.map(p=>p[0])),y:Math.min(...points.map(p=>p[1])),right:Math.max(...points.map(p=>p[0])),bottom:Math.max(...points.map(p=>p[1]))};}
+export function entityBounds(entity:DrawingEntity,document:DrawingDocument){
+ const style=entityStyle(entity,document),[ox,oy]=anchorOffset(entity,style),r=entity.rotation*Math.PI/180;
+ // Lines may run left/up from their insertion point (including imported DXF).
+ const local=entity.kind==='geometry'&&entity.geometry?.type==='line'
+  ? entity.geometry.points?.length?entity.geometry.points:[[0,0],[entity.width,entity.height]]
+  : [[0,0],[entity.width,0],[0,entity.height],[entity.width,entity.height]];
+ const points=local.map(([x,y])=>[entity.x+(ox+x)*Math.cos(r)-(oy+y)*Math.sin(r),entity.y+(ox+x)*Math.sin(r)+(oy+y)*Math.cos(r)]);
+ return {x:Math.min(...points.map(p=>p[0])),y:Math.min(...points.map(p=>p[1])),right:Math.max(...points.map(p=>p[0])),bottom:Math.max(...points.map(p=>p[1]))};
+}
 export function intersectingIds(entities:DrawingEntity[],document:DrawingDocument,a:Point2,b:Point2):string[]{const left=Math.min(a[0],b[0]),top=Math.min(a[1],b[1]),right=Math.max(a[0],b[0]),bottom=Math.max(a[1],b[1]);return entities.filter(e=>entityStyle(e,document).visible).filter(e=>{const box=entityBounds(e,document);return box.x<=right&&box.right>=left&&box.y<=bottom&&box.bottom>=top;}).map(e=>e.id);}
 export function moveEntities(document:DrawingDocument,ids:string[],delta:Point2):DrawingDocument{const selected=new Set(ids);return {...document,sheets:document.sheets.map(s=>s.id!==document.activeSheetId?s:{...s,entities:s.entities.map(e=>selected.has(e.id)&&!e.locked?{...e,x:e.x+delta[0],y:e.y+delta[1],leaders:e.leaders?.map(branch=>({...branch,points:branch.points.map(point=>[point[0]+delta[0],point[1]+delta[1]] as Point2)}))}:e)})};}
