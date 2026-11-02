@@ -47,4 +47,12 @@ const badRef=m.createTextEntity('text','');badRef.paragraphs=[{runs:[{text:'',fi
 for(const id of ['TXT-017','TXT-041','TXT-050','TXT-065','TXT-078','TXT-087','TXT-088','TXT-089','TXT-090','TXT-091','TXT-092','TXT-093','TXT-102'])throws(()=>o.executeDrawingCommand(doc,sel,id,{},ctx));
 throws(()=>o.executeDrawingCommand(doc,sel,'TXT-103',{},ctx));
 const locked=m.cloneDrawing(doc);locked.sheets[0].entities[0].locked=true;throws(()=>o.executeDrawingCommand(locked,sel,'TXT-010',{number:5},ctx),/заблокирован/);
+const fullDraft=m.createTextEntity('text','rich');fullDraft.paragraphs=[{runs:[{text:'жирный',format:{bold:true}},{text:'',field:{kind:'model',targetId:'model1',key:'name'}}]}];
+const richCreated=execute('TXT-002',{entity:fullDraft});const richId=richCreated.selection[0];let rich=doc.sheets[0].entities.find(e=>e.id===richId);ok(rich.id!==fullDraft.id);equal(rich.paragraphs,fullDraft.paragraphs);
+const edited=m.cloneDrawing(rich);edited.id='untrusted-draft-id';edited.paragraphs[0].runs[0].text='правка';execute('TXT-003',{entity:edited},[richId]);rich=doc.sheets[0].entities.find(e=>e.id===richId);equal(rich.id,richId);equal(rich.paragraphs[0].runs[0].text,'правка');ok(rich.paragraphs[0].runs[1].field);
+const richLeader=m.createTextEntity('leader','Указание');richLeader.leaders=[{id:'original-branch',points:[[1,2],[3,4]],shape:'arc',arrow:'open',arrowSize:3,landing:4}];const madeLeader=execute('TXT-005',{entity:richLeader});const newLeader=doc.sheets[0].entities.find(e=>e.id===madeLeader.selection[0]);ok(newLeader.leaders[0].id!=='original-branch');equal(newLeader.leaders[0].shape,'arc');
+const tsv=execute('TXT-007',{text:'A\tB\nC\tD',options:{rows:2,columns:2,tsv:true}});equal(doc.sheets[0].entities.find(e=>e.id===tsv.selection[0]).rows[1][1][0].runs[0].text,'D');
+throws(()=>o.executeDrawingCommand(doc,[],'TXT-007',{text:'A\tB',options:{rows:1,columns:1,tsv:true}},ctx),/TSV/);
+const stamp=execute('TXT-008',{options:{title:'Деталь',designation:'АБВ.001',author:'Иванов'}});const stampText=m.plainText(doc.sheets[0].entities.find(e=>e.id===stamp.selection[0]),doc,ctx);ok(stampText.includes('АБВ.001'));ok(stampText.includes('Иванов'));equal(doc.properties.title,'Деталь');
+const overflowDoc=m.cloneDrawing(doc);overflowDoc.styles[0].height=Number.MAX_VALUE;overflowDoc.styles[0].widthFactor=2;throws(()=>m.validateDrawingDocument(overflowDoc),/derived text size/);
 console.log(`PASS: ${checks} drawing core schema, fields, operations, layout and diagnostic checks`);
