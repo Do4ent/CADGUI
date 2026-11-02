@@ -1,6 +1,9 @@
 """Real sheet entities: confirmation, history, persistence and document isolation."""
 import json
 import re
+import base64
+import shutil
+import subprocess
 from pathlib import Path
 
 from playwright.sync_api import expect
@@ -186,6 +189,7 @@ def test_find_replace_changes_real_text_and_is_one_undo_step(page):
     create_text(page, 'Контроль alpha alpha')
     dialog = command_dialog(page, 'TXT-075')
     dialog.get_by_label('Найти', exact=True).fill('alpha')
+    dialog.get_by_label('Заменять совпадения', exact=True).check()
     dialog.get_by_label('Заменить', exact=True).fill('beta')
     dialog.get_by_label('Область', exact=True).select_option('document')
     dialog.get_by_label('Заменять совпадения', exact=True).check()
@@ -226,3 +230,90 @@ def test_svg_dxf_exports_and_invalid_json_diagnostics_preserve_drawing(page, tmp
     assert after['drawing'] == before['drawing']
     assert after['items'] == before['items']
     expect(page.get_by_role('region', name='Проверка чертежа')).to_be_visible()
+
+
+def test_vector_pdf_embeds_searchable_cyrillic_text(page, tmp_path):
+    workspace(page)
+    create_text(page, 'Редуктор TEST 123')
+    with page.expect_download(timeout=60000) as downloaded:
+        page.get_by_role('button', name='Экспорт PDF', exact=True).click()
+    target = tmp_path / 'drawing.pdf'
+    downloaded.value.save_as(target)
+    data = target.read_bytes()
+    assert data.startswith(b'%PDF-')
+    assert b'/ToUnicode' in data
+    if shutil.which('pdftotext'):
+        result = subprocess.run(['pdftotext', str(target), '-'], capture_output=True, text=True, check=True)
+        assert 'Редуктор' in result.stdout
+        assert 'TEST 123' in result.stdout
+
+
+def test_real_ocr_recognizes_uploaded_pixels_before_reviewed_insertion(page):
+    workspace(page)
+    png = page.evaluate('''() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 720; canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 720, 200);
+      ctx.fillStyle = 'black'; ctx.font = '80px Arial';
+      ctx.fillText('TEST 123', 40, 125);
+      return canvas.toDataURL('image/png').split(',')[1];
+    }''')
+    before = entities(page).count()
+    command(page, 'TXT-092')
+    page.get_by_label('Файл инструментария чертежа', exact=True).set_input_files({'name': 'ocr-pixels.png', 'mimeType': 'image/png', 'buffer': base64.b64decode(png)})
+    dialog = page.get_by_role('dialog', name='Распознавание и проверка текста', exact=True)
+    dialog.get_by_label('Язык OCR', exact=True).select_option('eng')
+    dialog.get_by_role('button', name='Распознать', exact=True).click()
+    reviewed = dialog.get_by_label('Проверенный текст OCR', exact=True)
+    expect(reviewed).to_have_value(re.compile(r'TEST\s+123'), timeout=90000)
+    expect(entities(page)).to_have_count(before)
+    dialog.get_by_role('button', name='Вставить проверенный текст', exact=True).click()
+    expect(entities(page)).to_have_count(before + 1)
+    expect(sheet(page)).to_contain_text('TEST')
+
+
+def test_real_font_outlines_export_paths_without_text_nodes(page, tmp_path):
+    workspace(page)
+    create_text(page, 'Контуры TEST')
+    command(page, 'TXT-090')
+    dialog = page.get_by_role('dialog', name='Текст в контуры', exact=True)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    font = Path(__file__).resolve().parents[1] / 'public' / 'fonts' / 'DejaVuSans.ttf'
+    assert font.is_file(), 'The bundled outline font must be available offline'
+    with page.expect_download(timeout=60000) as downloaded:
+        page.get_by_label('Файл инструментария чертежа', exact=True).set_input_files(str(font))
+    target = tmp_path / 'outlines.svg'
+    downloaded.value.save_as(target)
+    svg = target.read_text()
+    assert '<svg' in svg and '<path' in svg
+    assert '<text' not in svg
+    expect(sheet(page)).to_contain_text('Контуры TEST')
+
+
+def test_native_vertical_and_rtl_modes_change_actual_svg_attributes(page):
+    workspace(page)
+    create_text(page, 'Направление ABC')
+    command(page, 'TXT-017')
+    dialog = page.get_by_role('dialog', name='Направление текста', exact=True)
+    dialog.get_by_label('Направление текста', exact=True).select_option('vertical')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    text = entities(page).last.locator('text').first
+    assert text.evaluate('(el) => getComputedStyle(el).writingMode') in ['vertical-rl', 'vertical-lr']
+    command(page, 'TXT-102')
+    dialog = page.get_by_role('dialog', name='Направление текста', exact=True)
+    dialog.get_by_label('Направление текста', exact=True).select_option('rtl')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    assert text.evaluate('(el) => getComputedStyle(el).direction') == 'rtl'
+
+
+def test_dictionary_spellcheck_reports_an_actual_unknown_word(page):
+    workspace(page)
+    create_text(page, 'mispelingxyz')
+    command(page, 'TXT-078')
+    dialog = page.get_by_role('dialog', name='Проверка орфографии', exact=True)
+    dialog.get_by_label('Язык орфографии', exact=True).select_option('en')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    report = page.get_by_role('region', name='Проверка чертежа')
+    expect(report).to_contain_text('mispelingxyz', timeout=60000)
+    expect(sheet(page)).to_contain_text('mispelingxyz')
