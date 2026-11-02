@@ -18,7 +18,7 @@ vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleK
 });
 function svg(box='0 0 297 210'){
  const text={style:{fontFamily:'Arial'},getAttribute:()=>null,setAttribute(){}};
- const result={textContent:'Чертёж Ø ± ½',geometryMarker:'paths masks frames leaders tables',getAttribute:key=>key==='viewBox'?box:null,setAttribute(){},querySelectorAll:()=>[text],cloneNode:()=>svg(box)};
+ const result={textContent:'Чертёж Ø ± ½',geometryMarker:'paths masks frames leaders tables',getAttribute:key=>key==='viewBox'?box:null,setAttribute(){},querySelectorAll:(selector)=>selector?.includes("data-drawing-ui")?[]:[text],cloneNode:()=>svg(box)};
  return result;
 }
 (async()=>{

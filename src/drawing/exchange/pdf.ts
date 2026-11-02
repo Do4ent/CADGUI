@@ -39,6 +39,7 @@ export async function exportDrawingPdf(svg: SVGSVGElement): Promise<{blob: Blob;
   });
   pdf.setFont(FONT_FAMILY, 'normal');
   const clone = svg.cloneNode(true) as SVGSVGElement;
+  clone.querySelectorAll('[data-drawing-ui],[data-drawing-printable="false"]').forEach(element=>element.remove());
   const warnings = new Set<string>();
   const texts = Array.from(clone.querySelectorAll<SVGTextElement | SVGTSpanElement>('text,tspan'));
   for (const text of texts) {
