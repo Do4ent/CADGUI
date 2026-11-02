@@ -1,5 +1,6 @@
 import type {DrawingContext,DrawingDocument,DrawingEntity,TextStyle,TextRun} from './types';
 import {emptyContext,resolveStyle,runText} from './model';
+import {resolveFontFamily} from './fontPolicy';
 export type TextMeasure=(text:string,style:TextStyle)=>number;
 export type PositionedTextRun={text:string;x:number;y:number;width:number;style:TextStyle;script?:TextRun['script'];stack?:TextRun['stack']};
 export type TextLayoutLine={runs:PositionedTextRun[];x:number;y:number;width:number;height:number;paragraphIndex:number};
@@ -12,7 +13,7 @@ export function createCanvasTextMeasure(context:CanvasRenderingContext2D,pixelsP
 export function layoutText(entity:DrawingEntity,doc:DrawingDocument,context:DrawingContext=emptyContext,measure:TextMeasure=approximateTextMeasure):TextLayout {
  const base=resolveStyle(doc,entity),sheet=doc.sheets.find(s=>s.entities.some(e=>e.id===entity.id))??doc.sheets.find(s=>s.id===doc.activeSheetId)!;
  const scale=base.scaleMode==='model'?sheet.scale:1;
- const styleScale=(style:TextStyle):TextStyle=>({...style,height:style.height*scale,tracking:style.tracking*scale,spaceBefore:style.spaceBefore*scale,spaceAfter:style.spaceAfter*scale});
+ const styleScale=(style:TextStyle):TextStyle=>({...style,fontFamily:resolveFontFamily(doc,style.fontFamily),height:style.height*scale,tracking:style.tracking*scale,spaceBefore:style.spaceBefore*scale,spaceAfter:style.spaceAfter*scale});
  const count=entity.columns?.count??1,gap=entity.columns?.gap??0;
  const columnWidth=entity.width>0?(entity.width-gap*(count-1))/count:Infinity;
  if(columnWidth<=0)throw new Error('Column gaps exceed text container');
