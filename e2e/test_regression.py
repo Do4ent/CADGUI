@@ -17,7 +17,7 @@ ITEMS_KEY = "bendcore-items"
 @pytest.fixture(scope="module")
 def browser():
     with sync_playwright() as p:
-        instance = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+        instance = p.chromium.launch(headless=True, **({'executable_path': os.environ['CHROMIUM_PATH']} if os.getenv('CHROMIUM_PATH') else {}), args=["--no-sandbox", "--disable-dev-shm-usage"])
         yield instance
         instance.close()
 

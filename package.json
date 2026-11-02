@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node tests/quality-check.cjs && node tests/functional-check.cjs",
+    "test": "node tests/run-checks.cjs",
     "test:functional": "node tests/functional-check.cjs"
   },
   "dependencies": {
