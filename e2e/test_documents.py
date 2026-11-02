@@ -97,11 +97,36 @@ def test_legacy_import_export_and_reopen_roundtrip(page, tmp_path):
     saved = json.loads(target.read_text())
     # V1 files migrate explicitly; all new exports include drawing schema V2.
     assert saved['schemaVersion'] == 2
+    assert saved['drawing']['version'] == 1
     assert saved['items'] == legacy_items
     page.get_by_label('Импорт документа JSON', exact=True).set_input_files(str(target))
     expect(tabs(page).get_by_role('tab')).to_have_count(3)
     expect(page.locator('[role="treeitem"]')).to_have_count(2)
     assert items(page) == legacy_items
+
+
+def test_schema_v1_document_migrates_without_losing_model_items(page, tmp_path):
+    legacy_items = items(page)
+    import_json(page, {
+        'schemaVersion': 1,
+        'id': 'schema-v1-example',
+        'name': 'Документ первой версии',
+        'modifiedAt': '2026-11-02T00:00:00.000Z',
+        'items': legacy_items,
+    }, 'schema-v1.json')
+    expect(tabs(page).get_by_role('tab')).to_have_count(2)
+    expect(tabs(page).get_by_role('tab').nth(1)).to_contain_text('Документ первой версии')
+    assert items(page) == legacy_items
+    with page.expect_download() as download_info:
+        page.get_by_title('Сохранить JSON', exact=True).click()
+    target = tmp_path / 'migrated-v2.json'
+    download_info.value.save_as(target)
+    migrated = json.loads(target.read_text())
+    assert migrated['schemaVersion'] == 2
+    assert migrated['id'] == 'schema-v1-example'
+    assert migrated['items'] == legacy_items
+    assert migrated['drawing']['version'] == 1
+    assert migrated['drawing']['sheets']
 
 
 def test_dismissing_beforeunload_preserves_dirty_document(browser):
