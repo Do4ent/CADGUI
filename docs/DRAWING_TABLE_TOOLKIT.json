@@ -1,0 +1,1968 @@
+{
+  "catalogVersion": 1,
+  "reviewedOn": "2026-11-02",
+  "scope": "drawing-text-tables",
+  "runtimeIntegration": false,
+  "baseline": {
+    "commit": "e804ed2b679f13ef73a22e055e3d84b3d6d0d921",
+    "mergedTextPullRequest": 10
+  },
+  "coverage": {
+    "cadProducts": 9,
+    "bimReferences": 1,
+    "exhaustive": false
+  },
+  "notice": "Спецификация, не регистрация работающих команд. status=planned для всех TBL ID; currentSupport описывает только существующую частичную основу. Источники подтверждают образец функции, не все детали контракта и не наличие функции у каждой CAD.",
+  "phases": {
+    "A": "Базовая модель сетки, редактор, стили, навигация и сохранность",
+    "B": "Формулы, связанные данные, массовые операции, продолжения и обмен",
+    "C": "Адаптеры специализированных таблиц, Excel/DWG и сложные движки"
+  },
+  "sources": [
+    {
+      "id": "S01",
+      "product": "BricsCAD",
+      "version": "V27",
+      "title": "TABLE command",
+      "url": "https://help.bricsys.com/en-us/document/command-reference/t/table",
+      "evidence": "html",
+      "note": "Пустая таблица, CSV, связь; обычный импорт файла переносит значения, не формулы."
+    },
+    {
+      "id": "S02",
+      "product": "BricsCAD",
+      "version": "V27",
+      "title": "Working with tables",
+      "url": "https://help.bricsys.com/en-us/document/bricscad/annotate/texts/working-with-tables?version=V27",
+      "evidence": "html",
+      "note": "Структура, merge/unmerge, диапазоны, блоки в ячейках, защита, типы, стили, частичные формулы и CSV-экспорт."
+    },
+    {
+      "id": "S03",
+      "product": "BricsCAD",
+      "version": "V27",
+      "title": "Datalink Manager",
+      "url": "https://help.bricsys.com/en-us/document/dialog-boxes/d/datalink-manager-dialog-box?version=V27",
+      "evidence": "html",
+      "note": "Двусторонняя связь Excel; это отдельный путь, не равнозначный обычному импорту CSV."
+    },
+    {
+      "id": "S04",
+      "product": "ZWCAD",
+      "version": "Страница без фиксированного номера версии",
+      "title": "Creating Texts and Tables",
+      "url": "https://www.zwsoft.com/user-guide/create-text-and-table-in-zwcad",
+      "evidence": "html",
+      "note": "TABLE, стили, XLS/XLSX/CSV DATALINK, DATALINKUPDATE в обе стороны, извлечение данных."
+    },
+    {
+      "id": "S05",
+      "product": "Onshape",
+      "version": "Справка проверена 2026-11-02",
+      "title": "BOM Table",
+      "url": "https://cad.onshape.com/help/Content/Drawing/bom_table.htm",
+      "evidence": "html",
+      "note": "Типы BOM, опоры, split/move-to-sheet, форматирование, override-индикаторы и копирование диапазонов."
+    },
+    {
+      "id": "S06",
+      "product": "Onshape",
+      "version": "Справка проверена 2026-11-02",
+      "title": "Custom Table",
+      "url": "https://cad.onshape.com/help/Content/Drawing/custom_table.htm",
+      "evidence": "html",
+      "note": "Вычисляемая таблица Part Studio через FeatureScript; не обычная свободная таблица."
+    },
+    {
+      "id": "S07",
+      "product": "Onshape",
+      "version": "Справка проверена 2026-11-02",
+      "title": "Revision Table",
+      "url": "https://cad.onshape.com/help/Content/Drawing/revision_table.htm",
+      "evidence": "html",
+      "note": "Таблица ревизий связана с release management; есть Linked / See sheet 1 для нескольких листов."
+    },
+    {
+      "id": "S08",
+      "product": "Onshape",
+      "version": "Справка проверена 2026-11-02",
+      "title": "Cut List Table",
+      "url": "https://cad.onshape.com/help/Content/Drawing/cut_list_table.htm",
+      "evidence": "html",
+      "note": "Источник — предварительно созданный cut list составной детали каркаса."
+    },
+    {
+      "id": "S09",
+      "product": "FreeCAD",
+      "version": "Документация main; репозиторий документации архивирован",
+      "title": "Spreadsheet Workbench",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/Spreadsheet_Workbench.md",
+      "evidence": "repository",
+      "note": "Ячейки, форматирование, выражения, единицы, ссылки на свойства и CSV. Spreadsheet не равен листу TechDraw."
+    },
+    {
+      "id": "S10",
+      "product": "FreeCAD",
+      "version": "Документация main; репозиторий документации архивирован",
+      "title": "TechDraw SpreadsheetView",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_SpreadsheetView.md",
+      "evidence": "repository",
+      "note": "На чертёж вставляется представление таблицы Spreadsheet; показываются диапазон, строки и столбцы."
+    },
+    {
+      "id": "S11",
+      "product": "SOLIDWORKS",
+      "version": "2026",
+      "title": "Tables Overview",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/c_tables_overview.htm",
+      "evidence": "embedded_help_json",
+      "note": "Разные виды таблиц, reorder, размеры, блокировки размеров, hide/show, группировка. Прочитано helpContentData.helpText из __NEXT_DATA__, не только оболочка."
+    },
+    {
+      "id": "S12",
+      "product": "SOLIDWORKS",
+      "version": "2026",
+      "title": "General Tables",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/HIDD_DVE_ANNOTATION_TABLE.htm",
+      "evidence": "embedded_help_json",
+      "note": "General tables: ввод, символы/свойства, шаблоны, anchor, split/merge/sort/equations. Прочитан встроенный текст официальной справки."
+    },
+    {
+      "id": "S13",
+      "product": "SOLIDWORKS",
+      "version": "2026",
+      "title": "Hole Tables",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/c_hole_tables.htm",
+      "evidence": "embedded_help_json",
+      "note": "Таблица отверстий: начало координат, теги, позиции, точность, группировка. Есть ограничения типов отверстий."
+    },
+    {
+      "id": "S14",
+      "product": "SOLIDWORKS",
+      "version": "2026",
+      "title": "Bend Tables",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/c_Bend_Tables.htm",
+      "evidence": "embedded_help_json",
+      "note": "Таблица развертки: теги, направления, углы и внутренние радиусы сгибов."
+    },
+    {
+      "id": "S15",
+      "product": "DraftSight",
+      "version": "2026",
+      "title": "Creating Tables",
+      "url": "https://help.solidworks.com/2026/english/DraftSight/html/hlpid_draw_table.htm",
+      "evidence": "embedded_help_json",
+      "note": "Вставка по точке/углам, размеры, стили Title/Header/Data, Tab и EditTable. Прочитан встроенный текст официальной справки."
+    },
+    {
+      "id": "S16",
+      "product": "DraftSight",
+      "version": "2026",
+      "title": "Editing Text in Tables",
+      "url": "https://help.solidworks.com/2026/english/DraftSight/html/hlpid_edit_tableedit.htm",
+      "evidence": "embedded_help_json",
+      "note": "Редактор ячеек, расширенное оформление, Tab/Shift+Tab, EditTableCell для структуры."
+    },
+    {
+      "id": "S17",
+      "product": "GstarCAD",
+      "version": "2026",
+      "title": "User Guide, §6.9, печатные стр. 105–110",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD_2026_User_Guide.pdf",
+      "evidence": "pdf_text",
+      "note": "TABLE, вставка по точке/окну, размеры и стили таблицы/ячеек. PDF скачан и прочитан через pdftotext."
+    },
+    {
+      "id": "S18",
+      "product": "Vectorworks",
+      "version": "2026",
+      "title": "Creating worksheets",
+      "url": "https://app-help.vectorworks.net/2026/eng/VW2026_Guide/Worksheets/Creating_worksheets.htm",
+      "evidence": "html",
+      "note": "BIM/отчётный ориентир: worksheet, данные объектов, связанные таблицы, формулы и шаблоны; не обещание совместимости с CAD TABLE."
+    },
+    {
+      "id": "S19",
+      "product": "T-FLEX CAD",
+      "version": "15",
+      "title": "Text — раздел Table",
+      "url": "https://www.tflex.com/help/eng/T-FLEX%20CAD/15/text.htm",
+      "evidence": "html",
+      "note": "Прочитан раздел Table: структура, внутренние БД и обновление, сортировка полей, размеры/границы, перенос строк между страницами. Источник старой версии, не обещание актуального API."
+    },
+    {
+      "id": "S20",
+      "product": "nanoCAD",
+      "version": "Программа базового курса без фиксированного номера версии",
+      "title": "Базовый курс, урок 15 «Таблицы»",
+      "url": "https://courses.nanocad.ru/basic",
+      "evidence": "course_outline",
+      "note": "Подтверждает наличие создания/редактирования таблиц; не доказывает формулы, XLSX, merge или конкретные расширенные команды."
+    },
+    {
+      "id": "S21",
+      "product": "Vectorworks",
+      "version": "2026",
+      "title": "Editing worksheets",
+      "url": "https://app-help.vectorworks.net/2026/eng/VW2026_Guide/Worksheets/Editing_worksheets.htm",
+      "evidence": "html",
+      "note": "Навигация, выделение, размеры, вставка/удаление и изменение ячеек/строк/столбцов. Worksheet — отчётный ориентир."
+    }
+  ],
+  "groups": [
+    {
+      "id": "creation",
+      "label": "Создание и источники",
+      "dependencies": [
+        "grid-schema",
+        "table-editor"
+      ],
+      "features": [
+        {
+          "label": "Пустая таблица",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S15",
+            "S17",
+            "S20"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Задать строки, столбцы, размер и положение; создать одну табличную сущность после подтверждения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-001"
+        },
+        {
+          "label": "Вставка по точке или прямоугольнику",
+          "phase": "A",
+          "sources": [
+            "S15",
+            "S17"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Разделить положение и размеры; показать предварительный габарит без изменения документа.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-002"
+        },
+        {
+          "label": "Заголовок, шапка и область данных",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S15"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Явно назначать роли строк и повторяемую шапку, не угадывать роль по жирному шрифту.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-003"
+        },
+        {
+          "label": "Создание из TSV буфера",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Распознать строки и ячейки; показать размер диапазона и конфликт с существующим содержимым.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-004"
+        },
+        {
+          "label": "Импорт CSV с настройками",
+          "phase": "B",
+          "sources": [
+            "S01",
+            "S09"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Выбрать разделитель, кодировку и локаль; корректно разобрать кавычки, переносы и пустые поля.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-005"
+        },
+        {
+          "label": "Создание из выбранных подписей",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сопоставить текстовые объекты строкам и колонкам в предпросмотре; не удалять исходники молча.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-006"
+        },
+        {
+          "label": "Вставка из шаблона таблицы",
+          "phase": "A",
+          "sources": [
+            "S12",
+            "S17"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Восстановить структуру и стили; отдельно выбирать копирование содержимого и источников.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-007"
+        },
+        {
+          "label": "Дубликат таблицы",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Создать независимые ID сетки и ячеек; явно выбрать копию внешних ссылок или снимок.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-008"
+        }
+      ],
+      "order": 1
+    },
+    {
+      "id": "structure",
+      "label": "Структура строк, столбцов и ячеек",
+      "dependencies": [
+        "stable-grid-ids",
+        "table-history"
+      ],
+      "features": [
+        {
+          "label": "Вставка строк",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16",
+            "S19"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Вставить одну или несколько строк выше/ниже; корректно сдвинуть диапазоны и формулы.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-009"
+        },
+        {
+          "label": "Удаление строк",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16",
+            "S19"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Показать затрагиваемые данные и ссылки; удаление отменяется одной операцией.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-010"
+        },
+        {
+          "label": "Вставка столбцов",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16",
+            "S19"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Вставить слева/справа с наследованием выбранного стиля и обновлением ссылок.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-011"
+        },
+        {
+          "label": "Удаление столбцов",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16",
+            "S19"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранить предсказуемость объединений и показать сломанные ссылки до подтверждения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-012"
+        },
+        {
+          "label": "Объединение ячеек",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Разрешить прямоугольный диапазон; показать правило сохранения всех непустых значений.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-013"
+        },
+        {
+          "label": "Разделение объединённой ячейки",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Восстановить границы и сохранить содержимое; не выдумывать исходные значения после потерь.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-014"
+        },
+        {
+          "label": "Перемещение строк и столбцов",
+          "phase": "B",
+          "sources": [
+            "S11"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Переставлять логические ячейки вместе со стилями, ссылками и идентификаторами.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-015"
+        },
+        {
+          "label": "Транспонирование диапазона",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Поменять строки и столбцы местами; преобразование формул и merges показать до применения.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-016"
+        },
+        {
+          "label": "Достроить таблицу до прямоугольной сетки",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Мигрировать неодинаковую длину старых rows явными пустыми ячейками без сдвига значений.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-017"
+        }
+      ],
+      "order": 2
+    },
+    {
+      "id": "selection",
+      "label": "Выделение и навигация",
+      "dependencies": [
+        "grid-hit-testing",
+        "keyboard-focus"
+      ],
+      "features": [
+        {
+          "label": "Выбор активной ячейки",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Клик выбирает ячейку, двойной клик редактирует; выбор всей таблицы остаётся отдельным действием.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-018"
+        },
+        {
+          "label": "Прямоугольный диапазон",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Shift и протягивание выделяют диапазон с учётом объединённых ячеек.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-019"
+        },
+        {
+          "label": "Несмежные диапазоны",
+          "phase": "B",
+          "sources": [
+            "BendCore",
+            "S21"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Ctrl добавляет области; массовая операция показывает все затронутые ячейки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-020"
+        },
+        {
+          "label": "Выделение строки или столбца",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S11"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Заголовки индексов и клавиатура выбирают целую строку/столбец.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-021"
+        },
+        {
+          "label": "Выделение всей таблицы",
+          "phase": "A",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Различать объект на листе и все ячейки; не путать Delete объекта с очисткой диапазона.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-022"
+        },
+        {
+          "label": "Tab, Enter и стрелки",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16",
+            "S21"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Tab/Shift+Tab переходят по ячейкам; Enter и многострочный ввод имеют явные разные сочетания.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-023"
+        },
+        {
+          "label": "Переход к ячейке по адресу",
+          "phase": "B",
+          "sources": [
+            "S09",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Адрес A1 или имя диапазона активирует ячейку и прокручивает её в видимую область.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-024"
+        }
+      ],
+      "order": 3
+    },
+    {
+      "id": "content",
+      "label": "Содержимое ячеек",
+      "dependencies": [
+        "rich-text-adapter",
+        "cell-editor"
+      ],
+      "features": [
+        {
+          "label": "Редактор текста ячейки",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16",
+            "S20"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Редактировать rows[row][column] (массив абзацев ячейки), а не невидимый entity.paragraphs; OK/Cancel сохраняют или отменяют черновик.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-025"
+        },
+        {
+          "label": "Форматирование фрагмента",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Использовать текстовый редактор для фрагмента выбранной ячейки, сохраняя остальные runs и поля.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-026"
+        },
+        {
+          "label": "Многострочный текст и абзацы",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S16"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Поддержать переносы, списки, отступы и табуляцию внутри ячейки без создания новых строк таблицы.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-027"
+        },
+        {
+          "label": "Инженерные символы и индексы",
+          "phase": "A",
+          "sources": [
+            "S12",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Вставлять Unicode, индексы и дроби в активную ячейку через общий текстовый движок.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-028"
+        },
+        {
+          "label": "Поле свойства в ячейке",
+          "phase": "B",
+          "sources": [
+            "S12",
+            "S09"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Связать конкретную ячейку со свойством документа, листа или модели; обновление не стирает формат.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-029"
+        },
+        {
+          "label": "Блок или графический значок в ячейке",
+          "phase": "C",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Хранить отдельный тип содержимого и размеры; при отсутствии block backend явно отключить вставку.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-030"
+        },
+        {
+          "label": "Гиперссылка и переход к источнику",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Хранить текст отдельно от URL; открытие ссылки — явное действие с проверкой допустимой схемы.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-031"
+        },
+        {
+          "label": "Очистка содержимого",
+          "phase": "A",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Очищать значения выбранных ячеек без удаления границ, размеров, стилей и идентичности сетки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-032"
+        }
+      ],
+      "order": 4
+    },
+    {
+      "id": "data",
+      "label": "Типы, единицы и форматы данных",
+      "dependencies": [
+        "typed-values",
+        "locale-policy"
+      ],
+      "features": [
+        {
+          "label": "Тип значения ячейки",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Различать строку, число, дату и логическое значение; артикул 0012 не превращать в 12 молча.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-033"
+        },
+        {
+          "label": "Локаль ввода",
+          "phase": "B",
+          "sources": [
+            "S09",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Явно выбрать десятичный и списочный разделители; не зависеть скрыто от локали браузера.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-034"
+        },
+        {
+          "label": "Точность и округление",
+          "phase": "B",
+          "sources": [
+            "S13",
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Разделить исходное число и отображаемую точность, задать правило округления.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-035"
+        },
+        {
+          "label": "Физические единицы",
+          "phase": "B",
+          "sources": [
+            "S09"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Хранить величину и размерность; проверять совместимость единиц в расчётах и выводе.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-036"
+        },
+        {
+          "label": "Пустая ячейка и отсутствующее значение",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Различать пустой текст, null, ноль и ошибку; не подменять отсутствующие данные нулями.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-037"
+        },
+        {
+          "label": "Формат отображения",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Задавать число, дату, проценты и префикс/суффикс отдельно от хранимого значения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-038"
+        },
+        {
+          "label": "Ограничения ввода и списки значений",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проверять диапазон, обязательность и перечень значений до сохранения; показывать ошибочную ячейку.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-039"
+        }
+      ],
+      "order": 5
+    },
+    {
+      "id": "formulas",
+      "label": "Формулы и зависимости",
+      "dependencies": [
+        "typed-values",
+        "safe-formula-engine",
+        "stable-grid-ids"
+      ],
+      "features": [
+        {
+          "label": "Редактор формул",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S09",
+            "S12"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Показать формулу отдельно от результата; разрешённый синтаксис без eval и исполняемого кода.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-040"
+        },
+        {
+          "label": "Ссылки на ячейки и диапазоны",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Адреса A1 и A1:B5 привязать к логическим ячейкам и правилам изменения структуры.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-041"
+        },
+        {
+          "label": "Абсолютные и относительные ссылки",
+          "phase": "B",
+          "sources": [
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Поддержать A1, $A$1 и смешанные ссылки при копировании и заполнении.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-042"
+        },
+        {
+          "label": "Агрегатные функции",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "SUM, COUNT, MIN, MAX, AVG с явными правилами пустых, текстовых и ошибочных значений.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-043"
+        },
+        {
+          "label": "Имена ячеек и диапазонов",
+          "phase": "B",
+          "sources": [
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Читаемые уникальные имена с проверкой переименования и отсутствующих целей.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-044"
+        },
+        {
+          "label": "Ссылки между таблицами",
+          "phase": "C",
+          "sources": [
+            "S09",
+            "S18"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Устойчиво адресовать другую таблицу; потеря источника даёт ошибку, а не старое правдоподобное число.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-045"
+        },
+        {
+          "label": "Пересчёт и порядок зависимостей",
+          "phase": "B",
+          "sources": [
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Пересчитывать затронутый граф детерминированно; предусмотреть ручной режим и индикатор устаревания.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-046"
+        },
+        {
+          "label": "Циклы и ошибки вычисления",
+          "phase": "B",
+          "sources": [
+            "S09",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Показывать цикл, деление на ноль, несовместимые единицы и удалённую ссылку с адресом ячейки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-047"
+        }
+      ],
+      "order": 6
+    },
+    {
+      "id": "styles",
+      "label": "Стили таблиц и наследование",
+      "dependencies": [
+        "table-style-schema",
+        "text-style-adapter"
+      ],
+      "features": [
+        {
+          "label": "Именованный стиль таблицы",
+          "phase": "A",
+          "sources": [
+            "S01",
+            "S04",
+            "S15",
+            "S17"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Единый стиль определяет сетку, шапку, тело и типографику; сохраняется в документе.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-048"
+        },
+        {
+          "label": "Стили заголовка, шапки и данных",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S15"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отдельные роли ячеек с наследованием, без копирования несвязанных наборов параметров.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-049"
+        },
+        {
+          "label": "Переопределение строки, столбца и ячейки",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Задать документированный приоритет table → role → row/column → cell → text run.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-050"
+        },
+        {
+          "label": "Копировать оформление диапазона",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Перенести оформление без замены значений, формул, типов и внешних ссылок.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-051"
+        },
+        {
+          "label": "Сброс переопределений",
+          "phase": "A",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Снять формат ячеек/таблицы и вернуть наследуемый стиль с предпросмотром.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-052"
+        },
+        {
+          "label": "Библиотека стилей и шаблоны предприятия",
+          "phase": "B",
+          "sources": [
+            "S12",
+            "S17"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Импортировать именованные стили с предпросмотром и политикой конфликтов имён.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-053"
+        },
+        {
+          "label": "Поиск и объединение одинаковых стилей",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сравнить эффективные стили и заменить ссылки без изменения внешнего вида.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-054"
+        }
+      ],
+      "order": 7
+    },
+    {
+      "id": "borders",
+      "label": "Границы, фон и защита ячеек",
+      "dependencies": [
+        "cell-edge-schema",
+        "selection-ranges"
+      ],
+      "features": [
+        {
+          "label": "Внешняя рамка",
+          "phase": "A",
+          "sources": [
+            "S04",
+            "S17"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Отдельно настроить внешний контур таблицы, не меняя внутренних границ.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-055"
+        },
+        {
+          "label": "Внутренняя сетка",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S04"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Настроить горизонтальные и вертикальные линии выбранного диапазона.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-056"
+        },
+        {
+          "label": "Границы отдельных сторон",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S04",
+            "S19"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Редактировать каждое ребро с разрешением конфликта соседних ячеек.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-057"
+        },
+        {
+          "label": "Толщина, тип и цвет линий",
+          "phase": "A",
+          "sources": [
+            "S04",
+            "S17"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Параметры в единицах бумаги, единый приоритет общей границы при экспорте.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-058"
+        },
+        {
+          "label": "Заливка ячеек",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S04",
+            "S19"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Фон ячейки отдельно от маски текста; сохранять контраст в светлой/тёмной теме и печати.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-059"
+        },
+        {
+          "label": "Защита содержимого и формата",
+          "phase": "B",
+          "sources": [
+            "S02"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Независимо блокировать ввод и оформление; защита интерфейса не считается разграничением прав доступа.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-060"
+        },
+        {
+          "label": "Условное оформление",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Правила по типизированным значениям с показом причины; не выдать предупреждение только цветом.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-061"
+        }
+      ],
+      "order": 8
+    },
+    {
+      "id": "sizing",
+      "label": "Размеры и компоновка ячеек",
+      "dependencies": [
+        "cell-metrics",
+        "text-layout"
+      ],
+      "features": [
+        {
+          "label": "Высота строк",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S11",
+            "S17",
+            "S19"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Задать отдельную высоту каждой строки числом или перетаскиванием границы.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-062"
+        },
+        {
+          "label": "Ширина столбцов",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S11",
+            "S17",
+            "S19"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Задать отдельную ширину каждого столбца и явный режим изменения общей ширины.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-063"
+        },
+        {
+          "label": "Выровнять размеры",
+          "phase": "A",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Уравнять выбранные строки/столбцы, показав итоговый размер таблицы.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-064"
+        },
+        {
+          "label": "Автоподбор по содержимому",
+          "phase": "B",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Измерить текст с учётом шрифта, padding, wraps и merged cells; сообщить приближённость метрик.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-065"
+        },
+        {
+          "label": "Перенос и переполнение текста",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Выбрать wrap/clip/overflow; выдавать диагностический адрес переполненной ячейки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-066"
+        },
+        {
+          "label": "Горизонтальное и вертикальное выравнивание",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S04",
+            "S19"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Выравнивать содержимое относительно внутренней области каждой ячейки.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-067"
+        },
+        {
+          "label": "Поворот текста ячейки",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S04"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Поворот 0/90/180/270 градусов без поворота всей таблицы; размеры рассчитываются согласованно.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-068"
+        },
+        {
+          "label": "Внутренние отступы и фиксированные размеры",
+          "phase": "A",
+          "sources": [
+            "S02",
+            "S11",
+            "S19"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Раздельные отступы сторон; блокировка высоты/ширины предотвращает неявный автоподбор.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-069"
+        }
+      ],
+      "order": 9
+    },
+    {
+      "id": "placement",
+      "label": "Размещение на листах и разбиение",
+      "dependencies": [
+        "paper-coordinates",
+        "table-segments",
+        "sheet-links"
+      ],
+      "features": [
+        {
+          "label": "Положение таблицы на листе",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S15",
+            "S17"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Задать XY в мм, переместить объект и отменить одним шагом.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-070"
+        },
+        {
+          "label": "Фиксированный угол и якорь",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "S12"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Выбрать стационарный угол и направление роста таблицы при изменении структуры.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-071"
+        },
+        {
+          "label": "Поворот таблицы",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Повернуть объект вместе с содержимым и границами вокруг явного якоря.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-072"
+        },
+        {
+          "label": "Бумажный и модельный масштаб",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Разделить размеры на бумаге и масштаб вида, исключить скрытое масштабирование текста.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-073"
+        },
+        {
+          "label": "Разбить таблицу на продолжения",
+          "phase": "B",
+          "sources": [
+            "S05",
+            "S12"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Одна логическая сетка отображается несколькими сегментами; строки не дублируются как независимые данные.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-074"
+        },
+        {
+          "label": "Повторять шапку и подписи продолжения",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "На каждой части печатать заданные строки шапки и номер продолжения без дублирования данных. Это отдельное требование BendCore, не вывод из самого факта разбиения.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-075"
+        },
+        {
+          "label": "Перенести продолжение на другой лист",
+          "phase": "B",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранить связь сегмента с таблицей; изменение данных обновляет все представления.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-076"
+        },
+        {
+          "label": "Объединить продолжения обратно",
+          "phase": "B",
+          "sources": [
+            "S12",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Восстановить одно представление без дубликатов, потери порядка и смешения с merge cells.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-077"
+        }
+      ],
+      "order": 10
+    },
+    {
+      "id": "sorting",
+      "label": "Сортировка, фильтры и группировка",
+      "dependencies": [
+        "typed-values",
+        "stable-grid-ids",
+        "formula-remap"
+      ],
+      "features": [
+        {
+          "label": "Сортировка по одному столбцу",
+          "phase": "B",
+          "sources": [
+            "S12",
+            "S13"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сортировать целые записи, сохраняя значения и формат соседних ячеек.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-078"
+        },
+        {
+          "label": "Сортировка по нескольким ключам",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Порядок ключей и направления задаются явно; равные ключи имеют стабильный порядок.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-079"
+        },
+        {
+          "label": "Правила сравнения типов",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Числа сравнивать численно, даты хронологически, строки по выбранной локали.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-080"
+        },
+        {
+          "label": "Фильтр строк",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Фильтровать представление, не удаляя исходные строки; показать количество скрытых записей.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-081"
+        },
+        {
+          "label": "Скрыть и показать строки/столбцы",
+          "phase": "B",
+          "sources": [
+            "S11"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отдельно задать видимость в редакторе и в печати; скрытое не означает удалённое.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-082"
+        },
+        {
+          "label": "Группировка и промежуточные итоги",
+          "phase": "B",
+          "sources": [
+            "S11",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Групповые строки и итоги отделены от исходных записей, правила агрегации проверяются.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-083"
+        },
+        {
+          "label": "Восстановить исходный порядок",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "После сортировки сохранить идентичность строк и возможность возврата без изменения ссылок.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-084"
+        }
+      ],
+      "order": 11
+    },
+    {
+      "id": "bulk",
+      "label": "Поиск и массовые операции",
+      "dependencies": [
+        "cell-addressing",
+        "bulk-preview"
+      ],
+      "features": [
+        {
+          "label": "Поиск по ячейкам",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Искать видимый текст через границы форматированных фрагментов с адресом результата.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-085"
+        },
+        {
+          "label": "Замена в выбранной области",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Ограничить ячейкой, диапазоном, таблицей или документом; поля/формулы не заменять как обычный текст.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-086"
+        },
+        {
+          "label": "Выбор по значению, типу или стилю",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сформировать диапазон совпадений без изменения значений.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-087"
+        },
+        {
+          "label": "Массовое заполнение и вставка диапазона",
+          "phase": "A",
+          "sources": [
+            "S05",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проверить размеры источника/приёмника, объединения и protected cells до применения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-088"
+        },
+        {
+          "label": "Нумерация и последовательности",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Начало, шаг и шаблон номера задаются явно; связанные позиции BOM не переименовываются вручную молча.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-089"
+        },
+        {
+          "label": "Преобразование регистра и пробелов",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Изменять только буквальный текст, сохранять rich runs, формулы и идентификаторы деталей.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-090"
+        },
+        {
+          "label": "Дубликаты и пустые строки",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Показать критерий равенства и план удаления; не уничтожать строки с формулами или скрытыми данными.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-091"
+        }
+      ],
+      "order": 12
+    },
+    {
+      "id": "links",
+      "label": "Источники и обновления",
+      "dependencies": [
+        "source-adapters",
+        "stable-grid-ids",
+        "update-diff"
+      ],
+      "features": [
+        {
+          "label": "Сопоставление колонок свойствам",
+          "phase": "B",
+          "sources": [
+            "S04",
+            "S06",
+            "S09",
+            "S19"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Отделить схему столбцов от значений; зафиксировать ID объекта и свойство источника.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-092"
+        },
+        {
+          "label": "Связанный CSV-источник",
+          "phase": "B",
+          "sources": [
+            "S04",
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отличать импорт снимка от связи; разрешение к файлу и его повторное чтение показывать явно.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-093"
+        },
+        {
+          "label": "Адаптер XLS/XLSX",
+          "phase": "C",
+          "sources": [
+            "S03",
+            "S04"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выбрать книгу, лист и диапазон; объявить поддерживаемое подмножество формул и оформления.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-094"
+        },
+        {
+          "label": "Предпросмотр обновления",
+          "phase": "B",
+          "sources": [
+            "S03",
+            "BendCore",
+            "S19"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Показать добавленные/удалённые/изменённые строки и ручные переопределения до подтверждения.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-095"
+        },
+        {
+          "label": "Запись обратно во внешний источник",
+          "phase": "C",
+          "sources": [
+            "S03",
+            "S04"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Только явная отдельная команда с проверкой версии, доступности записи и конфликтов; без адаптера недоступна.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-096"
+        },
+        {
+          "label": "Заморозить или разорвать связь",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранить текущие значения снимком и происхождение; разрыв связи подтверждается и отменяется.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-097"
+        },
+        {
+          "label": "Недоступный источник и конфликты",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Не считать старый кэш актуальным; показать время обновления и варианты разрешения.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-098"
+        },
+        {
+          "label": "Ручное переопределение связанной ячейки",
+          "phase": "B",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Явный override-индикатор, исходное значение и команда возврата к источнику.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-099"
+        }
+      ],
+      "order": 13
+    },
+    {
+      "id": "specialized",
+      "label": "Шаблоны и специализированные таблицы",
+      "dependencies": [
+        "template-library",
+        "specialized-source-adapters"
+      ],
+      "features": [
+        {
+          "label": "Шаблон структуры и оформления",
+          "phase": "A",
+          "sources": [
+            "S12",
+            "S17"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Сохранить схему, стили и роли строк отдельно от пользовательских данных.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-100"
+        },
+        {
+          "label": "Ведомость свойств документа",
+          "phase": "B",
+          "sources": [
+            "S09",
+            "S12"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Показать свойства документа/листа в обычной сетке с живыми полями.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-101"
+        },
+        {
+          "label": "Спецификация BOM",
+          "phase": "C",
+          "sources": [
+            "S05",
+            "S11"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Источником служит дерево сборки и свойства; нужны количества, уровни, исключения и связь с позициями.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-102"
+        },
+        {
+          "label": "Таблица ревизий",
+          "phase": "C",
+          "sources": [
+            "S07",
+            "S11"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Использовать модель ревизий с автором, датой и статусом; табличная строка не заменяет release workflow.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-103"
+        },
+        {
+          "label": "Таблица отверстий",
+          "phase": "C",
+          "sources": [
+            "S13"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Нужны реальные отверстия, начало координат, теги и обновляемые размеры; без topology backend отключена.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-104"
+        },
+        {
+          "label": "Таблица сгибов",
+          "phase": "C",
+          "sources": [
+            "S14"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Нужны развертка и сгибы с направлением, углом и радиусом; данные вручную не выдавать за вычисленные.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-105"
+        },
+        {
+          "label": "Ведомость раскроя и сварных элементов",
+          "phase": "C",
+          "sources": [
+            "S08",
+            "S11"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Источник — каркас/cut list с устойчивыми ID и размерами; не выводить из произвольного текста.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-106"
+        },
+        {
+          "label": "Основная надпись и штамп",
+          "phase": "B",
+          "sources": [
+            "S11",
+            "S12"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Шаблон полей документа и листа с отдельной семантикой, а не произвольный BOM или XLS.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-107"
+        }
+      ],
+      "order": 14
+    },
+    {
+      "id": "exchange",
+      "label": "Обмен, печать и представления",
+      "dependencies": [
+        "export-adapters",
+        "loss-report"
+      ],
+      "features": [
+        {
+          "label": "Экспорт TSV/CSV",
+          "phase": "B",
+          "sources": [
+            "S02",
+            "S09"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Выбрать значения либо формулы, кодировку, разделитель и правила защиты spreadsheet-инъекций.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-108"
+        },
+        {
+          "label": "Копирование диапазона в буфер",
+          "phase": "A",
+          "sources": [
+            "S05"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Отдать обычный текст TSV и собственный структурный формат; HTML не исполнять.",
+          "status": "planned",
+          "evidenceBasis": "documented_pattern_with_bendcore_contract",
+          "id": "TBL-109"
+        },
+        {
+          "label": "Структурный round-trip JSON",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Сохранить и восстановить ID, merges, типы, формулы, стили и источники с версией схемы.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-110"
+        },
+        {
+          "label": "DXF/DWG TABLE",
+          "phase": "C",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Сохранять семантику TABLE только при наличии подходящего SDK/адаптера; не выдавать LINE/TEXT за TABLE.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-111"
+        },
+        {
+          "label": "Статический DXF текстом и линиями",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Явный режим потерь: независимые линии/надписи без формул, структуры и ассоциативности.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-112"
+        },
+        {
+          "label": "SVG и PDF таблицы на листе",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Проверять границы, шрифты, overflow, скрытые строки и продолжения; семантика ячеек не обещается в PDF.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-113"
+        },
+        {
+          "label": "Предпросмотр печати и пагинации",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Показать физические размеры, обрезанные ячейки и повторённую шапку до печати.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-114"
+        },
+        {
+          "label": "Отчёт о потерях обмена",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Перечислить утраченные merges, стили, формулы, связи и неподдержанные типы; оригинал остаётся доступным.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-115"
+        }
+      ],
+      "order": 15
+    },
+    {
+      "id": "quality",
+      "label": "Надёжность, доступность и контроль качества",
+      "dependencies": [
+        "validated-transactions",
+        "migration",
+        "accessibility"
+      ],
+      "features": [
+        {
+          "label": "OK, Cancel и Undo/Redo",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Изменение диапазона — одна транзакция; отмена черновика и ошибки не меняют документ или autosave.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-116"
+        },
+        {
+          "label": "Валидация и миграция сетки",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Проверить прямоугольность, ID, merges, ссылки и лимиты до сохранения; миграция старого rows без потерь.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-117"
+        },
+        {
+          "label": "Сохранение и восстановление документов",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "partial",
+          "behavior": "Независимые таблицы вкладок, JSON round-trip, dirty-состояние и восстановление после перезагрузки.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-118"
+        },
+        {
+          "label": "Поиск переполнения и обрезанного текста",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Проверять каждую ячейку после учёта объединений и padding; дать переход к ошибке.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-119"
+        },
+        {
+          "label": "Диагностика ссылок, типов и формул",
+          "phase": "B",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Разделить missing source, cycle, invalid type и stale result; не подставлять правдоподобные значения.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-120"
+        },
+        {
+          "label": "Проверка орфографии и шрифтов",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Переиспользовать текстовые проверки ячеек с адресом; артикулам и вычисляемым полям нужна отдельная политика.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-121"
+        },
+        {
+          "label": "Клавиатура, скринридер и темы",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "missing",
+          "behavior": "Роли grid/cell, координаты и состояние выделения, фокус, контраст и светлая/тёмная тема без опоры только на цвет.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-122"
+        },
+        {
+          "label": "Лимиты и безопасные внешние данные",
+          "phase": "A",
+          "sources": [
+            "BendCore"
+          ],
+          "currentSupport": "foundation",
+          "behavior": "Ограничить суммарные ячейки/размер, отменять долгие операции; запретить eval, макросы и скрытую запись наружу.",
+          "status": "planned",
+          "evidenceBasis": "bendcore_requirement",
+          "id": "TBL-123"
+        }
+      ],
+      "order": 16
+    }
+  ],
+  "currentSupportLegend": {
+    "missing": "В текущем коде нет соответствующего workflow/модели.",
+    "foundation": "Есть только общий примитив или часть отрисовки; требуется новый табличный workflow. Не считать команду доступной.",
+    "partial": "Есть ограниченный путь в TXT/общих действиях чертежа; полный контракт TBL не выполнен."
+  }
+}
