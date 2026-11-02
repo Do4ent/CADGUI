@@ -58,4 +58,19 @@ const overflowDoc=m.cloneDrawing(doc);overflowDoc.styles[0].height=Number.MAX_VA
 execute('TXT-066',{value:'freeze'},stamp.selection);let stampEntity=doc.sheets[0].entities.find(e=>e.id===stamp.selection[0]);ok(stampEntity.rows.flatMap(row=>row.flat()).flatMap(p=>p.runs).filter(r=>r.field).every(r=>r.field.frozen!==undefined),'table live fields freeze too');
 execute('TXT-066',{value:'restore'},stamp.selection);execute('TXT-011',{options:{bold:true}},stamp.selection);stampEntity=doc.sheets[0].entities.find(e=>e.id===stamp.selection[0]);ok(stampEntity.rows.flatMap(row=>row.flat()).flatMap(p=>p.runs).every(r=>r.format?.bold),'table cell formatting is included');
 execute('TXT-068',{number:1},[ttId]);const continuedFlag=doc.sheets[0].entities.find(e=>e.id===flag.selection[0]);ok(continuedFlag.reference.targetId!==ttId);equal(m.plainText(continuedFlag,doc,ctx),'2');ok(!d.diagnoseDrawing(doc,ctx).some(issue=>issue.entityId===continuedFlag.id&&issue.code==='broken-field'));
+// Font policies are data, never destructive font replacement or executable CSS.
+const fontDoc=m.createDrawingDocument(),fontEntity=m.createTextEntity('text','Шрифт');fontDoc.sheets[0].entities.push(fontEntity);
+fontDoc.properties['fontFallback:Arial']='Liberation Sans';const fontSnapshot=JSON.stringify(fontDoc);
+equal(m.resolveStyle(fontDoc,fontEntity).fontFamily,'Liberation Sans');equal(fontDoc.styles[0].fontFamily,'Arial');equal(JSON.stringify(fontDoc),fontSnapshot);
+fontDoc.properties['fontFallback:Liberation Sans']='Noto Sans';equal(m.resolveStyle(fontDoc,fontEntity).fontFamily,'Noto Sans');equal(m.validateDrawingDocument(fontDoc).properties['fontFallback:Arial'],'Liberation Sans');
+const overrideFont=m.cloneDrawing(fontEntity);overrideFont.overrides.fontFamily='Engineering Font';fontDoc.properties['fontFallback:Engineering Font']='Noto Serif';equal(m.resolveStyle(fontDoc,overrideFont).fontFamily,'Noto Serif');equal(overrideFont.overrides.fontFamily,'Engineering Font');equal(fontDoc.styles[0].fontFamily,'Arial');
+const noPolicy=m.createDrawingDocument();noPolicy.properties.fontFallbackDescription='plain descriptive metadata';equal(m.resolveStyle(noPolicy,m.createTextEntity()).fontFamily,'Arial');equal(m.validateDrawingDocument(noPolicy).properties.fontFallbackDescription,'plain descriptive metadata');
+for(const properties of [
+ {'fontFallback:Arial':'Arial'},
+ {'fontFallback:Arial':'Noto Sans','fontFallback:Noto Sans':'Arial'},
+ {'fontFallback:Arial':'First','fontFallback:First':'Second','fontFallback:Second':'First'}
+]){const cyclic=m.createDrawingDocument();cyclic.properties=properties;throws(()=>m.validateDrawingDocument(cyclic),/cycle/);throws(()=>m.resolveStyle(cyclic,m.createTextEntity()),/Цикл/);}
+for(const target of ['', '   ', 'Arial; color:red', 'url(https://example.invalid/font)', 'Arial" onload="x', '#badfont']){const unsafe=m.createDrawingDocument();unsafe.properties['fontFallback:Arial']=target;throws(()=>m.validateDrawingDocument(unsafe));throws(()=>m.resolveStyle(unsafe,m.createTextEntity()));}
+for(const source of ['', 'Bad;Font','url(font)']){const unsafe=m.createDrawingDocument();unsafe.properties['fontFallback:'+source]='Arial';throws(()=>m.validateDrawingDocument(unsafe));}
+const inherited=m.createDrawingDocument();inherited.properties=Object.assign(Object.create({'fontFallback:Arial':'Unexpected Font'}),{title:'ordinary property'});equal(m.resolveStyle(inherited,m.createTextEntity()).fontFamily,'Arial');
 console.log(`PASS: ${checks} drawing core schema, fields, operations, layout and diagnostic checks`);
