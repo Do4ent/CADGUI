@@ -1,12 +1,15 @@
 """Real sheet entities: confirmation, history, persistence and document isolation."""
 import json
 import re
+from pathlib import Path
 
 from playwright.sync_api import expect
 from test_regression import browser, page
 
 
 EDITOR = 'Редактор текста чертежа'
+CATALOG = json.loads((Path(__file__).resolve().parents[1] / 'docs' / 'DRAWING_TEXT_TOOLKIT.json').read_text())
+COMMAND_LABELS = {feature['id']: feature['label'] for group in CATALOG['groups'] for feature in group['features']}
 
 
 def sheet(page):
@@ -23,7 +26,14 @@ def workspace(page):
 
 
 def command(page, identifier):
-    page.get_by_role('button', name=re.compile(re.escape(identifier))).first.click()
+    page.locator(f'[data-drawing-command="{identifier}"]').click()
+
+
+def command_dialog(page, identifier):
+    command(page, identifier)
+    dialog = page.get_by_role('dialog', name=COMMAND_LABELS[identifier], exact=True)
+    expect(dialog).to_be_visible()
+    return dialog
 
 
 def text_editor(page, text):
@@ -75,7 +85,7 @@ def test_drawing_creation_cancel_edit_and_one_step_history(page):
         ('Control+y', count + 1, 'Редуктор Ø25 ±0,1'),
         ('Control+y', count + 1, 'Новая редакция'),
     ]:
-        page.locator('body').click(position={'x': 1, 'y': 1})
+        page.evaluate('document.activeElement?.blur()')
         page.keyboard.press(shortcut)
         expect(entities(page)).to_have_count(expected_count)
         if text:
@@ -120,3 +130,99 @@ def test_drawing_format_mask_and_position_are_persisted(page, tmp_path):
     assert style['mask'] is True
     assert style['height'] == 5
     assert entities(page).last.locator('rect').count() > 0
+
+
+def test_all_twelve_groups_expose_the_102_catalog_commands(page):
+    workspace(page)
+    panel = page.get_by_role('region', name='Инструменты текста чертежа')
+    expect(panel.locator('[data-drawing-group]')).to_have_count(12)
+    expect(panel.locator('[data-drawing-command]')).to_have_count(102)
+    actual = panel.locator('[data-drawing-command]').evaluate_all('(nodes) => nodes.map(n => n.dataset.drawingCommand)')
+    assert len(set(actual)) == 102
+    assert set(actual) == set(COMMAND_LABELS)
+    for group in CATALOG['groups']:
+        section = panel.locator(f'[data-drawing-group="{group["id"]}"]')
+        expect(section).to_contain_text(group['label'])
+        for feature in group['features']:
+            button = section.locator(f'[data-drawing-command="{feature["id"]}"]')
+            expect(button).to_have_accessible_name(re.compile(re.escape(feature['id'])))
+
+
+def test_leader_table_title_fields_and_technical_requirements_are_real_entities(page, tmp_path):
+    workspace(page)
+    command(page, 'TXT-005')
+    editor = page.get_by_role('dialog', name=EDITOR, exact=True)
+    editor.get_by_label('Абзац 1', exact=True).fill('Связанная выноска')
+    editor.get_by_role('button', name='ОК', exact=True).click()
+    expect(sheet(page)).to_contain_text('Связанная выноска')
+    table = command_dialog(page, 'TXT-007')
+    table.get_by_label('Строки', exact=True).fill('2')
+    table.get_by_label('Столбцы', exact=True).fill('2')
+    table.get_by_label('Данные таблицы TSV', exact=True).fill('Деталь\tКоличество\nБолт\t4')
+    table.get_by_role('button', name='ОК', exact=True).click()
+    expect(sheet(page)).to_contain_text('Болт')
+    title = command_dialog(page, 'TXT-008')
+    title.get_by_label('Название', exact=True).fill('Редуктор учебный')
+    title.get_by_label('Обозначение', exact=True).fill('БК.001')
+    title.get_by_label('Автор', exact=True).fill('Инженер')
+    title.get_by_role('button', name='ОК', exact=True).click()
+    expect(sheet(page)).to_contain_text('Редуктор учебный')
+    requirements = command_dialog(page, 'TXT-067')
+    requirements.get_by_label('Технические требования', exact=True).fill('Острые кромки притупить.\nПокрытие защитное.')
+    requirements.get_by_role('button', name='ОК', exact=True).click()
+    expect(sheet(page)).to_contain_text('Острые кромки притупить.')
+    drawing = save_document(page, tmp_path)['drawing']
+    content = [entity for current_sheet in drawing['sheets'] for entity in current_sheet['entities']]
+    leader = next(entity for entity in content if entity['kind'] == 'leader')
+    assert leader['leaders'] and len(leader['leaders'][0]['points']) >= 2
+    table_entity = next(entity for entity in content if entity['kind'] == 'table')
+    assert len(table_entity['rows']) == 2
+    assert all(len(row) == 2 for row in table_entity['rows'])
+    assert any(entity.get('technical') is True for entity in content)
+
+
+def test_find_replace_changes_real_text_and_is_one_undo_step(page):
+    workspace(page)
+    create_text(page, 'Контроль alpha alpha')
+    dialog = command_dialog(page, 'TXT-075')
+    dialog.get_by_label('Найти', exact=True).fill('alpha')
+    dialog.get_by_label('Заменить', exact=True).fill('beta')
+    dialog.get_by_label('Область', exact=True).select_option('document')
+    dialog.get_by_label('Заменять совпадения', exact=True).check()
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(sheet(page)).to_contain_text('Контроль beta beta')
+    expect(sheet(page)).not_to_contain_text('alpha')
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(sheet(page)).to_contain_text('Контроль alpha alpha')
+    page.keyboard.press('Control+y')
+    expect(sheet(page)).to_contain_text('Контроль beta beta')
+
+
+def test_svg_dxf_exports_and_invalid_json_diagnostics_preserve_drawing(page, tmp_path):
+    workspace(page)
+    create_text(page, 'Экспортируемый текст Ø30')
+    before = save_document(page, tmp_path, 'before.json')
+    with page.expect_download() as svg_download:
+        page.get_by_role('button', name='Экспорт SVG', exact=True).click()
+    svg_target = tmp_path / 'sheet.svg'
+    svg_download.value.save_as(svg_target)
+    svg = svg_target.read_text()
+    assert '<svg' in svg and '<text' in svg
+    assert 'Экспортируемый текст' in svg
+    assert '<script' not in svg.lower()
+    with page.expect_download() as dxf_download:
+        page.get_by_role('button', name='Экспорт DXF', exact=True).click()
+    dxf_target = tmp_path / 'sheet.dxf'
+    dxf_download.value.save_as(dxf_target)
+    dxf = dxf_target.read_text()
+    assert 'SECTION' in dxf and 'ENTITIES' in dxf and 'EOF' in dxf
+    assert 'TEXT' in dxf or 'MTEXT' in dxf
+    invalid = json.loads(json.dumps(before))
+    invalid['drawing']['sheets'][0]['entities'][0]['x'] = 'invalid-coordinate'
+    page.get_by_label('Импорт документа JSON', exact=True).set_input_files({'name': 'broken-drawing.json', 'mimeType': 'application/json', 'buffer': json.dumps(invalid).encode()})
+    expect(page.get_by_role('alert')).to_be_visible()
+    after = save_document(page, tmp_path, 'after.json')
+    assert after['drawing'] == before['drawing']
+    assert after['items'] == before['items']
+    expect(page.get_by_role('region', name='Проверка чертежа')).to_be_visible()
