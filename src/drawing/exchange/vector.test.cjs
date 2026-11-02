@@ -19,3 +19,9 @@ assert.throws(()=>parseDrawingDxf(output.text.replace('10\r\n24.5','10\r\nNaN'))
 let unsupported=output.text.replace('0\r\nENDSEC\r\n0\r\nEOF','0\r\nCIRCLE\r\n10\r\n5\r\n0\r\nENDSEC\r\n0\r\nEOF');assert.ok(parseDrawingDxf(unsupported).warnings.some(w=>w.includes('CIRCLE')));
 entity.paragraphs=[{runs:[{text:'secret'}]}];entity.overrides={printable:false};doc.sheets[0].entities=[entity];assert.ok(!exportDrawingDxf(doc,context).text.includes('secret'));
 console.log('PASS DXF Unicode/escapes/chunks, mm coordinates, TEXT/MTEXT/LINE round trips, malformed/binary/unit rejection and loss reporting');
+
+const linked=createTextEntity('leader','Attached');linked.leaders=[{id:'branch',points:[[1,2],[20,20]],attachment:{modelItemId:'moving'},shape:'polyline',arrow:'closed',arrowSize:2,landing:5}];doc.sheets[0].entities=[linked];
+const movingContext={...context,modelItems:[{id:'moving',name:'Moving',kind:'box',pos:[100,120,0],size:[1,1,1],visible:true,color:'#000000',group:'parts'}]};const linkedSnapshot=JSON.stringify(doc);
+const exportedLines=parseDrawingDxf(exportDrawingDxf(doc,movingContext).text).document.sheets[0].entities.filter(e=>e.kind==='geometry');assert.equal(exportedLines[0].x,100);assert.equal(exportedLines[0].y,120);assert.equal(JSON.stringify(doc),linkedSnapshot);
+movingContext.modelItems[0].pos=[50,60,0];const movedLines=parseDrawingDxf(exportDrawingDxf(doc,movingContext).text).document.sheets[0].entities.filter(e=>e.kind==='geometry');assert.equal(movedLines[0].x,50);assert.equal(movedLines[0].y,60);
+console.log('PASS DXF model attachment snapshots follow current XY coordinates without source mutation');
