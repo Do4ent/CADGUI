@@ -30,9 +30,27 @@ export function Dialog({ open, title, children, onCancel, onConfirm, confirmDisa
       if (invoker instanceof HTMLElement && invoker.isConnected) invoker.focus();
     };
   }, [open]);
-  return <dialog ref={ref} className="bc-dialog" aria-labelledby={titleId}
+  return <dialog ref={ref} className="bc-dialog" aria-labelledby={titleId} tabIndex={-1}
     onCancel={event => { event.preventDefault(); onCancel(); }}
-    onKeyDown={event => event.stopPropagation()}>
+    onKeyDown={event => {
+      event.stopPropagation();
+      if (event.key !== 'Tab') return;
+      const dialog = event.currentTarget;
+      const controls = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button, input, select, textarea, a[href], [tabindex]'
+      )).filter(control => control.tabIndex >= 0 && !control.matches(':disabled') &&
+        !control.closest('[inert]') && control.getClientRects().length > 0 &&
+        getComputedStyle(control).visibility !== 'hidden');
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      const active = document.activeElement;
+      if (!first) { event.preventDefault(); dialog.focus(); return; }
+      if (!controls.includes(active as HTMLElement) ||
+          (event.shiftKey ? active === first : active === last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+    }}>
     <form onSubmit={event => { event.preventDefault(); if (!confirmDisabled) onConfirm(); }}>
       <header className="bc-dialog-title" id={titleId}>{title}</header>
       <div className="bc-dialog-content">{children}</div>
