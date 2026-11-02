@@ -1,3 +1,4 @@
+import {resolveFontFamily} from './fontPolicy';
 import type {DrawingDocument, DrawingEntity, DrawingContext, TextStyle, FieldRef, TextParagraph, TextRun, DrawingSheetModel, Point2} from './types';
 
 export const emptyContext: DrawingContext = {documentName: '', documentId: '', modelItems: []};
@@ -20,12 +21,7 @@ export function resolveStyle(doc: DrawingDocument, entity: DrawingEntity): TextS
  const style = doc.styles.find(s=>s.id===entity.styleId);
  if (!style) throw new Error(`Missing text style: ${entity.styleId}`);
  const resolved={...style,...entity.overrides,id:style.id};
- const visited=new Set<string>();let family=resolved.fontFamily;
- while(Object.prototype.hasOwnProperty.call(doc.properties,'fontFallback:'+family)){
-  if(visited.has(family))throw new Error('Цикл подстановки шрифтов');visited.add(family);
-  family=doc.properties['fontFallback:'+family];validateStyle({fontFamily:family},true);
- }
- return {...resolved,fontFamily:family};
+ return {...resolved,fontFamily:resolveFontFamily(doc,resolved.fontFamily)};
 }
 export function activeDrawingSheet(doc: DrawingDocument): DrawingSheetModel {
  const sheet=doc.sheets.find(s=>s.id===doc.activeSheetId);
