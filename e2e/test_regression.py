@@ -65,7 +65,7 @@ def test_environment_switch_updates_persistent_state(page, shortcut, environment
     assert panel.get_attribute("aria-label") == f"Параметры среды {environment}"
     page.wait_for_function(
         "(expected) => JSON.parse(localStorage.getItem('bendcore-ui-v25') || '{}').tab === expected",
-        environment,
+        arg=environment,
     )
     page.reload(wait_until="domcontentloaded")
     assert page.locator(".environment-panel").get_attribute("aria-label") == f"Параметры среды {environment}"
