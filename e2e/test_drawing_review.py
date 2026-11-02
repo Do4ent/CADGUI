@@ -15,7 +15,7 @@ def import_drawing(page, drawing):
 
 
 def line_drawing(page, tmp_path):
-    page.get_by_role('button', name='Опорная линия', exact=True).click()
+    page.locator('.drawing-toolbar').get_by_role('button', name='Опорная линия', exact=True).click()
     drawing = save_document(page, tmp_path)['drawing']
     return drawing, drawing['sheets'][0]['entities'][0]
 
@@ -47,7 +47,7 @@ def test_balloon_leader_add_remove_preserves_symbol_number(page, tmp_path):
     assert not removed['leaders']
 
 
-def test_imported_negative_local_line_can_be_selected_at_its_visible_geometry(page, tmp_path):
+def test_imported_negative_local_line_can_be_box_selected_at_its_visible_geometry(page, tmp_path):
     workspace(page)
     drawing, line = line_drawing(page, tmp_path)
     line.update(x=120, y=100)
@@ -55,8 +55,11 @@ def test_imported_negative_local_line_can_be_selected_at_its_visible_geometry(pa
     import_drawing(page, drawing)
     target = sheet(page).locator(f'[data-drawing-id="{line["id"]}"]')
     expect(target).to_have_attribute('aria-pressed', 'false')
-    point = sheet(page).evaluate('(svg) => { const p = new DOMPoint(70, 75).matrixTransform(svg.getScreenCTM()); return {x:p.x,y:p.y}; }')
-    page.mouse.click(point['x'], point['y'])
+    points = sheet(page).evaluate('(svg) => [[30,50],[80,80]].map(([x,y]) => { const p = new DOMPoint(x,y).matrixTransform(svg.getScreenCTM()); return {x:p.x,y:p.y}; })')
+    page.mouse.move(points[0]['x'], points[0]['y'])
+    page.mouse.down()
+    page.mouse.move(points[1]['x'], points[1]['y'], steps=8)
+    page.mouse.up()
     expect(target).to_have_attribute('aria-pressed', 'true')
     page.get_by_role('button', name='Размер линии', exact=True).click()
     expect(entities(page)).to_have_count(2)
@@ -85,7 +88,7 @@ def test_invalid_imported_line_dimension_reports_inline_error_and_ui_recovers(pa
     expect(error).to_contain_text('ненулевой длины' if points else 'две точки')
     expect(entities(page)).to_have_count(1)
     assert not errors
-    page.get_by_role('button', name='Опорная линия', exact=True).click()
+    page.locator('.drawing-toolbar').get_by_role('button', name='Опорная линия', exact=True).click()
     page.get_by_role('button', name='Размер линии', exact=True).click()
     expect(entities(page)).to_have_count(3)
     expect(entities(page).last.locator('[data-annotation-type="dimension"]')).to_contain_text('100')
