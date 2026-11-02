@@ -2,6 +2,8 @@
 
 Status: started 2026-11-02. Scope: UI prototype, not a CAD geometry kernel.
 
+See [delivery status](DELIVERY_STATUS.md) for evidence. No implementation changes have merged into main.
+
 ## Approved UI design contract
 - Sharp square corners throughout: border-radius: 0 for dialogs, controls, dropdowns and buttons.
 - Compact, flat industrial appearance, 1px separators, consistent spacing; light and dark themes.
@@ -12,24 +14,29 @@ Status: started 2026-11-02. Scope: UI prototype, not a CAD geometry kernel.
 
 ## Work packages and acceptance criteria
 
-### P0-01 — CI baseline and regression stabilization [IN PROGRESS]
+### P0-01 — CI baseline and regression stabilization [VERIFIED COMPLETE]
+- Verified baseline `920fe95`: [successful CI 41439426314](https://github.com/Do4ent/CADGUI/actions/runs/41439426314).
 - Repair failing browser tests and rerun CI.
 - Exit: npm test, TypeScript/Vite build and browser tests pass on the same commit.
 
-### P0-02 — Shared dialog and technical icon system [NEXT]
+### P0-02 — Shared dialog and technical icon system [IMPLEMENTED; ACCEPTANCE PARTIAL]
+- PR #6 implements reusable dialogs/fields/icons and primitive command integration; theme visual snapshots remain outstanding.
 - Add reusable typed dialog, parameter field, icon mapping and form validation components.
 - Apply square corners and consistent design tokens without disrupting existing docking/ribbon.
 - Exit: accessible keyboard behavior, unit tests and visual snapshots in both themes.
 
-### P0-03 — Document lifecycle
+### P0-03 — Document lifecycle [IMPLEMENTED; UNDER REVIEW]
+- PR #8 implements tabs, schema validation/migration, dirty guards and recovery. Six module/static suites, production build and 32 browser tests passed locally; current-head CI and review are required before integration.
 - New/open/save/export document, multiple document tabs, dirty-state warnings, explicit JSON schema versioning and migration.
 - Exit: reopening preserves content; cancel protects unsaved changes; invalid files report errors.
 
-### P0-04 — Selection and visibility
+### P0-04 — Selection and visibility [IMPLEMENTED; ACCEPTANCE PARTIAL]
+- PR #7 integrates multiselection and undoable set actions; viewport drag-box hit testing and browser coverage remain outstanding.
 - Ctrl/Shift multi-select, 3D/tree synchronization, box selection, isolate/show/hide on sets.
 - Exit: deterministic selection and undoable visibility operations, including E2E tests.
 
-### P0-05 — Parameterized command workflows
+### P0-05 — Parameterized command workflows [IMPLEMENTED; ACCEPTANCE PARTIAL]
+- PR #6 adds validated create forms and confirmation/undo. Validated edit/transform forms remain outstanding. Pipe thickness is validated but not stored/rendered; exact CAD previews are unsupported.
 - Convert demo commands to validated forms (create/edit box, cylinder, pipe; delete, duplicate and transforms).
 - Preview and confirm/cancel semantics; don't claim exact CAD geometry beyond prototype capability.
 - Exit: no command silently mutates a model before confirmation; undo/redo works.

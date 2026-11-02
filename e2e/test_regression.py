@@ -17,7 +17,7 @@ ITEMS_KEY = "bendcore-items"
 @pytest.fixture(scope="module")
 def browser():
     with sync_playwright() as p:
-        instance = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
+        instance = p.chromium.launch(headless=True, **({'executable_path': os.environ['CHROMIUM_PATH']} if os.getenv('CHROMIUM_PATH') else {}), args=["--no-sandbox", "--disable-dev-shm-usage"])
         yield instance
         instance.close()
 
@@ -34,10 +34,20 @@ def page(browser):
         }"""
     )
     page = context.new_page()
+    unexpected_dialogs = []
+    def handle_native_dialog(dialog):
+        # Explicit test reloads must reach the application after dirty edits.
+        if dialog.type == 'beforeunload':
+            dialog.accept()
+        else:
+            unexpected_dialogs.append(f'{dialog.type}: {dialog.message}')
+            dialog.dismiss()
+    page.on('dialog', handle_native_dialog)
     page.goto(BASE, wait_until="domcontentloaded")
     page.locator(".environment-panel").wait_for()
     yield page
     context.close()
+    assert not unexpected_dialogs, 'Unexpected native dialogs: ' + '; '.join(unexpected_dialogs)
 
 
 def items(page):

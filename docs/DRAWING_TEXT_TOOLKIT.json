@@ -1,0 +1,1529 @@
+{
+  "catalogVersion": 1,
+  "reviewedOn": "2026-11-02",
+  "scope": "drawing-text-and-annotations",
+  "runtimeIntegration": false,
+  "coverage": {
+    "cadProducts": 22,
+    "bimReferences": 2,
+    "exhaustive": false
+  },
+  "notice": "Планируемый каталог, не регистрация работающих команд. documented_pattern означает подтверждённый функциональный образец, а не наличие всех его деталей во всех CAD. bendcore_requirement — проектное требование.",
+  "phases": {
+    "A": "Базовый редактор после появления настоящего 2D-листа",
+    "B": "Связанные аннотации, оформление и производственная подготовка",
+    "C": "Продвинутые движки текста, обмена и распознавания"
+  },
+  "sources": [
+    {
+      "id": "S01",
+      "product": "AutoCAD",
+      "scope": "CAD",
+      "title": "Text Editor Ribbon",
+      "url": "https://help.autodesk.com/cloudhelp/2026/ENU/AutoCAD-Core/files/GUID-5B8A1DB8-8AF0-44EC-BA48-A8E06118D3DC.htm",
+      "evidence": "help",
+      "note": "Форматирование фрагментов, индексы, дроби, поля, аннотативность; особенности зависят от шрифта."
+    },
+    {
+      "id": "S02",
+      "product": "BricsCAD",
+      "scope": "CAD",
+      "title": "Creating text",
+      "url": "https://help.bricsys.com/en-us/document/bricscad/annotate/texts/creating-text",
+      "evidence": "help",
+      "note": "TEXT/MTEXT, Fit/Align, колонки, маска, форматирование и проверка орфографии."
+    },
+    {
+      "id": "S03",
+      "product": "DraftSight",
+      "scope": "CAD",
+      "title": "Creating Notes",
+      "url": "https://help.solidworks.com/2026/english/DraftSight/html/hlpid_draw_mtext.htm?id=11.1.1",
+      "evidence": "indexed_help",
+      "note": "Форматированные заметки. Прямое открытие выдаёт оболочку справки; содержание подтверждено индексом официальной страницы."
+    },
+    {
+      "id": "S04",
+      "product": "ZWCAD",
+      "scope": "CAD",
+      "title": "Texts and Tables",
+      "url": "https://www.zwsoft.com/user-guide/create-text-and-table-in-zwcad",
+      "evidence": "vendor_guide",
+      "note": "TEXT/MTEXT, стили, колонки, выноски и таблицы с внешними данными."
+    },
+    {
+      "id": "S05",
+      "product": "nanoCAD",
+      "scope": "CAD",
+      "title": "Официальный базовый курс",
+      "url": "https://courses.nanocad.ru/basic",
+      "evidence": "vendor_course",
+      "note": "Программа подтверждает текст/МТекст, текстовые стили и выноски; не доказывает расширенные функции всех модулей nanoCAD."
+    },
+    {
+      "id": "S06",
+      "product": "MicroStation",
+      "scope": "CAD",
+      "title": "Text Favorite Using a Text Field",
+      "url": "https://bentleysystems.service-now.com/community?id=kb_article&sysparm_article=KB0110011",
+      "evidence": "vendor_kb",
+      "note": "Переиспользуемые текстовые заготовки с полями свойств, префиксом/суффиксом и стилем."
+    },
+    {
+      "id": "S07",
+      "product": "SOLIDWORKS",
+      "scope": "CAD",
+      "title": "Notes Overview",
+      "url": "https://help.solidworks.com/2025/English/SolidWorks/sldworks/c_notes.htm",
+      "evidence": "indexed_help",
+      "note": "Заметки, выноски, параметрическое содержимое и ссылки на свойства. Оболочка help ограничивает прямое чтение; использован индекс официальной страницы."
+    },
+    {
+      "id": "S08",
+      "product": "Inventor",
+      "scope": "CAD",
+      "title": "Text in Drawings",
+      "url": "https://help.autodesk.com/cloudhelp/2024/ENU/Inventor-Help/files/GUID-8F02404E-241F-4CE8-952D-76193DB107AB.htm",
+      "evidence": "help",
+      "note": "Текст чертежа, параметры/iProperties, единицы, индексы, дроби и согласованное оформление аннотаций."
+    },
+    {
+      "id": "S09",
+      "product": "Creo",
+      "scope": "CAD",
+      "title": "About Note Parameters",
+      "url": "https://support.ptc.com/help/creo/creo_pma/r13/usascii/detail/About_Note_Parameters.html",
+      "evidence": "help",
+      "note": "Параметры и размеры модели в заметках, символическое/числовое представление. Поведение переноса размера специфично для Creo."
+    },
+    {
+      "id": "S10",
+      "product": "NX",
+      "scope": "CAD",
+      "title": "Drafting and layout text updates",
+      "url": "https://blogs.sw.siemens.com/designcenter/maximize-your-nx-drafting-and-layout-performance-with-these-new-updates/",
+      "evidence": "vendor_article",
+      "note": "Редактор заметок, символы, выражения/атрибуты и позиционирование. Это статья производителя, не полная командная справка."
+    },
+    {
+      "id": "S11",
+      "product": "Solid Edge",
+      "scope": "CAD",
+      "title": "Drawing Automation",
+      "url": "https://blogs.sw.siemens.com/solidedge/Two-Nice-Bits-of-Drawing-Automation/",
+      "evidence": "vendor_article",
+      "note": "Callout и основная надпись из свойств/переменных и связанных документов; автоматизация позиций в шаблонах."
+    },
+    {
+      "id": "S12",
+      "product": "КОМПАС-3D",
+      "scope": "CAD",
+      "title": "Технические требования",
+      "url": "https://help.ascon.ru/KOMPAS/25/ru-RU/365_41_4_tekhnicheskie_trebovan.html",
+      "evidence": "help",
+      "note": "Отдельные ТТ документа, оформление/размещение, страницы и текстовые ссылки."
+    },
+    {
+      "id": "S13",
+      "product": "T-FLEX CAD",
+      "scope": "CAD",
+      "title": "Drawing Title Block",
+      "url": "https://www.tflex.com/help/eng/T-FLEX%20CAD/15/title_block.htm",
+      "evidence": "versioned_help",
+      "note": "Переменные в основной надписи, заметки, словарь типовых фраз и технические требования; источник относится к указанной версии."
+    },
+    {
+      "id": "S14",
+      "product": "Onshape",
+      "scope": "CAD",
+      "title": "Drawing Note",
+      "url": "https://cad.onshape.com/help/Content/Drawing/note.htm",
+      "evidence": "help",
+      "note": "Заметки, несколько выносок, поля свойств, флаги пунктов, размещение и Unicode. Вращение заметок с выносками имеет ограничения."
+    },
+    {
+      "id": "S15",
+      "product": "Fusion",
+      "scope": "CAD",
+      "title": "Text and notes — Drawing",
+      "url": "https://help.autodesk.com/cloudhelp/ENU/Fusion-Drawing/files/DWG-NOTES.htm",
+      "evidence": "help",
+      "note": "Текст листа, связанные выноски, обозначения отверстий/резьбы/сгибов и поля модели."
+    },
+    {
+      "id": "S16",
+      "product": "FreeCAD TechDraw",
+      "scope": "CAD",
+      "title": "RichTextAnnotation",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_RichTextAnnotation.md",
+      "evidence": "archived_official_docs",
+      "note": "Форматированный блок на листе или у выносной линии, рамка и ширина. Официальный репозиторий архивирован; это свидетельство функции, не гарантия актуального API."
+    },
+    {
+      "id": "S17",
+      "product": "QCAD",
+      "scope": "CAD",
+      "title": "Texts tutorial",
+      "url": "https://www.qcad.org/en/tutorials/texts/",
+      "evidence": "vendor_tutorial",
+      "note": "Одно-/многострочные сущности, TrueType/линейные шрифты, якоря, ширина и редактирование фрагментов."
+    },
+    {
+      "id": "S18",
+      "product": "LibreCAD",
+      "scope": "CAD",
+      "title": "Drawing Tools",
+      "url": "https://docs.librecad.org/en/latest/ref/tools.html",
+      "evidence": "project_manual",
+      "note": "Text/MText; подробности свойств также в руководстве. Latest-документация отмечена проектом как незавершённая."
+    },
+    {
+      "id": "S19",
+      "product": "Rhino",
+      "scope": "CAD",
+      "title": "Text",
+      "url": "https://docs.mcneel.com/rhino/8/help/en-us/commands/text.htm",
+      "evidence": "help",
+      "note": "Rich text, наследование/переопределение стилей, маска, рамка, масштаб и замена недостающих шрифтов."
+    },
+    {
+      "id": "S20",
+      "product": "Revit",
+      "scope": "BIM reference",
+      "title": "Text Notes",
+      "url": "https://help.autodesk.com/cloudhelp/2026/ENU/Revit-DocumentPresent/files/GUID-7CCCA6E3-B748-4181-A5E2-6FECAAC87C12.htm",
+      "evidence": "help",
+      "note": "Текстовые заметки вида/листа, прямые/дуговые выноски, списки, поиск/замена и орфография. Марки BIM не равны свободному тексту."
+    },
+    {
+      "id": "S21",
+      "product": "Archicad",
+      "scope": "BIM reference",
+      "title": "Labels",
+      "url": "https://help.graphisoft.com/AC/29/INT/_AC29_Help/070_Documentation/070_Documentation-70.htm",
+      "evidence": "help",
+      "note": "Независимые и ассоциативные подписи, Autotext; связь/видимость зависят от объекта BIM."
+    },
+    {
+      "id": "S22",
+      "product": "CATIA",
+      "scope": "CAD",
+      "title": "Interactive Drafting overview",
+      "url": "https://3dswym.3dexperience.3ds.com/wiki/catia-user-community/catia-interactive-drafting-1-id1_o8zKcIvWRcm7_cIj98_vDQ",
+      "evidence": "vendor_hosted_overview",
+      "note": "Описание продукта в официальном сообществе: ассоциативные аннотации и текст на 2D-видах. Это не полный аудит закрытой справки CATIA."
+    },
+    {
+      "id": "S23",
+      "product": "GstarCAD",
+      "scope": "CAD",
+      "title": "User Guide 2026 — Notes and Labels",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD_2026_User_Guide.pdf",
+      "evidence": "versioned_manual",
+      "note": "Одно-/многострочные объекты, оформление, геометрические свойства, редактирование на месте."
+    },
+    {
+      "id": "S24",
+      "product": "Vectorworks",
+      "scope": "CAD",
+      "title": "Inserting text",
+      "url": "https://app-help.vectorworks.net/2026/eng/VW2026_Guide/Text/Inserting_text.htm",
+      "evidence": "help",
+      "note": "Текстовые блоки, стили, табуляция и применение стилей к классам/аннотациям."
+    },
+    {
+      "id": "E01",
+      "title": "AutoCAD — поиск и замена",
+      "url": "https://help.autodesk.com/cloudhelp/2021/ENU/AutoCAD-Core/files/GUID-3104FBDE-7145-4AD9-9B05-CC2C002ED587.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E02",
+      "title": "AutoCAD — орфография",
+      "url": "https://help.autodesk.com/view/ACD/2026/ENU/?caas=caas%2Fdocumentation%2FACDLT%2F2014%2FENU%2Ffiles%2FGUID-C717CC2C-C0D5-411A-B607-CFDE4C1DC9FD-htm.html",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E03",
+      "title": "DraftSight — текст по дуге",
+      "url": "https://help.solidworks.com/2025/english/DraftSight/DraftSightSW/HLPID_XTRATOOLS_CURVEDTEXT.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E04",
+      "title": "ZWCAD — объединение Text в MText",
+      "url": "https://www.zwsoft.com/user-guide/how-to-convert-multiple-single-line-text-to-mtext-in-zwcad",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E05",
+      "title": "Rhino — поля текста",
+      "url": "https://docs.mcneel.com/rhino/8/help/en-us/information/text_fields.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E06",
+      "title": "MicroStation — Annotation Scale, Fields, Favorites",
+      "url": "https://bentleysystems.service-now.com/community?id=kb_article&sysparm_article=KB0043311",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E07",
+      "title": "Revit — Keynoting",
+      "url": "https://help.autodesk.com/cloudhelp/2026/ENU/Revit-HaveYouTried/files/GUID-4ADEA4F7-536C-4D1C-BEAE-47AFEBE9A038.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E08",
+      "title": "LibreCAD — свойства текстовых сущностей в руководстве",
+      "url": "https://librecad.readthedocs.io/_/downloads/en/latest/pdf/",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E09",
+      "title": "AutoCAD — распознавание SHX-геометрии PDF",
+      "url": "https://help.autodesk.com/cloudhelp/2022/ENU/AutoCAD-Core/files/GUID-A0F80ABD-0F1C-47FB-B7E3-E4C699DAEE83.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E10",
+      "title": "AutoCAD Raster Design — распознавание растрового текста",
+      "url": "https://help.autodesk.com/cloudhelp/2022/ENU/AutoCAD-RasterDesign/files/GUID-4936CADD-DA2D-4C39-AA88-D1B0C891D871.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E11",
+      "title": "AutoCAD — вертикальное направление текста",
+      "url": "https://help.autodesk.com/cloudhelp/2022/ENU/AutoCAD-MAC-Core/files/GUID-D44DCAF7-FDC1-4C12-BC9C-EADA04A9F55E.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E12",
+      "title": "AutoCAD — сохранение SHX как комментариев/скрытого текста PDF",
+      "url": "https://help.autodesk.com/cloudhelp/2025/ENU/AutoCAD-Core/files/GUID-56EA988C-A1DA-4E85-8765-B3F31A01AB02.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E13",
+      "title": "Fusion — создание связанных выносок",
+      "url": "https://help.autodesk.com/cloudhelp/ENU/Fusion-Drawing/files/DWG-CREATE-LEADER.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E14",
+      "title": "Onshape — категории аннотаций",
+      "url": "https://cad.onshape.com/help/Content/Drawing/drawing_properties_-_annotations.htm",
+      "evidence": "supplemental_official_source"
+    },
+    {
+      "id": "E15",
+      "title": "GstarCAD — Express Tools 2021, текстовые утилиты",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD-2021-Express-Tools.pdf",
+      "evidence": "supplemental_official_source"
+    }
+  ],
+  "groups": [
+    {
+      "id": "G01",
+      "label": "Создание и редактор",
+      "features": [
+        {
+          "id": "TXT-001",
+          "label": "Однострочный текст",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S17",
+            "S18"
+          ],
+          "description": "Короткая подпись с одной точкой вставки.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-002",
+          "label": "Многострочный текст",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S03",
+            "S17"
+          ],
+          "description": "Один редактируемый блок с несколькими абзацами.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-003",
+          "label": "Редактор на листе",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S10",
+            "S14"
+          ],
+          "description": "Двойной щелчок открывает содержимое без потери привязки к листу.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-004",
+          "label": "Текстовый контейнер",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S16"
+          ],
+          "description": "Фиксируемая ширина, переносы и явный режим свободной ширины.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-005",
+          "label": "Заметка с выноской",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S07",
+            "S15"
+          ],
+          "description": "Текст и линия выноски сохраняются как связанная аннотация.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-006",
+          "label": "Флаг или рамка примечания",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S14",
+            "S19"
+          ],
+          "description": "Пункт/заметка оформляется выбранной рамкой без превращения смысла в набор линий.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-007",
+          "label": "Текст таблицы",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04"
+          ],
+          "description": "Редактируемые ячейки с собственными отступами и выравниванием; отдельная табличная сущность.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-008",
+          "label": "Текст основной надписи",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S13",
+            "S14"
+          ],
+          "description": "Редактирование полей шаблона штампа без разрыва его структуры.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G02",
+      "label": "Символы текста и шрифты",
+      "features": [
+        {
+          "id": "TXT-009",
+          "label": "Выбор шрифта",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S17"
+          ],
+          "description": "Семейство/начертание; штриховые шрифты только при наличии соответствующего движка.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-010",
+          "label": "Высота текста",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S08",
+            "S17"
+          ],
+          "description": "Размер задаётся физическими единицами чертежа/бумаги с явной системой отсчёта.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-011",
+          "label": "Жирный и курсив",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S15"
+          ],
+          "description": "Форматирование выделенного фрагмента в пределах поддерживаемого шрифта.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-012",
+          "label": "Подчёркивание, надчёркивание, зачёркивание",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S02"
+          ],
+          "description": "Независимые оформления фрагментов; не заменять ими семантику допусков.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-013",
+          "label": "Цвет и начертание фрагмента",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S17",
+            "S19"
+          ],
+          "description": "Разные фрагменты одного блока могут иметь собственное оформление.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-014",
+          "label": "Коэффициент ширины",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S17"
+          ],
+          "description": "Сжатие/растяжение символов отдельно от высоты, с предупреждением о нарушении принятого стиля.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-015",
+          "label": "Наклон символов",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S18"
+          ],
+          "description": "Угол наклона символов отдельно от поворота текстового объекта.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-016",
+          "label": "Межсимвольные интервалы",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01"
+          ],
+          "description": "Настройка интервалов там, где это поддерживает выбранный рендерер.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-017",
+          "label": "Вертикальное направление письма",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "E11"
+          ],
+          "description": "Отдельно от поворота блока на 90°; зависит от возможностей шрифта и shaping.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G03",
+      "label": "Абзацы и компоновка",
+      "features": [
+        {
+          "id": "TXT-018",
+          "label": "Якорь текста",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S17",
+            "S19"
+          ],
+          "description": "Горизонтальный/вертикальный якорь блока и положение базовой линии различаются явно.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-019",
+          "label": "Выравнивание абзаца",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S03"
+          ],
+          "description": "По левому/правому краю, центру; по ширине — только при поддержке layout.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-020",
+          "label": "Межстрочный интервал",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04",
+            "E08"
+          ],
+          "description": "Множитель, минимальный или точный интервал с единицами.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-021",
+          "label": "Интервалы абзацев",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01"
+          ],
+          "description": "Отступы перед/после абзаца не заменяются пустыми строками.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-022",
+          "label": "Табуляция и отступы",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S24"
+          ],
+          "description": "Позиции табуляции, первая строка и висячий отступ.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-023",
+          "label": "Списки",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S15",
+            "S20"
+          ],
+          "description": "Маркированные, числовые и буквенные списки; продолжить/начать нумерацию заново.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-024",
+          "label": "Колонки",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S04"
+          ],
+          "description": "Заданное число колонок или динамическая компоновка с контролем переполнения.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-025",
+          "label": "Управляемые разрывы",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01"
+          ],
+          "description": "Разрыв строки/абзаца, неразрывный пробел; ручной разрыв колонки при её поддержке.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G04",
+      "label": "Размещение и преобразования",
+      "features": [
+        {
+          "id": "TXT-026",
+          "label": "Точная точка вставки",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S16"
+          ],
+          "description": "Координаты XY относительно листа/вида, привязки и шаг перемещения.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-027",
+          "label": "Поворот блока",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S17",
+            "S19"
+          ],
+          "description": "Угол относительно листа; ограничения выносок показываются явно.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-028",
+          "label": "По базовой линии или ребру",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S14"
+          ],
+          "description": "Ориентация и размещение относительно опорной геометрии при доступных устойчивых ссылках.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-029",
+          "label": "Вписать между двумя точками",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02"
+          ],
+          "description": "Выбор режима изменения ширины и/или высоты; исходные параметры доступны до подтверждения.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-030",
+          "label": "Выровнять несколько блоков",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S08"
+          ],
+          "description": "Общий левый/правый край, центр или базовая линия.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-031",
+          "label": "Равномерно распределить",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Задать промежутки между выбранными блоками одной транзакцией.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-032",
+          "label": "Текст по дуге",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "E03"
+          ],
+          "description": "Радиус, сторона дуги и направление; расширение на произвольную кривую требует отдельного layout.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-033",
+          "label": "Зеркалирование и читаемость",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Явно выбирать зеркальные глифы или сохранение читаемого текста при отражении геометрии.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G05",
+      "label": "Стили и оформление чертежа",
+      "features": [
+        {
+          "id": "TXT-034",
+          "label": "Менеджер стилей",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04",
+            "S19"
+          ],
+          "description": "Создать, изменить, дублировать и переименовать именованный стиль.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-035",
+          "label": "Наследование и переопределения",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S19"
+          ],
+          "description": "Показывать, что взято из стиля, а что изменено у объекта/фрагмента.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-036",
+          "label": "Копировать форматирование",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S02"
+          ],
+          "description": "Перенести оформление без замены содержания и живых полей.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-037",
+          "label": "Сбросить к стилю",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S19"
+          ],
+          "description": "Удалить локальные переопределения с предварительным просмотром результата.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-038",
+          "label": "Профили ГОСТ/ISO/предприятия",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [
+            "S08"
+          ],
+          "description": "Наборы настраиваемых стилей; профиль сам по себе не означает нормативную сертификацию.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-039",
+          "label": "Бумажный и аннотативный масштаб",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "E06"
+          ],
+          "description": "Согласовать читаемую высоту на печати с масштабом вида; не менять содержание текста.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-040",
+          "label": "Слой и печатные свойства",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Отдельно хранить экранный цвет, слой, видимость и политику печати.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-041",
+          "label": "Политика подстановки шрифтов",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S19"
+          ],
+          "description": "Показать отсутствующий шрифт и выбранную замену, сохранив исходную ссылку.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-042",
+          "label": "Фоновая маска и рамка",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S02",
+            "S19"
+          ],
+          "description": "Цвет фона, поля маски, рамка и порядок отрисовки без удаления нижележащей геометрии.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G06",
+      "label": "Инженерный набор",
+      "features": [
+        {
+          "id": "TXT-043",
+          "label": "Палитра символов",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S14"
+          ],
+          "description": "Диаметр, градусы, ±, микрон и другие Unicode-символы с проверкой покрытия шрифта.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-044",
+          "label": "Верхний и нижний индекс",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S08"
+          ],
+          "description": "Индексы остаются структурой текста, а не смещёнными отдельными объектами.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-045",
+          "label": "Дроби",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S19"
+          ],
+          "description": "Горизонтальные/наклонные дроби с редактируемыми числителем и знаменателем.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-046",
+          "label": "Верхнее/нижнее отклонение",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S08"
+          ],
+          "description": "Структурированная запись отклонений; простой текстовый блок не объявляется размером модели.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-047",
+          "label": "Префикс/суффикс размера",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S09",
+            "S15"
+          ],
+          "description": "Дополнить вычисленное значение, не уничтожая измерение и его связь с геометрией.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-048",
+          "label": "Геометрические допуски и базы",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S10",
+            "E14"
+          ],
+          "description": "Отдельные семантические обозначения с рамками и ссылками; не свободная строка символов.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-049",
+          "label": "Сварка и шероховатость",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "E14"
+          ],
+          "description": "Специализированные аннотации с проверяемыми полями и библиотекой условных обозначений.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-050",
+          "label": "Отверстия, резьба и сгибы",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S15"
+          ],
+          "description": "Автоматические заметки только по реальным данным соответствующих элементов модели.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G07",
+      "label": "Выноски, позиции и связи",
+      "features": [
+        {
+          "id": "TXT-051",
+          "label": "Ветви выноски",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S14",
+            "S20"
+          ],
+          "description": "Добавить/удалить несколько стрелок у одной заметки.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-052",
+          "label": "Форма выносной линии",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04",
+            "S20"
+          ],
+          "description": "Прямая, ломаная, дуга; сплайн — если реализован геометрический компонент.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-053",
+          "label": "Стрелка и полка",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04"
+          ],
+          "description": "Тип/размер наконечника, длина полки и точка присоединения к тексту.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-054",
+          "label": "Связь с геометрией",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S15",
+            "E13",
+            "S22"
+          ],
+          "description": "Выноска следует за доступным устойчивым объектом/видом; потеря связи обозначается явно.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-055",
+          "label": "Перепривязать аннотацию",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [
+            "E13"
+          ],
+          "description": "Выбрать новую опору для потерянной связи и подтвердить замену.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-056",
+          "label": "Позиционные обозначения",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S11",
+            "E14"
+          ],
+          "description": "Позиция из спецификации отличается от вручную введённого числа.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-057",
+          "label": "Ключевые и флажковые примечания",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S14",
+            "E07"
+          ],
+          "description": "Маркер ссылается на пункт/легенду, а текст пункта редактируется централизованно.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-058",
+          "label": "Упорядочить выноски",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04"
+          ],
+          "description": "Выравнивание и интервалы группы выносок без разрыва их привязок.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G08",
+      "label": "Поля, штамп и данные",
+      "features": [
+        {
+          "id": "TXT-059",
+          "label": "Поля документа и листа",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S14"
+          ],
+          "description": "Обозначение, название, номер листа, автор и другие явно доступные свойства.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-060",
+          "label": "Свойства модели",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S08",
+            "S11"
+          ],
+          "description": "Подставлять только существующие данные; отсутствие массы/материала не заменять выдуманным значением.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-061",
+          "label": "Параметры и выражения",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "S09",
+            "S10"
+          ],
+          "description": "Типизированные ссылки/выражения с ограниченным вычислителем, без исполнения произвольного кода.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-062",
+          "label": "Формат значения",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S08",
+            "E05"
+          ],
+          "description": "Единицы, точность и префиксы отделены от исходного значения поля.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-063",
+          "label": "Шаблон основной надписи",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S13"
+          ],
+          "description": "Зоны штампа и привязки полей переиспользуются на листах.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-064",
+          "label": "Ссылки на зоны и листы",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S07"
+          ],
+          "description": "Ссылка хранит идентификатор цели; смена номера листа не превращает её в устаревшую строку.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-065",
+          "label": "Табличные внешние данные",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04"
+          ],
+          "description": "Связь с CSV/таблицами; Excel — только при наличии реально работающего адаптера.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-066",
+          "label": "Обновить/зафиксировать поле",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [
+            "E05"
+          ],
+          "description": "Явные действия: обновить, сделать статическим, восстановить связь; показывать потерянный источник.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G09",
+      "label": "Технические требования и переиспользование",
+      "features": [
+        {
+          "id": "TXT-067",
+          "label": "Редактор технических требований",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S12",
+            "S13"
+          ],
+          "description": "ТТ — отдельный нумерованный документ/блок, а не набор несвязанных надписей.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-068",
+          "label": "Размещение ТТ по страницам",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S12"
+          ],
+          "description": "Разбиение и размещение длинных требований без потери последовательности пунктов.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-069",
+          "label": "Словарь типовых фраз",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S13"
+          ],
+          "description": "Вставка утверждённых формулировок с редактируемыми параметрами.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-070",
+          "label": "Избранное с полями",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S06"
+          ],
+          "description": "Шаблон текста вместе с ссылками на свойства и правилами оформления.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-071",
+          "label": "Шаблоны аннотаций",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [
+            "S06"
+          ],
+          "description": "Переиспользовать содержание/стиль/выноску; новые объекты получают новые идентификаторы.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-072",
+          "label": "Перенести на другой лист",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Явно сохранить, перепривязать или зафиксировать ссылки, если источник недоступен.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-073",
+          "label": "Каталог шаблонов",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S06"
+          ],
+          "description": "Категории и имена типовых фраз/избранного; поиск — требование интерфейса BendCore.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-074",
+          "label": "Ссылки на пункты ТТ",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S12"
+          ],
+          "description": "Связанные отсылки к пунктам не заменяются копированием текущего номера.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G10",
+      "label": "Поиск и групповые операции",
+      "features": [
+        {
+          "id": "TXT-075",
+          "label": "Найти и заменить",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "E01",
+            "S20"
+          ],
+          "description": "Выделение/лист/документ, регистр и целое слово; шаблоны поиска — отдельный режим.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-076",
+          "label": "Групповое изменение свойств",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "E15"
+          ],
+          "description": "Образец: массовая смена стиля; высота/положение и одна undo-транзакция — требования BendCore к расширению операции.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-077",
+          "label": "Смена регистра",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S01",
+            "S19"
+          ],
+          "description": "Верхний/нижний регистр и капитализация без разрушения полей.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-078",
+          "label": "Проверка орфографии",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S20",
+            "E02"
+          ],
+          "description": "Язык и пользовательский инженерный словарь; не проверять коды/артикулы как обычные слова без настройки.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-079",
+          "label": "Перенумеровать выбранные позиции",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Предварительный список соответствий; связанные позиции обновляются согласованно.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-080",
+          "label": "Выбор по тексту/свойствам",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Найти объекты по содержимому, стилю или шрифту и передать набор общему selection API.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-081",
+          "label": "Согласование стилей",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Показать конфликтующие стили и overrides, предложить явное объединение вместо тихой замены.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-082",
+          "label": "Проверка связей",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Список сломанных ссылок полей, выносок и штампа с переходом к объекту.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G11",
+      "label": "Импорт, экспорт и преобразования",
+      "features": [
+        {
+          "id": "TXT-083",
+          "label": "Импорт обычного текста",
+          "phase": "A",
+          "basis": "documented_pattern",
+          "sources": [
+            "S10",
+            "E15"
+          ],
+          "description": "UTF-8 с явным выбором кодировки при необходимости; переносы сохраняются.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-084",
+          "label": "Вставка без/с оформлением",
+          "phase": "A",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Различать обычный текст и безопасный ограниченный rich text; форматирование можно сбросить.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-085",
+          "label": "Объединить строки в блок",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "E04"
+          ],
+          "description": "Предварительно показать порядок чтения и возможные изменения интервалов.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-086",
+          "label": "Разбить блок на строки",
+          "phase": "B",
+          "basis": "documented_pattern",
+          "sources": [
+            "S04"
+          ],
+          "description": "Показать потери форматирования и живых полей до подтверждения.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-087",
+          "label": "SVG с редактируемым текстом",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Отдельный export backend; явно указывать, сохраняется ли текст или создаются контуры.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-088",
+          "label": "PDF с поиском текста",
+          "phase": "C",
+          "basis": "bendcore_requirement",
+          "sources": [
+            "E12"
+          ],
+          "description": "Проверять реальную извлекаемость текста, шрифты и условия встраивания; контуры сами по себе поиска не дают.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-089",
+          "label": "DWG/DXF текст и стили",
+          "phase": "C",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Требуется выбранный SDK/адаптер и матрица TEXT/MTEXT/ATTRIB; неподдержанные свойства не теряются молча.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-090",
+          "label": "Текст в контуры при экспорте",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "S14"
+          ],
+          "description": "Onshape документирует Explode заметки в полилинии при экспорте. В BendCore нужны предпросмотр и предупреждение о потере текстовой семантики.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-091",
+          "label": "Восстановить SHX из PDF",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "E09"
+          ],
+          "description": "Сопоставление импортированной векторной геометрии со шрифтом; это не OCR растров.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-092",
+          "label": "OCR скана",
+          "phase": "C",
+          "basis": "documented_pattern",
+          "sources": [
+            "E10"
+          ],
+          "description": "Отдельный OCR backend с выбором области/языка и ручной проверкой распознанного результата.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-093",
+          "label": "Проверить результат распознавания",
+          "phase": "C",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Наложить исходник и найденный текст, показать сомнительные символы до замены; исходник сохраняется.",
+          "implementationStatus": "planned"
+        }
+      ]
+    },
+    {
+      "id": "G12",
+      "label": "Контроль качества и удобство",
+      "features": [
+        {
+          "id": "TXT-094",
+          "label": "Переполнение и отсутствующие глифы",
+          "phase": "A",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Показывать необработанные символы и выход за контейнер до сохранения/экспорта.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-095",
+          "label": "Наложения и читаемость",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Обнаруживать пересечения текста с аннотациями и слишком малую печатную высоту; исправления подтверждаются.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-096",
+          "label": "Отчёт о шрифтах",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [
+            "S19"
+          ],
+          "description": "Показать используемые/подменённые шрифты, покрытие символов и влияние на переносы.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-097",
+          "label": "Unicode, кириллица и IME",
+          "phase": "A",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Сохранность символов и композиционного ввода при редактировании и повторном открытии.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-098",
+          "label": "Печатный предпросмотр",
+          "phase": "A",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Одинаковый текст/единицы на листе и при поддерживаемом экспорте; масштаб интерфейса не меняет высоту на бумаге.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-099",
+          "label": "Отмена и подтверждение",
+          "phase": "A",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Черновик не меняет документ. ОК/Apply фиксируют одну undo-транзакцию, Escape отменяет текущий черновик.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-100",
+          "label": "Сравнение текстовых изменений",
+          "phase": "B",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Показать изменения содержания и ссылок между сохранёнными ревизиями; требуется подсистема истории.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-101",
+          "label": "Клавиатура и доступность",
+          "phase": "A",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "В модальном редакторе Tab/Shift+Tab удерживают фокус; немодальная панель позволяет перейти к листу. После закрытия фокус возвращается инициатору, команды модели заблокированы при вводе.",
+          "implementationStatus": "planned"
+        },
+        {
+          "id": "TXT-102",
+          "label": "RTL и сложные письменности",
+          "phase": "C",
+          "basis": "bendcore_requirement",
+          "sources": [],
+          "description": "Отдельный shaping/bidi backend и тесты порядка чтения, лигатур и сложных глифов; не объявлять готовыми через обычный CSS direction.",
+          "implementationStatus": "planned"
+        }
+      ]
+    }
+  ]
+}

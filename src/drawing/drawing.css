@@ -1,0 +1,30 @@
+.drawing-text-editor { width: min(840px, 80vw); max-height: 64vh; overflow: auto; padding: 2px; color: inherit; }
+.drawing-text-editor fieldset { min-width: 0; border: 1px solid var(--edge, #8796a6); padding: 10px; margin: 0 0 12px; }
+.drawing-text-editor legend { display: flex; align-items: center; gap: 6px; padding: 0 5px; font-weight: 600; }
+.drawing-editor-hint, .drawing-format-scope { font-size: 12px; margin: 0 0 10px; line-height: 1.5; }
+.drawing-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; align-items: start; }
+.drawing-editor-field { display: grid; grid-template-columns: minmax(105px, 1fr) minmax(85px, 1fr); align-items: center; gap: 5px 8px; font-size: 12px; }
+.drawing-editor-field label { display: flex; align-items: center; gap: 5px; }
+.drawing-editor-field svg { flex-shrink: 0; }
+.drawing-editor-field small, .drawing-editor-field > .drawing-editor-error { grid-column: 1 / -1; font-size: 11px; }
+.drawing-text-editor input:not([type="checkbox"]), .drawing-text-editor select, .drawing-text-editor textarea { width: 100%; min-width: 0; border: 1px solid var(--edge, #8796a6); background: var(--panel2, #fff); color: inherit; border-radius: 0; font: inherit; padding: 5px; }
+.drawing-text-editor input[type="color"] { padding: 1px; min-height: 28px; }
+.drawing-text-editor input[type="checkbox"] { justify-self: start; }
+.drawing-text-editor textarea { resize: vertical; min-height: 64px; font-size: 14px; line-height: 1.4; }
+.drawing-text-editor button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 0; }
+.drawing-text-editor :focus-visible { outline: 2px solid #2378e8; outline-offset: 2px; }
+.drawing-paragraph-editor { margin: 8px 0; padding-bottom: 8px; border-bottom: 1px solid var(--edge, #8796a6); }
+.drawing-paragraph-editor .drawing-editor-field { grid-template-columns: 110px minmax(0, 1fr); margin-bottom: 6px; }
+.drawing-number { display: flex; align-items: center; gap: 4px; }
+.drawing-number span { white-space: nowrap; }
+.drawing-editor-error { color: #d52e39; font-size: 12px; margin: 4px 0; }
+.drawing-text-editor [aria-invalid="true"] { border-color: #d52e39; }
+.drawing-symbol-palette { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0; }
+.drawing-symbol-palette button { min-width: 44px; }
+.drawing-editor-preview { background: var(--panel2, #fff); color: var(--text, #202935); border: 1px solid var(--edge, #8796a6); padding: 12px; min-height: 70px; max-height: 220px; overflow: auto; }
+.drawing-editor-preview p { overflow-wrap: anywhere; min-height: 1em; }
+.drawing-stack { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; font-size: .8em; line-height: 1.1; }
+.drawing-stack.fraction > span:first-child { border-bottom: 1px solid currentColor; }
+.drawing-stack.diagonal { transform: skew(-10deg); }
+.drawing-stack.diagonal > span:first-child { border-bottom: 1px solid currentColor; }
+@media (max-width: 740px) { .drawing-editor-grid { grid-template-columns: 1fr; } .drawing-text-editor { width: 78vw; } }

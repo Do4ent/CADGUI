@@ -19,10 +19,19 @@ def browser():
 def page(browser):
     context = browser.new_context(viewport={'width': 1440, 'height': 900})
     page = context.new_page()
+    unexpected_dialogs = []
+    def handle_native_dialog(dialog):
+        if dialog.type == 'beforeunload':
+            dialog.accept()
+        else:
+            unexpected_dialogs.append(f'{dialog.type}: {dialog.message}')
+            dialog.dismiss()
+    page.on('dialog', handle_native_dialog)
     page.goto(BASE, wait_until='domcontentloaded', timeout=15000)
     page.locator('.environment-panel').wait_for(timeout=15000)
     yield page
     context.close()
+    assert not unexpected_dialogs, 'Unexpected native dialogs: ' + '; '.join(unexpected_dialogs)
 
 def test_switch_environments_and_contextual_properties(page):
     for key, env in [('1','Модель'),('2','Сборка'),('3','Эскиз'),('4','Чертёж')]:
