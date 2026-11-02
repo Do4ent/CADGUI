@@ -9,7 +9,7 @@ export function PrimitiveDialog({kind,onConfirm,onCancel}:{kind:CommandKind;onCo
  const [draft]=useState(()=>createCommandDraft(kind));
  const [values,setValues]=useState<Record<string,string>>(()=>Object.fromEntries(draft.parameters.map(p=>[p.name,String(p.value)])));
  const parsed:CommandDraft={kind,parameters:draft.parameters.map(p=>({...p,value:values[p.name].trim()===''?NaN:Number(values[p.name])}))};
- const fieldErrors=Object.fromEntries(draft.parameters.map(p=>[p.name,validateNumber(values[p.name],{min:0,exclusiveMin:true})]));
+ const fieldErrors=Object.fromEntries(draft.parameters.map(p=>[p.name,validateNumber(values[p.name],{min:0,exclusiveMin:true,max:p.name.toLowerCase().includes('radius')?Number.MAX_VALUE/2:undefined})]));
  const errors=validateCommandDraft(parsed);const invalid=errors.length>0||Object.values(fieldErrors).some(Boolean);
  return <Dialog open title={titles[kind]} onCancel={onCancel} onConfirm={()=>{if(!invalid)onConfirm(parsed)}} confirmDisabled={invalid}>
   <p>Параметры демонстрационного примитива. Точное CAD-ядро и предпросмотр не поддерживаются.</p>
