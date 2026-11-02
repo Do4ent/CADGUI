@@ -50,7 +50,7 @@ export function resolveField(field: FieldRef, doc: DrawingDocument, context: Dra
    case 'sheet': raw=field.key==='number'&&sheet?doc.sheets.indexOf(sheet)+1:field.key==='count'?doc.sheets.length:sheet&&['name','id','width','height','scale'].includes(field.key)?sheet[field.key as keyof DrawingSheetModel]:undefined;break;
    case 'model': {const item=context.modelItems.find(i=>i.id===field.targetId);if(item){if(['name','id','kind','group','color','visible'].includes(field.key))raw=item[field.key as keyof typeof item];else if(/^(pos|size)\.[xyz]$/.test(field.key)){const [key,axis]=field.key.split('.');raw=item[key as 'pos'|'size'][['x','y','z'].indexOf(axis)]}}break;}
    case 'entity': {const entity=doc.sheets.flatMap(s=>s.entities).find(e=>e.id===field.targetId);if(entity&&['name','x','y','width','height','rotation'].includes(field.key))raw=entity[field.key as keyof DrawingEntity];break;}
-   case 'technical': {const target=doc.sheets.flatMap(s=>s.entities).find(e=>e.id===field.targetId&&e.technical);if(target){const index=Number(field.key);if(Number.isInteger(index)&&index>=1&&index<=target.paragraphs.length)raw=index;}break;}
+   case 'technical': {const target=doc.sheets.flatMap(s=>s.entities).find(e=>e.id===field.targetId&&e.technical);if(target){const index=Number(field.key);if(Number.isInteger(index)&&index>=1&&index<=target.paragraphs.length)raw=target.paragraphs[index-1].listStart??index;}break;}
    case 'formula':raw=evaluateDrawingFormula(field.key);break;
   }
  }catch{broken=true;}
