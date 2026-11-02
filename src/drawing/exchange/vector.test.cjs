@@ -1,0 +1,21 @@
+const fs=require('node:fs'),ts=require('typescript'),assert=require('node:assert/strict');
+require.extensions['.ts']=(module,file)=>module._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);
+const {createDrawingDocument,createTextEntity}=require('../model.ts');
+const {encodeDxfText,decodeDxfText,exportDrawingDxf,parseDrawingDxf}=require('./vector.ts');
+const context={documentName:'Чертёж',documentId:'doc',modelItems:[]};
+for(const value of ['Кириллица Ø ± 漢字 😀','{font} \\P \\U+0041','a\nb\r\nc','000\n0\nENDSEC\n0\nEOF'])for(const multiline of [false,true])assert.equal(decodeDxfText(encodeDxfText(value,multiline),multiline),value);
+let doc=createDrawingDocument();let entity=createTextEntity('text','Привет Ø 😀\nВторая строка');entity.x=24.5;entity.y=18;entity.rotation=30;doc.sheets[0].entities=[entity];
+let output=exportDrawingDxf(doc,context);assert.ok(output.text.includes('AC1015'));assert.ok(!output.text.includes('Привет'));assert.ok(output.warnings.length>0);
+let imported=parseDrawingDxf(output.text);let note=imported.document.sheets[0].entities[0];assert.equal(note.paragraphs.map(p=>p.runs[0].text).join('\n'),'Привет Ø 😀\nВторая строка');assert.equal(note.x,24.5);assert.equal(note.y,18);assert.ok(Math.abs(note.rotation-30)<1e-10);assert.equal(imported.document.sheets[0].width,297);assert.equal(imported.document.sheets[0].height,210);
+for(const length of [249,250,251,499,500,501,1000]){entity.paragraphs=[{runs:[{text:'X'.repeat(length)+'\nend'}]}];note=parseDrawingDxf(exportDrawingDxf(doc,context).text).document.sheets[0].entities[0];assert.equal(note.paragraphs.map(p=>p.runs[0].text).join('\n'),'X'.repeat(length)+'\nend');}
+entity.paragraphs=[{runs:[{text:'hello\n0\nENDSEC\n0\nEOF'}]}];imported=parseDrawingDxf(exportDrawingDxf(doc,context).text);assert.equal(imported.document.sheets[0].entities.length,1);
+const line=createTextEntity('geometry');Object.assign(line,{x:15,y:20,width:30,height:10,geometry:{type:'line',points:[[0,0],[-30,10]]},paragraphs:[]});doc.sheets[0].entities=[line];note=parseDrawingDxf(exportDrawingDxf(doc,context).text).document.sheets[0].entities[0];assert.equal(note.x,15);assert.equal(note.y,20);assert.deepEqual(note.geometry.points,[[0,0],[-30,10]]);
+const field=createTextEntity('text','');field.paragraphs=[{runs:[{text:'',field:{kind:'document',key:'name'}}]}];doc.sheets[0].entities=[field];let frozen=exportDrawingDxf(doc,context);assert.ok(frozen.warnings.some(w=>w.includes('static')));assert.equal(parseDrawingDxf(frozen.text).document.sheets[0].entities[0].paragraphs[0].runs[0].text,'Чертёж');
+const table=createTextEntity('table');table.rows=[[[{runs:[{text:'Ячейка'}]}]]];doc.sheets[0].entities=[table];let cells=parseDrawingDxf(exportDrawingDxf(doc,context).text).document.sheets[0].entities;assert.equal(cells.filter(e=>e.kind==='geometry').length,4);assert.equal(cells.filter(e=>e.kind==='text')[0].paragraphs[0].runs[0].text,'Ячейка');
+const base=createDrawingDocument();const original=JSON.stringify(base);parseDrawingDxf(output.text,base);assert.equal(JSON.stringify(base),original);
+for(const invalid of ['hello','AC1032DWG','AutoCAD Binary DXF\0','0\nSECTION\n2\nENTITIES\n0\nENDSEC\n0\nEOF\n99'])assert.throws(()=>parseDrawingDxf(invalid));
+assert.throws(()=>parseDrawingDxf(output.text.replace('70\r\n4\r\n','70\r\n1\r\n')),/millimetre/);
+assert.throws(()=>parseDrawingDxf(output.text.replace('10\r\n24.5','10\r\nNaN')),/numeric/);
+let unsupported=output.text.replace('0\r\nENDSEC\r\n0\r\nEOF','0\r\nCIRCLE\r\n10\r\n5\r\n0\r\nENDSEC\r\n0\r\nEOF');assert.ok(parseDrawingDxf(unsupported).warnings.some(w=>w.includes('CIRCLE')));
+entity.paragraphs=[{runs:[{text:'secret'}]}];entity.overrides={printable:false};doc.sheets[0].entities=[entity];assert.ok(!exportDrawingDxf(doc,context).text.includes('secret'));
+console.log('PASS DXF Unicode/escapes/chunks, mm coordinates, TEXT/MTEXT/LINE round trips, malformed/binary/unit rejection and loss reporting');
