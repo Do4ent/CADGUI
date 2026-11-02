@@ -29,6 +29,11 @@ export function validateCommandDraft(draft: CommandDraft): string[] {
     if (Number.isFinite(p.value) && p.value <= 0) errors.push(p.name + ': must be greater than zero');
   }
   for (const name of required) if (!names.has(name)) errors.push('Missing parameter: ' + name);
+  if (draft.kind === 'cylinder' || draft.kind === 'pipe') {
+    const radiusName = draft.kind === 'pipe' ? 'outerRadius' : 'radius';
+    const radius = draft.parameters.find(p => p.name === radiusName)?.value;
+    if (radius !== undefined && Number.isFinite(radius) && !Number.isFinite(radius * 2)) errors.push(radiusName + ': diameter must be finite');
+  }
   if (draft.kind === 'pipe') {
     const inner = draft.parameters.find(p => p.name === 'innerRadius')?.value;
     const outer = draft.parameters.find(p => p.name === 'outerRadius')?.value;
