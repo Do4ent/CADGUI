@@ -1,7 +1,7 @@
 """Document isolation, unsaved-change protection and JSON compatibility."""
 import json
 from playwright.sync_api import expect
-from test_regression import browser, page, items
+from test_regression import BASE, browser, page, items
 from test_workflows import open_box
 
 
@@ -73,3 +73,27 @@ def test_legacy_import_export_and_reopen_roundtrip(page, tmp_path):
     expect(tabs(page).get_by_role('tab')).to_have_count(3)
     expect(page.locator('[role="treeitem"]')).to_have_count(2)
     assert items(page) == legacy_items
+
+
+def test_dismissing_beforeunload_preserves_dirty_document(browser):
+    # Use an independent context so this test explicitly controls the native prompt.
+    context = browser.new_context(viewport={'width': 1440, 'height': 900})
+    try:
+        page = context.new_page()
+        page.goto(BASE, wait_until='domcontentloaded')
+        page.locator('.environment-panel').wait_for()
+        page.get_by_title('Новый документ', exact=True).click()
+        dialog = open_box(page)
+        dialog.get_by_role('button', name='ОК', exact=True).click()
+        expect(page.locator('[role="treeitem"]')).to_have_count(1)
+        before = items(page)
+        with page.expect_event('dialog') as prompt:
+            page.evaluate("setTimeout(() => { window.location.href = 'about:blank'; }, 0)")
+        assert prompt.value.type == 'beforeunload'
+        prompt.value.dismiss()
+        expect(tabs(page).get_by_role('tab')).to_have_count(2)
+        expect(page.locator('[role="treeitem"]')).to_have_count(1)
+        assert items(page) == before
+        assert page.url != 'about:blank'
+    finally:
+        context.close()
