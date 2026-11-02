@@ -1,0 +1,5 @@
+.document-tabs { display:flex; gap:1px; background:var(--bg, #172334); border-bottom:1px solid #61788b; overflow-x:auto; flex-shrink:0; }
+.document-tab { display:flex; flex-shrink:0; border-right:1px solid #61788b; }
+.document-tab button { border-radius:0; background:transparent; color:inherit; padding:5px 10px; border:0; cursor:pointer; }
+.document-tab button[aria-selected="true"] { border-bottom:2px solid #2378e8; font-weight:600; }
+.document-tab button:focus-visible { outline:2px solid #2378e8; outline-offset:-2px; }

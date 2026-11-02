@@ -1,0 +1,75 @@
+"""Document isolation, unsaved-change protection and JSON compatibility."""
+import json
+from playwright.sync_api import expect
+from test_regression import browser, page, items
+from test_workflows import open_box
+
+
+def tabs(page):
+    return page.get_by_role('tablist', name='Документы')
+
+
+def import_json(page, payload, name='example.json'):
+    page.locator('input[type="file"]').set_input_files({'name': name, 'mimeType': 'application/json', 'buffer': json.dumps(payload).encode()})
+
+
+def test_tabs_isolate_content_and_undo_history(page):
+    original = items(page)
+    page.get_by_title('Новый документ', exact=True).click()
+    expect(tabs(page).get_by_role('tab')).to_have_count(2)
+    expect(page.locator('[role="treeitem"]')).to_have_count(0)
+    dialog = open_box(page)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(page.locator('[role="treeitem"]')).to_have_count(1)
+    tabs(page).get_by_role('tab').first.click()
+    expect(page.locator('[role="treeitem"]')).to_have_count(len(original))
+    page.locator('.command-search input').blur()
+    page.keyboard.press('Control+z')
+    assert items(page) == original
+    tabs(page).get_by_role('tab').nth(1).click()
+    page.keyboard.press('Control+z')
+    expect(page.locator('[role="treeitem"]')).to_have_count(0)
+
+
+def test_dirty_close_cancel_preserves_document(page):
+    page.get_by_title('Новый документ', exact=True).click()
+    dialog = open_box(page)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    page.get_by_role('button', name='Закрыть документ Без имени', exact=True).click()
+    warning = page.get_by_role('dialog', name='Несохранённые изменения', exact=True)
+    expect(warning).to_be_visible()
+    warning.get_by_role('button', name='Отмена', exact=True).click()
+    expect(tabs(page).get_by_role('tab')).to_have_count(2)
+    expect(page.locator('[role="treeitem"]')).to_have_count(1)
+    page.get_by_role('button', name='Закрыть документ Без имени', exact=True).click()
+    warning.get_by_role('button', name='Закрыть без сохранения', exact=True).click()
+    expect(tabs(page).get_by_role('tab')).to_have_count(1)
+    expect(page.locator('[role="treeitem"]')).to_have_count(8)
+
+
+def test_invalid_import_preserves_active_content(page):
+    before = items(page)
+    count = tabs(page).get_by_role('tab').count()
+    import_json(page, {'format': 'bendcore-demo-v1', 'items': [{'id': 'broken', 'name': 'broken'}]})
+    expect(page.get_by_role('alert')).to_be_visible()
+    assert items(page) == before
+    expect(tabs(page).get_by_role('tab')).to_have_count(count)
+
+
+def test_legacy_import_export_and_reopen_roundtrip(page, tmp_path):
+    legacy_items = items(page)[:2]
+    import_json(page, {'format': 'bendcore-demo-v1', 'items': legacy_items}, 'legacy.json')
+    expect(tabs(page).get_by_role('tab')).to_have_count(2)
+    expect(page.locator('[role="treeitem"]')).to_have_count(2)
+    assert items(page) == legacy_items
+    with page.expect_download() as download_info:
+        page.get_by_title('Сохранить JSON', exact=True).click()
+    target = tmp_path / 'roundtrip.json'
+    download_info.value.save_as(target)
+    saved = json.loads(target.read_text())
+    assert saved['schemaVersion'] == 1
+    assert saved['items'] == legacy_items
+    page.locator('input[type="file"]').set_input_files(str(target))
+    expect(tabs(page).get_by_role('tab')).to_have_count(3)
+    expect(page.locator('[role="treeitem"]')).to_have_count(2)
+    assert items(page) == legacy_items
