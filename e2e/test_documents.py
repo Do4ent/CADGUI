@@ -10,7 +10,7 @@ def tabs(page):
 
 
 def import_json(page, payload, name='example.json'):
-    page.locator('input[type="file"]').set_input_files({'name': name, 'mimeType': 'application/json', 'buffer': json.dumps(payload).encode()})
+    page.get_by_label('Импорт документа JSON', exact=True).set_input_files({'name': name, 'mimeType': 'application/json', 'buffer': json.dumps(payload).encode()})
 
 
 def test_tabs_isolate_content_and_undo_history(page):
@@ -69,7 +69,7 @@ def test_legacy_import_export_and_reopen_roundtrip(page, tmp_path):
     saved = json.loads(target.read_text())
     assert saved['schemaVersion'] == 1
     assert saved['items'] == legacy_items
-    page.locator('input[type="file"]').set_input_files(str(target))
+    page.get_by_label('Импорт документа JSON', exact=True).set_input_files(str(target))
     expect(tabs(page).get_by_role('tab')).to_have_count(3)
     expect(page.locator('[role="treeitem"]')).to_have_count(2)
     assert items(page) == legacy_items
