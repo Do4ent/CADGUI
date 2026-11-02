@@ -12,18 +12,18 @@ No implementation changes have merged into `main`. This remains a UI prototype w
 
 Results apply only to the listed heads. Later changes need their own checks. Original specialist PRs #1–#5 have been advanced by the integrator with continuation work. Their original foundation review remains in [INTEGRATION_GATES.md](INTEGRATION_GATES.md).
 
-## Document stage pending verification
+## Document stage local verification
 
 Branch `integration/document-lifecycle` implements versioned document import/export, legacy migration, multiple tabs, per-tab session history/selection, dirty close/navigation protection and recovery feedback. Active document names appear throughout the editor.
 
-The integrator is rerunning the full 31-test browser suite after correcting two ambiguous upload-fixture selectors. No final pass or successful document-stage CI is claimed here. Publication as PR #8 is pending.
+Local verification passed: six npm test suites, the TypeScript/Vite production build and 32 browser E2E tests at `7561c03`. The subsequent command-search focus correction at `a92969b` passed npm test/build and its focused Escape/no-mutation/focus browser regression. See [PR #8](https://github.com/Do4ent/CADGUI/pull/8) for the current head and CI result; local results do not substitute for CI on that head.
 
-Dependency stack: **PR #6 → PR #7 → pending PR #8**, all targeting `main`. Review cumulative commits and integrate in dependency order after applicable checks and review succeed. No merges have occurred.
+Dependency stack: **PR #6 → PR #7 → PR #8**, all targeting `main`. Review cumulative commits and integrate in dependency order after applicable checks and review succeed. No merges have occurred.
 
 ## Outstanding acceptance criteria
 
 - P0-02: light/dark visual snapshots and complete dialog accessibility/visual review.
-- P0-03: final document browser rerun and CI; verify cancellation protects dirty contents and invalid imports preserve the current document. Undo/selection persist between tabs during the session; persistence across reload is not claimed.
+- P0-03: current-head CI and review gate on PR #8. Browser tests verify cancellation protects dirty contents and invalid imports preserve the current document. Undo/selection persist between tabs during the session; persistence across reload is not claimed.
 - P0-04: viewport drag-box hit testing and browser gesture coverage. Set-selection helpers alone do not complete this feature.
 - P0-05: validated edit/transform forms and full command coverage. Pipe thickness is validated but not persisted/rendered. Exact CAD geometry and previews remain unsupported.
 - P1 packages remain planned; these deliveries do not establish dependency-aware feature history, full workspaces or large-model performance budgets.

@@ -25,8 +25,8 @@ See [delivery status](DELIVERY_STATUS.md) for evidence. No implementation change
 - Apply square corners and consistent design tokens without disrupting existing docking/ribbon.
 - Exit: accessible keyboard behavior, unit tests and visual snapshots in both themes.
 
-### P0-03 — Document lifecycle [IMPLEMENTED; VERIFICATION PENDING]
-- Tabs, schema validation/migration, dirty guards and recovery are implemented on integration/document-lifecycle; final browser rerun and CI are pending.
+### P0-03 — Document lifecycle [IMPLEMENTED; UNDER REVIEW]
+- PR #8 implements tabs, schema validation/migration, dirty guards and recovery. Six module/static suites, production build and 32 browser tests passed locally; current-head CI and review are required before integration.
 - New/open/save/export document, multiple document tabs, dirty-state warnings, explicit JSON schema versioning and migration.
 - Exit: reopening preserves content; cancel protects unsaved changes; invalid files report errors.
 
