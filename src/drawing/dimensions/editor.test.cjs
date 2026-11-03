@@ -1,0 +1,54 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript'),React=require('react');
+const {renderToStaticMarkup}=require('react-dom/server');
+const cache={};
+function load(file){
+ if(cache[file])return cache[file];const exports={};cache[file]=exports;
+ const source=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
+ vm.runInNewContext(source,{exports,structuredClone,console,require(id){if(id.endsWith('.css'))return {};if(!id.startsWith('.'))return require(id);const target=path.resolve(path.dirname(file),id);return load(fs.existsSync(target+'.tsx')?target+'.tsx':fs.existsSync(target+'.ts')?target+'.ts':path.join(target,'index.ts'));}});
+ return exports;
+}
+const {DimensionEditor,createDimensionEditorDraft,dimensionNumberError,dimensionKindOptions}=load(path.join(__dirname,'DimensionEditor.tsx'));
+const {evaluateDimension}=load(path.join(__dirname,'engine.ts'));
+const {defaultDimensionDefinition,defaultDimensionStyle}=load(path.join(__dirname,'defaults.ts'));
+const m=load(path.join(__dirname,'../model.ts'));
+const plain=value=>JSON.parse(JSON.stringify(value));
+const document=m.createDrawingDocument();
+const line=m.createTextEntity('geometry','');line.id='source-line';line.name='Линия 3–4–5';line.width=3;line.height=4;line.geometry={type:'line',points:[[0,0],[3,4]]};document.sheets[0].entities.push(line);
+document.dimensionStyles=[defaultDimensionStyle()];
+const snapshot=JSON.stringify(document);
+for(const [kind,value] of [['horizontal',3],['vertical',4],['aligned',5]]){
+ const draft=createDimensionEditorDraft(document,[line.id],undefined,kind);
+ assert.equal(draft.kind,kind);assert.equal(draft.refs.length,1);assert.equal(draft.refs[0].entityId,line.id);
+ assert.equal(evaluateDimension(draft,document).value,value);
+}
+const empty=createDimensionEditorDraft(document,[],undefined,'aligned');
+assert.equal(empty.refs.length,2);
+assert.ok(empty.refs.every(ref=>!ref.entityId&&!ref.point),'missing selection cannot invent source geometry or manual coordinates');
+assert.throws(()=>evaluateDimension(empty,document));
+const definition=defaultDimensionDefinition('aligned');
+definition.refs=[{entityId:line.id,anchor:'start'},{entityId:line.id,anchor:'end'}];
+definition.format.prefix='L=';definition.format.suffix=' мм';definition.manualText='Контрольный размер';
+definition.tolerance={type:'deviation',upper:.2,lower:-.1,precision:3};
+definition.frozen={value:5,unit:'mm',points:[[20,20],[23,24]]};definition.groupId='dimension-group';definition.groupType='chain';definition.inspection={label:'К1',rate:10};
+const annotation=m.createTextEntity('symbol','');annotation.dimension=definition;
+const edited=createDimensionEditorDraft(document,[],annotation,'radius');
+assert.deepEqual(plain(edited),plain(definition),'opening edit preserves kind, refs, formatting, overrides, frozen snapshot and group metadata');
+edited.style.textHeight=9;edited.refs[0].anchor='mid';edited.frozen.points[0][0]=999;
+assert.equal(definition.style.textHeight,3.5);assert.equal(definition.refs[0].anchor,'start');assert.equal(definition.frozen.points[0][0],20);
+assert.equal(JSON.stringify(document),snapshot);
+for(const raw of ['', ' ', 'Infinity','NaN','0x10','1e999'])assert.ok(dimensionNumberError(raw,{}),raw);
+assert.ok(dimensionNumberError('0',{min:0,positive:true}));assert.ok(dimensionNumberError('1.5',{integer:true}));assert.ok(dimensionNumberError('9',{min:0,max:8,integer:true}));
+assert.equal(dimensionNumberError('-5',{}),undefined);assert.equal(dimensionNumberError('0',{min:0}),undefined);assert.equal(dimensionNumberError('8',{min:0,max:8,integer:true}),undefined);
+assert.equal(dimensionKindOptions.length,14);assert.equal(new Set(dimensionKindOptions.map(([kind])=>kind)).size,14);
+let confirmations=0,cancellations=0;
+const markup=renderToStaticMarkup(React.createElement(DimensionEditor,{document,selection:[line.id],onConfirm(){confirmations++;},onCancel(){cancellations++;}}));
+for(const label of ['Редактор размера','Тип размера','Размерный стиль','Точность','Режим допуска','Переопределить текст','Смещение размерной линии','Источник A'])assert.ok(markup.includes(label),label);
+assert.match(markup,/data-dimension-measurement="true"[^>]*>[^<]*5 мм/);
+assert.match(markup,/data-dimension-label="true"/);
+assert.match(markup,/aria-labelledby=/);
+assert.equal(confirmations,0);assert.equal(cancellations,0);assert.equal(JSON.stringify(document),snapshot);
+const invalid=renderToStaticMarkup(React.createElement(DimensionEditor,{document,selection:[],onConfirm(){},onCancel(){}}));
+assert.match(invalid,/type="submit" disabled/);assert.match(invalid,/role="alert"/);
+const existing=renderToStaticMarkup(React.createElement(DimensionEditor,{document,selection:[],entity:annotation,onConfirm(){},onCancel(){}}));
+assert.ok(existing.includes('Контрольный размер'));assert.ok(existing.includes('Измерение зафиксировано'));assert.ok(existing.includes('dimension-group'));assert.ok(existing.includes('L='));
+console.log('PASS dimension editor14 kinds, actual3/4/5 preview, explicit references, numeric guards, immutable draft and complete edit metadata');

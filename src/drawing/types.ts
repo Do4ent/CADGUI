@@ -1,3 +1,4 @@
+import type {DimensionDefinition,DimensionStyle} from './dimensions/types';
 /** Drawing schema is independent of three-dimensional scene Item primitives. */
 export type Point2 = [number, number];
 export type TextAnchor = 'top-left'|'top-center'|'top-right'|'middle-left'|'middle-center'|'middle-right'|'bottom-left'|'bottom-center'|'bottom-right'|'baseline-left';
@@ -18,18 +19,19 @@ export type LeaderBranch={id:string;points:Point2[];attachment?:{entityId?:strin
 export type DrawingEntity={
  id:string;kind:'text'|'leader'|'table'|'symbol'|'geometry';name:string;x:number;y:number;
  width:number;height:number;rotation:number;styleId:string;overrides:Partial<TextStyle>;
+ dimension?:DimensionDefinition;
  paragraphs:TextParagraph[];locked?:boolean;columns?:{count:number;gap:number;dynamic:boolean};
  arc?:{radius:number;startAngle:number;clockwise:boolean;inside:boolean};
  leaders?:LeaderBranch[];rows?:TextParagraph[][][];
  annotation?:{type:'balloon'|'flag'|'dimension'|'gdt'|'datum'|'weld'|'surface'|'hole'|'thread'|'bend';number?:string;prefix?:string;suffix?:string;fields:Record<string,string>;sourceId?:string};
- geometry?:{type:'line'|'rect'|'ellipse';points?:Point2[]};
+ geometry?:{type:'line'|'rect'|'ellipse'|'arc';points?:Point2[];radius?:number;startAngle?:number;endAngle?:number;clockwise?:boolean};
  reference?:{kind:'model'|'note'|'sheet';targetId:string};
  technical?:boolean;sourceText?:string;
 };
 export type DrawingSheetModel={id:string;name:string;width:number;height:number;scale:number;entities:DrawingEntity[]};
 export type TextTemplate={id:string;name:string;category:string;entity:DrawingEntity};
 export type DrawingRevision={id:string;name:string;createdAt:string;sheets:DrawingSheetModel[]};
-export type DrawingDocument={version:1;activeSheetId:string;sheets:DrawingSheetModel[];styles:TextStyle[];templates:TextTemplate[];properties:Record<string,string>;dictionary:string[];revisions:DrawingRevision[]};
+export type DrawingDocument={version:1;dimensionStyles?:DimensionStyle[];activeSheetId:string;sheets:DrawingSheetModel[];styles:TextStyle[];templates:TextTemplate[];properties:Record<string,string>;dictionary:string[];revisions:DrawingRevision[]};
 export type DrawingModelItem={id:string;name:string;kind:string;pos:[number,number,number];size:[number,number,number];color:string;visible:boolean;group:string};
 export type DrawingContext={documentName:string;documentId:string;modelItems:DrawingModelItem[];sheetId?:string};
 export type Diagnostic={severity:'error'|'warning'|'info';code:string;message:string;entityId?:string;sheetId?:string};
