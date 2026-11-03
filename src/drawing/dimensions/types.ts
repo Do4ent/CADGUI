@@ -1,0 +1,12 @@
+import type {DrawingDocument,DrawingEntity,Point2} from '../types';
+export type DimensionKind='horizontal'|'vertical'|'aligned'|'rotated'|'point-line'|'parallel'|'radius'|'diameter'|'angle'|'angle3'|'arc-length'|'ordinate-x'|'ordinate-y'|'chamfer';
+/** An explicit point is non-associative; entity anchors resolve on every evaluation. */
+export type DimensionReference={entityId?:string;anchor?:'start'|'end'|'mid'|'center';point?:Point2};
+export type DimensionStyle={id:string;name:string;textHeight:number;fontFamily:string;color:string;lineWidth:number;arrowSize:number;arrow:'closed'|'open'|'tick'|'dot'|'none';flipArrows:boolean;extensionOffset:number;extensionOvershoot:number;textGap:number;fit:'auto'|'inside'|'outside';textOrientation:'aligned'|'horizontal';hideFirstExtension:boolean;hideSecondExtension:boolean;hideDimensionLine:boolean;textMask:boolean};
+export type DimensionFormat={unit:'mm'|'cm'|'m'|'in'|'deg'|'rad';precision:number;trailingZeros:boolean;decimalSeparator:'.'|',';roundingIncrement:number;factor:number;alternateUnit?:'mm'|'in';alternatePrecision:number;prefix:string;suffix:string};
+export type DimensionTolerance={type:'none'|'symmetric'|'deviation'|'limits'|'basic'|'reference';upper:number;lower:number;precision:number};
+export type DimensionDefinition={version:1;mode:'driven';kind:DimensionKind;refs:DimensionReference[];offset:number;axisAngle:number;origin:Point2;style:DimensionStyle;format:DimensionFormat;tolerance:DimensionTolerance;textPosition?:Point2;manualText?:string;frozen?:{value:number;unit:'mm'|'deg';points:Point2[]};groupId?:string;groupType?:'chain'|'baseline'|'ordinate';inspection?:{label:string;rate:number}};
+export type DimensionMeasurement={value:number;unit:'mm'|'deg';points:Point2[];center?:Point2;radius?:number;startAngle?:number;endAngle?:number;axis?:Point2};
+export type DimensionPrimitive={type:'line';a:Point2;b:Point2}|{type:'path';d:string}|{type:'circle';center:Point2;radius:number;fill?:boolean};
+export type DimensionLayout={measurement:DimensionMeasurement;label:string;primitives:DimensionPrimitive[];bounds:{x:number;y:number;right:number;bottom:number};text:{x:number;y:number;rotation:number;height:number;anchor:'middle'|'start'|'end'};warnings:string[]};
+export type DimensionEditorProps={document:DrawingDocument;selection:string[];entity?:DrawingEntity;initialKind?:DimensionKind;onConfirm:(definition:DimensionDefinition)=>void;onCancel:()=>void};
