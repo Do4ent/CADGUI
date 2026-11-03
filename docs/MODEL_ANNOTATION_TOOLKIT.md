@@ -61,7 +61,7 @@ MBD — организация геометрии, требований, пре�
 
 **Таблица требований дополняет сцену.** Onshape Inspection table связывает выбранную деталь с характеристиками и аннотациями, поддерживает cross-highlighting и CSV. Его ограничения по faces, derived и closed composite необходимо сохранять при обмене. Отсутствие в отдельном описании какого-либо инструмента не является доказательством его отсутствия в продукте.
 
-**Актуальные расширения проверяются отдельно.** Fusion уже заявляет PMI Authoring в расширениях; подтверждены Note/Hole-Thread Note и использование допусков в CAM inspection. Это не основание приписывать ему весь набор GD&T-authoring из NX или Creo. SOLIDWORKS имеет базовые аннотации вне MBD, а публикация/организация MBD зависит от отдельного продукта. Solid Edge MBD и Advanced PMI также нельзя считать одним модулем.
+**Актуальные расширения проверяются отдельно.** Fusion уже заявляет PMI Authoring в расширениях; подтверждены Note/Hole-Thread Note и использование допусков в CAM inspection. Подробные страницы DSN-PMI-* при проверке не открылись: вывод об authoring основан на перечнях расширений, а не на проверке полного workflow. Это не основание приписывать ему весь набор GD&T-authoring из NX или Creo. SOLIDWORKS имеет базовые аннотации вне MBD, а расширенная организация через 3D Views/Dynamic Annotation Views и публикация MBD зависят от отдельного продукта; базовые annotation views доступны в Standard. Solid Edge MBD и Advanced PMI также нельзя считать одним модулем.
 
 **3D-подпись и технические требования документа могут жить по-разному.** В КОМПАС ТТ показаны поверх сцены; в T-FLEX семантика связей размещённых ТТ менялась между v17 и v18. В SketchUp геометрический 3D Text принципиально отличается от screen/leader text. В FreeCAD Draft-аннотации существуют в 3D-виде; TechDraw остаётся чертёжным видом даже при измерении 3D-геометрии.
 
@@ -107,7 +107,7 @@ MNA — отдельное пространство идентификаторо
 
 | ID | Инструмент / возможность | Этап | Зависимость |
 |---|---|---|---|
-| MNA-008 | Привязать к компоненту | B | reference-adapter |
+| MNA-008 | Привязать к компоненту | A | model-annotation-schema |
 | MNA-009 | Привязать к грани | B | reference-adapter |
 | MNA-010 | Привязать к ребру | B | reference-adapter |
 | MNA-011 | Привязать к вершине | B | reference-adapter |
@@ -124,8 +124,8 @@ MNA — отдельное пространство идентификаторо
 |---|---|---|---|
 | MNA-016 | Выбрать плоскость аннотации | A | annotation-frame |
 | MNA-017 | Задать локальную систему координат | A | annotation-frame |
-| MNA-018 | Разместить параллельно грани | A | annotation-frame |
-| MNA-019 | Разместить в плоскости грани | A | annotation-frame |
+| MNA-018 | Разместить параллельно грани | B | annotation-frame, reference-adapter, geometry-adapter |
+| MNA-019 | Разместить в плоскости грани | B | annotation-frame, reference-adapter, geometry-adapter |
 | MNA-020 | Повернуть текст в плоскости | A | annotation-frame |
 | MNA-021 | Ориентировать надпись к экрану | A | annotation-frame |
 | MNA-022 | Перенести на другую плоскость без изменения требования | A | annotation-frame |
@@ -142,7 +142,7 @@ MNA — отдельное пространство идентификаторо
 | MNA-026 | Угловой размер | B | geometry-adapter |
 | MNA-027 | Радиус и диаметр | B | geometry-adapter |
 | MNA-028 | Размер фаски или скругления | B | geometry-adapter |
-| MNA-029 | Размерная заметка отверстия/резьбы | B | geometry-adapter |
+| MNA-029 | Размерная заметка отверстия/резьбы | B | geometry-adapter, feature-parameters-adapter |
 | MNA-030 | Минимальное и максимальное расстояние при поддержке геометрии | B | geometry-adapter |
 | MNA-031 | Производная аннотация параметра эскиза/операции | B | geometry-adapter |
 | MNA-032 | Показать допуск размера | B | geometry-adapter |
@@ -176,7 +176,7 @@ MNA — отдельное пространство идентификаторо
 | MNA-046 | Требование покрытия | C | typed-requirements, standard-rules |
 | MNA-047 | Требование термообработки | C | typed-requirements, standard-rules |
 | MNA-048 | Общие технические требования документа | A | model-annotation-schema |
-| MNA-049 | Примечание к отверстию/резьбе из данных операции | C | typed-requirements, standard-rules |
+| MNA-049 | Примечание к отверстию/резьбе из данных операции | C | typed-requirements, standard-rules, feature-parameters-adapter |
 | MNA-050 | Указать источник и статус ручного требования | A | model-annotation-schema |
 
 ### MG07 — Текст, поля и стили
@@ -268,7 +268,7 @@ MNA — отдельное пространство идентификаторо
 | MNA-096 | Выявить устаревшее значение | B | reference-adapter, diagnostics |
 | MNA-097 | Проследить derived-источник | B | reference-adapter, diagnostics |
 | MNA-098 | Проверить контекст конфигурации/экземпляра | B | reference-adapter, diagnostics |
-| MNA-099 | Запретить запись устаревшего асинхронного результата | B | reference-adapter, diagnostics |
+| MNA-099 | Запретить запись устаревшего асинхронного результата | A | model-annotation-schema, document-history |
 
 ### MG13 — Шаблоны и автоматизация
 
@@ -282,7 +282,7 @@ MNA — отдельное пространство идентификаторо
 | MNA-103 | Предложить плоскость и положение | B | template-schema, capability-registry |
 | MNA-104 | Создать аннотации по поддерживаемым операциям | B | template-schema, capability-registry |
 | MNA-105 | Показать предпросмотр пакетного создания | B | template-schema, capability-registry |
-| MNA-106 | Применить допуски по явной библиотеке правил | B | template-schema, capability-registry |
+| MNA-106 | Применить допуски по явной библиотеке правил | C | standard-rules, typed-requirements, feature-parameters-adapter |
 | MNA-107 | Сообщить о неподдерживаемых типах | B | template-schema, capability-registry |
 
 ### MG14 — Наборы MBD и ревизии
