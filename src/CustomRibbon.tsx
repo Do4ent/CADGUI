@@ -5,6 +5,7 @@ import {ChevronDown,ChevronLeft,ChevronRight,Pin,PinOff,Settings2,RotateCcw,X,Ch
 
 type Entry={id:string;label:string;icon:CadIconName;group:string;action:string;demo?:boolean};
 const catalog:Entry[]=[
+{id:'model-note',label:'3D-заметка',icon:'dimension',group:'Аннотации',action:'model-note'},
 {id:'select',label:'Выбрать',icon:'select',group:'Общие',action:'select'},
 {id:'box',label:'Блок',icon:'box',group:'Создание',action:'box'},
 {id:'cylinder',label:'Цилиндр',icon:'cylinder',group:'Создание',action:'cylinder'},
@@ -35,8 +36,8 @@ const catalog:Entry[]=[
 {id:'measure',label:'Измерить',icon:'measure',group:'Анализ',action:'measure',demo:true},
 ];
 const presets:Record<string,string[]>={
-'Модель':['select','box','cylinder','sketch','extrude','revolve','hole','fillet','chamfer','shell','pattern','mirror'],
-'Сборка':['select','box','cylinder','pipe','duplicate','hide','isolate','showall','mate','section','pattern'],
+'Модель':['select','model-note','box','cylinder','sketch','extrude','revolve','hole','fillet','chamfer','shell','pattern','mirror'],
+'Сборка':['select','model-note','box','cylinder','pipe','duplicate','hide','isolate','showall','mate','section','pattern'],
 'Эскиз':['select','sketch','dimension','mirror','pattern'],
 'Чертёж':['select','sheet','draft','dimension','section'],
 'Поверхности':['select','surface','loft','sweep','mirror'],
@@ -44,7 +45,7 @@ const presets:Record<string,string[]>={
 'Сварка':['select','weld','measure','section'],
 'Трубопроводы':['select','pipe','sweep','measure','duplicate'],
 'Анализ':['select','measure','section','hide','isolate'],
-'Вид':['select','hide','isolate','showall','section']};
+'Вид':['select','model-note','hide','isolate','showall','section']};
 type Group={id:string;name:string;commands:string[]};
 type Workspace={name:string;groups:Group[];favorites:string[];compact:boolean;hidden:string[]};
 type Store={active:string;workspaces:Workspace[]};

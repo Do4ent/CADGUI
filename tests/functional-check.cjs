@@ -21,7 +21,7 @@ for(const section of ['off','XY','XZ','YZ']){storage.setItem('bendcore-ui-v25',J
 for(const invalid of [null,{},[],false,'x']){storage.setItem('bendcore-ui-v25',JSON.stringify({sectionOffset:invalid,sharedZoom:invalid}));v=load();equal(v.sectionOffset,defaults.sectionOffset);equal(v.sharedZoom,defaults.sharedZoom)}
 // Verify environment-specific UI, keyboard and panel contracts exist in source.
 for(const label of ['Модель','Сборка','Эскиз','Чертёж','Поверхности','Листовой металл','Сварка','Трубопроводы','Анализ','Вид'])check(main.includes(`'${label}':{root:`),'environment definition '+label);
-for(const token of ['setTab(', 'setSelected(', 'setItems(', 'data-property-editor="true"','role="tree"','role="treeitem"','aria-label="Строка состояния"','commandEnabled(', 'contextCommandIds('])check(main.includes(token),'UI interaction contract '+token);
+for(const token of ['setTab(', 'setSelected(', 'documents.changeScene(', 'documents.modelUndo(', 'documents.modelRedo(', 'data-property-editor="true"','role="tree"','role="treeitem"','aria-label="Строка состояния"','commandEnabled(', 'contextCommandIds('])check(main.includes(token),'UI interaction contract '+token);
 for(const token of ['onKeyDown','onClick','role="menu"','setMenu(null)'])check(main.includes(token),'context interaction '+token);
 for(const token of ['localStorage.setItem','bendcore-profiles-v07','importProfiles','saveProfile','loadProfile','zoneView(','setLayout(','setView('])check(dock.includes(token),'dock workspace contract '+token);
 for(const token of ['onClick','onKeyDown','button'])check(ribbon.includes(token),'ribbon keyboard contract '+token);
