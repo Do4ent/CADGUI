@@ -22,6 +22,11 @@ def open_note(page, text, mode='world', component='gear1'):
     dialog.get_by_label('Опора', exact=True).select_option(mode)
     if mode == 'component':
         dialog.get_by_label('Компонент', exact=True).select_option(component)
+    # Put the anchor and label above opaque demo solids: occluded notes are
+    # intentionally absent from the scene rather than rendered through parts.
+    for label, value in [('X опоры', '0'), ('Y опоры', '3'), ('Z опоры', '0'),
+                         ('Смещение подписи X', '0.5'), ('Смещение подписи Y', '0.5'), ('Смещение подписи Z', '0')]:
+        dialog.get_by_label(label, exact=True).fill(value)
     return dialog
 
 
@@ -130,3 +135,59 @@ def test_note_plane_orientation_and_square_editor_persist_in_both_themes(page, t
     assert note['offset'][0] == 0.5
     assert note['anchor']['kind'] == 'world'
     expect(labels(page)).to_contain_text(['Плоскость заметки ' + orientation])
+    expect(labels(page)).to_have_attribute('data-model-annotation-orientation', orientation)
+    rendered_position = [float(value) for value in labels(page).get_attribute('data-model-annotation-position').split()]
+    assert rendered_position == pytest.approx([0.5, 3.5, 0])
+
+
+def test_component_note_tracks_motion_reports_missing_source_and_rebinds(page, tmp_path):
+    component = 'gear1'
+    original = next(item for item in items(page) if item['id'] == component)
+    create_note(page, 'Привязанная заметка', 'component', component)
+    annotation_id = labels(page).get_attribute('data-model-annotation-id')
+    before_position = [float(value) for value in labels(page).get_attribute('data-model-annotation-position').split()]
+    page.locator(f'[role="treeitem"][data-tree-id="{component}"]').click()
+    page.locator('[data-property-editor] input[type="number"]').first.fill(str(original['pos'][0] + 1))
+    page.wait_for_function('''({id, x}) => {
+      const node = document.querySelector(`[data-model-annotation-id="${id}"]`);
+      return node && Math.abs(Number(node.dataset.modelAnnotationPosition.split(' ')[0]) - x) < 1e-9;
+    }''', arg={'id': annotation_id, 'x': before_position[0] + 1})
+    moved = [float(value) for value in labels(page).get_attribute('data-model-annotation-position').split()]
+    assert moved == pytest.approx([before_position[0] + 1, *before_position[1:]])
+    search = page.locator('.command-search input')
+    search.fill('Удалить')
+    search.press('Enter')
+    page.wait_for_function('(id) => !JSON.parse(localStorage.getItem("bendcore-items")).some(item => item.id === id)', arg=component)
+    expect(labels(page)).to_have_count(0)
+    row = panel(page).locator(f'[data-model-annotation-row="{annotation_id}"]')
+    expect(row.locator('[data-model-annotation-status]')).to_have_attribute('data-model-annotation-status', 'missing')
+    expect(row).to_contain_text('Источник отсутствует')
+    missing = annotations(save_document(page, tmp_path, 'missing-source.json'))
+    assert missing[0]['id'] == annotation_id
+    assert missing[0]['anchor']['componentId'] == component
+    dialog = edit_note(page, 'Привязанная заметка')
+    dialog.get_by_label('Компонент', exact=True).select_option('gear2')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(labels(page)).to_have_count(1)
+    expect(row.locator('[data-model-annotation-status]')).to_have_attribute('data-model-annotation-status', 'visible')
+    rebound = annotations(save_document(page, tmp_path, 'rebound.json'))
+    assert rebound[0]['id'] == annotation_id
+    assert rebound[0]['text'] == 'Привязанная заметка'
+    assert rebound[0]['anchor']['componentId'] == 'gear2'
+    assert rebound[0]['anchor']['point'] == [0, 3, 0]
+
+
+def test_delete_selected_note_leaves_components_unchanged_and_undo_restores_note(page, tmp_path):
+    original_items = items(page)
+    create_note(page, 'Удалить только заметку')
+    labels(page).click()
+    page.keyboard.press('Delete')
+    expect(labels(page)).to_have_count(0)
+    assert items(page) == original_items
+    saved = save_document(page, tmp_path)
+    assert annotations(saved) == []
+    assert saved['items'] == original_items
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(labels(page)).to_contain_text(['Удалить только заметку'])
+    assert items(page) == original_items
