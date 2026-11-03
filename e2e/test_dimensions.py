@@ -143,3 +143,20 @@ def test_dimension_palette_preserves_all_126_catalog_ids(page):
     actual = panel.locator('[data-dimension-command]').evaluate_all('(nodes) => nodes.map(n => n.dataset.dimensionCommand)')
     assert len(actual) == len(set(actual)) == 126
     assert set(actual) == expected
+
+
+def test_unsupported_backends_have_disabled_commands_and_specific_reasons(page, tmp_path):
+    workspace(page)
+    before = save_document(page, tmp_path, 'before-unavailable.json')['drawing']
+    for identifier, reason in [
+        ('DIM-107', 'solver'),
+        ('DIM-088', '3D'),
+        ('DIM-074', 'норматив'),
+        ('DIM-115', 'PMI'),
+        ('DIM-123', 'DXF/DWG'),
+    ]:
+        button = page.locator(f'[data-dimension-command="{identifier}"]')
+        expect(button).to_be_disabled()
+        expect(button).to_have_attribute('title', re.compile(re.escape(reason), re.I))
+    after = save_document(page, tmp_path, 'after-unavailable.json')['drawing']
+    assert after == before
