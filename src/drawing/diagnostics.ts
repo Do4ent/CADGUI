@@ -1,3 +1,4 @@
+import {evaluateDimension} from './dimensions/engine';
 import type {Diagnostic,DrawingContext,DrawingDocument} from './types';
 import {emptyContext,resolveField,resolveStyle,plainText} from './model';
 import {layoutText} from './layout';
@@ -7,6 +8,12 @@ export function diagnoseDrawing(doc:DrawingDocument,context:DrawingContext=empty
  for(const sheet of doc.sheets)for(const entity of sheet.entities){
   const add=(code:string,message:string,severity:Diagnostic['severity']='warning')=>result.push({code,message,severity,entityId:entity.id,sheetId:sheet.id});
   const style=resolveStyle(doc,entity);
+  if(entity.dimension){
+   try{evaluateDimension(entity.dimension,doc);}catch(error){add('dimension-source',error instanceof Error?error.message:String(error),'error');}
+   if(entity.dimension.manualText!==undefined)add('dimension-manual-override','Текст размера заменён вручную; надпись может отличаться от измерения');
+   if(entity.dimension.frozen)add('dimension-frozen','Значение размера зафиксировано и не обновляется по источнику');
+   if(entity.dimension.refs.some(ref=>ref.point!==undefined))add('dimension-manual-reference','Ручная точка размера не связана с геометрией','info');
+  }
   try{if(layoutText(entity,doc,{...context,sheetId:sheet.id}).overflow)add('text-overflow','Текст выходит за границы контейнера (приближённые метрики)');}catch(error){add('layout-error',String(error),'error');}
   if(style.height*(style.scaleMode==='model'?sheet.scale:1)<2)add('small-print-height','Высота текста на бумаге меньше 2 мм');
   if(style.direction==='rtl'||style.writingMode==='vertical')add('shaping-required','Направление/сложные глифы требуют проверки shaping-движком');

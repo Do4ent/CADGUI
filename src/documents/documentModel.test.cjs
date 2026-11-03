@@ -118,3 +118,41 @@ const closedSetter=hook.setDrawing;hook.close(sourceId);hook=useEditorDocuments(
 assert.equal(hook.activeId,otherId);closedSetter(imported);hook=useEditorDocuments(()=>[]);
 assert.deepEqual(plain(hook.drawing),otherDrawing);
 console.log('PASS async drawing guards: tab switch, closed source and stale same-document callbacks');
+
+const {defaultDimensionDefinition,defaultDimensionStyle}=load(path.resolve(__dirname,'../drawing/dimensions/defaults.ts'));
+const dimensionDoc=plain(createDocument('dimension-doc','Размеры'));
+const dd=defaultDimensionDefinition('aligned');
+dd.refs=[{point:[0,0]},{point:[3,4]}];
+const dimensionEntity=plain(createTextEntity('symbol','not-a-source-cache'));
+dimensionEntity.dimension=plain(dd);
+dimensionDoc.drawing.sheets[0].entities=[dimensionEntity];
+dimensionDoc.drawing.dimensionStyles=[plain(defaultDimensionStyle())];
+assert.deepEqual(plain(parseDocument(serializeDocument(dimensionDoc))),dimensionDoc);
+for(const mutate of [
+ doc=>doc.drawing.sheets[0].entities[0].dimension.version=2,
+ doc=>doc.drawing.sheets[0].entities[0].dimension.mode='driving',
+ doc=>doc.drawing.sheets[0].entities[0].dimension.unknown=true,
+ doc=>doc.drawing.sheets[0].entities[0].dimension.refs=[{entityId:'line',point:[0,0]}],
+ doc=>doc.drawing.dimensionStyles.push(plain(doc.drawing.dimensionStyles[0])),
+ doc=>doc.drawing.dimensionStyles[0].arrow='future',
+ doc=>doc.drawing.sheets[0].entities[0].dimension.format.unit='future',
+ doc=>doc.drawing.sheets[0].entities[0].dimension.format.precision=Infinity,
+]){const bad=plain(dimensionDoc);mutate(bad);assert.throws(()=>serializeDocument(bad));}
+const arcDoc=plain(createDocument('arc-doc'));
+const arc=plain(createTextEntity('geometry',''));arc.geometry={type:'arc',radius:15,startAngle:0,endAngle:90,clockwise:false};
+arcDoc.drawing.sheets[0].entities=[arc];assert.deepEqual(plain(parseDocument(serializeDocument(arcDoc))),arcDoc);
+for(const patch of [{radius:0},{radius:NaN},{startAngle:Infinity},{endAngle:'90'},{clockwise:'false'},{unknown:true}]){const bad=plain(arcDoc);Object.assign(bad.drawing.sheets[0].entities[0].geometry,patch);assert.throws(()=>serializeDocument(bad));}
+const {plainText}=load(path.resolve(__dirname,'../drawing/model.ts'));
+const {diagnoseDrawing}=load(path.resolve(__dirname,'../drawing/diagnostics.ts'));
+assert.equal(plainText(dimensionEntity,dimensionDoc.drawing),'5');
+const broken=plain(dimensionDoc);const brokenEntity=broken.drawing.sheets[0].entities[0];brokenEntity.dimension.refs=[{entityId:'missing',anchor:'start'},{entityId:'missing',anchor:'end'}];
+brokenEntity.annotation={type:'dimension',fields:{value:'123456'}};
+assert.equal(plainText(brokenEntity,broken.drawing),'⟦нет источника⟧');
+assert.ok(diagnoseDrawing(broken.drawing).some(d=>d.entityId===brokenEntity.id&&d.code==='dimension-source'&&d.severity==='error'));
+const wrongType=plain(dimensionDoc);const textSource=plain(createTextEntity('text','Not geometry'));wrongType.drawing.sheets[0].entities.push(textSource);wrongType.drawing.sheets[0].entities[0].dimension.refs=[{entityId:textSource.id}];
+assert.ok(diagnoseDrawing(wrongType.drawing).some(d=>d.code==='dimension-source'));
+const frozen=plain(dimensionDoc);const frozenEntity=frozen.drawing.sheets[0].entities[0];frozenEntity.dimension.frozen={value:5,unit:'mm',points:[[0,0],[3,4]]};frozenEntity.dimension.manualText='Ручной размер';
+const issues=diagnoseDrawing(frozen.drawing);assert.ok(issues.some(d=>d.code==='dimension-manual-override'));assert.ok(issues.some(d=>d.code==='dimension-frozen'));
+console.log('PASS native dimension roundtrip, strict future schemas, arc persistence and source diagnostics');
+
+const detachedFrozen=plain(frozen);detachedFrozen.drawing.sheets[0].entities[0].dimension.refs=[];assert.deepEqual(plain(parseDocument(serializeDocument(detachedFrozen))),detachedFrozen);
