@@ -1,0 +1,2073 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "baseline": "e5d7d8696ba3bb22b0d1bb204bee508f2e5d9ae7",
+  "scope": "Исследование 3D-аннотаций/PMI/MBD и предлагаемые возможности BendCore; не реализация",
+  "idPrefix": "MNA",
+  "externalProductsReviewed": 18,
+  "sources": [
+    {
+      "id": "NX-MBD",
+      "product": "NX June 2023",
+      "url": "https://blogs.sw.siemens.com/designcenter/whats-new-nx-model-based-definition-2/",
+      "checked": "2026-11-03",
+      "scope": "PMI, Convert PMI с предупреждениями, заметки отверстий по граням без истории, автоматизация MBD."
+    },
+    {
+      "id": "NX-PMI",
+      "product": "NX PMI, материал 2025",
+      "url": "https://blogs.sw.siemens.com/designcenter/nx-tips-and-tricks-pmi/",
+      "checked": "2026-11-03",
+      "scope": "FCF, плоскость/выноска, библиотеки правил, заметки параллельно экрану."
+    },
+    {
+      "id": "CREO-MBD",
+      "product": "Creo Parametric 12",
+      "url": "https://support.ptc.com/help/creo/creo_pma/r12/usascii/model-based_definition/overview_model_based_design.html",
+      "checked": "2026-11-03",
+      "scope": "3D-размеры, GTOL, символы, заметки, повторное использование размеров модели."
+    },
+    {
+      "id": "CREO-QUERY",
+      "product": "Creo Parametric 12",
+      "url": "https://support.ptc.com/help/creo/creo_pma/r12/usascii/model-based_definition/about_semantic_query.html",
+      "checked": "2026-11-03",
+      "scope": "Semantic Query с семантическими опорами, подсветка поверхностей и связанных баз/DRF."
+    },
+    {
+      "id": "CREO-VIEWS",
+      "product": "Creo Parametric 12",
+      "url": "https://support.ptc.com/help/creo/creo_pma/r12/usascii/model-based_definition/about_assigning_annots_to_combination_states.html",
+      "checked": "2026-11-03",
+      "scope": "Combined states: ориентация, разрез, взрыв, упрощение, видимость. Возможен приоритет над скрытым слоем."
+    },
+    {
+      "id": "CATIA-FT1",
+      "product": "CATIA V5 FT1",
+      "url": "https://3dswym.3dexperience.3ds.com/wiki/catia-user-community/catia-3d-functional-tolerancing-and-annotations-1-ft1_J6eUA2eOSX-2Drxj7l4qEA",
+      "checked": "2026-11-03",
+      "scope": "3D-размеры/знаки/плоскости; производитель прямо ограничивает полноту семантической ассоциативности FT1."
+    },
+    {
+      "id": "CATIA-TAD",
+      "product": "CATIA 3DEXPERIENCE TAD, материал 2025",
+      "url": "https://3dswym.3dexperience.3ds.com/wiki/catia-user-community/success-path-3d-tolerancing-annotation-designer_sHeDmqh6Sb66DyOOfNnn1g",
+      "checked": "2026-11-03",
+      "scope": "Роль TAD: tolerancing advisor, captures, просмотр/фильтрация; не универсальная лицензия CATIA."
+    },
+    {
+      "id": "SE-MBD",
+      "product": "Solid Edge MBD, datasheet 09/2024",
+      "url": "https://blogs.sw.siemens.com/wp-content/uploads/sites/8/2024/11/Siemens-SW-Solid-Edge-Model-Based-Definition-FS-78027-D14.pdf",
+      "checked": "2026-11-03",
+      "scope": "Публикация 3D PDF с PMI, метаданными, видами и шаблонами."
+    },
+    {
+      "id": "SE-ADV",
+      "product": "Solid Edge Advanced PMI, datasheet 09/2024",
+      "url": "https://blogs.sw.siemens.com/wp-content/uploads/sites/8/2024/11/Siemens-SW-Using-Solid-Edge-Advanced-PMI-FS-84801-D5.pdf",
+      "checked": "2026-11-03",
+      "scope": "Автоматические размеры/допуски, проверка определённости, виды, библиотека заметок и подсветка граней."
+    },
+    {
+      "id": "SW-DIMX",
+      "product": "SOLIDWORKS 2026 DimXpert",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/t_using_dimxpert.htm?id=31.1.2",
+      "checked": "2026-11-03",
+      "scope": "Размеры и допуски модели, ручное/автоматическое создание, статус определённости."
+    },
+    {
+      "id": "SW-MBD",
+      "product": "SOLIDWORKS MBD",
+      "url": "https://www.solidworks.com/product/solidworks-mbd",
+      "checked": "2026-11-03",
+      "scope": "Отдельный продукт MBD; организация PMI, 3D views, публикация 3D PDF/STEP 242; базовые аннотации доступны и в Standard."
+    },
+    {
+      "id": "SW-TOOLS",
+      "product": "SOLIDWORKS 2026 MBD Toolbar",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/r_mbd_toolbar.htm?id=2.12.4.1.18",
+      "checked": "2026-11-03",
+      "scope": "Инструменты MBD и ограничения конкретной установки с 3DEXPERIENCE."
+    },
+    {
+      "id": "INV-3DA",
+      "product": "Inventor 2025",
+      "url": "https://help.autodesk.com/cloudhelp/2025/ENU/Inventor-Help/files/GUID-B8779786-A71C-4A5C-B9A9-7EB1A9918946.htm",
+      "checked": "2026-11-03",
+      "scope": "3D Annotation в детали/сборке; Tolerance Feature/Advisor для детали; design views, cross-highlighting, единицы Active Standard."
+    },
+    {
+      "id": "INV-WELD",
+      "product": "Inventor 2024",
+      "url": "https://help.autodesk.com/cloudhelp/2024/ENU/Inventor-WhatsNew/files/GUID-A0B07812-EB30-4898-B53E-1112CF02DB2C.htm",
+      "checked": "2026-11-03",
+      "scope": "3D weld/subweld в детали и сборке без обязательного weldment, получение в Drawing и публикация."
+    },
+    {
+      "id": "INV-2026",
+      "product": "Inventor 2026",
+      "url": "https://help.autodesk.com/cloudhelp/2026/ENU/Inventor-WhatsNew/files/GUID-FB6DF8DA-9009-4DAD-9277-2CA2A6DF34EA.htm",
+      "checked": "2026-11-03",
+      "scope": "Datum targets, несколько опор выноски, параметры в тексте."
+    },
+    {
+      "id": "FUS-DESIGN",
+      "product": "Fusion Design Extension, текущая справка",
+      "url": "https://help.autodesk.com/cloudhelp/ENU/Fusion-Extensions/files/EXT-PRODUCT-DESIGN.htm",
+      "checked": "2026-11-03",
+      "scope": "Перечислено PMI Authoring; доступ зависит от расширения и типа подписки."
+    },
+    {
+      "id": "FUS-MFG",
+      "product": "Fusion Manufacturing Extension, текущая справка",
+      "url": "https://help.autodesk.com/cloudhelp/ENU/Fusion-Extensions/files/EXT-MANUFACTURING.htm",
+      "checked": "2026-11-03",
+      "scope": "PMI Authoring: явно перечислены Hole/Thread Note и Note."
+    },
+    {
+      "id": "FUS-INSPECT",
+      "product": "Fusion CAM, текущая справка",
+      "url": "https://help.autodesk.com/cloudhelp/ENU/Fusion-CAM/files/MFG-PMI-FOR-INSPECTION-OVERVIEW.htm",
+      "checked": "2026-11-03",
+      "scope": "Использование PMI в inspection/probing; перенос size tolerances ограничен linear/diameter."
+    },
+    {
+      "id": "ON-MBD",
+      "product": "Onshape Part Studio, текущая справка",
+      "url": "https://cad.onshape.com/help/Content/PartStudio/model_based_definition.htm",
+      "checked": "2026-11-03",
+      "scope": "MBD в модели, driving/driven/derived различаются; экспорт STEP с ограничениями для closed composite parts."
+    },
+    {
+      "id": "ON-TABLE",
+      "product": "Onshape Part Studio, текущая справка",
+      "url": "https://cad.onshape.com/help/Content/PartStudio/inspection_table.htm",
+      "checked": "2026-11-03",
+      "scope": "Inspection table: datum, dimension/fillet/min/max, GTOL, weld; ориентация, CSV, выбор модели. Не Drawing toolbar."
+    },
+    {
+      "id": "K-DIMS",
+      "product": "КОМПАС-3D v24",
+      "url": "https://help.ascon.ru/KOMPAS/24/ru-RU/741_65_1_obchie_svedeniy_o_razmerah.html",
+      "checked": "2026-11-03",
+      "scope": "Управляющие и информационные размеры; производные размеры для постоянного отображения."
+    },
+    {
+      "id": "K-PLANE",
+      "product": "КОМПАС-3D v24",
+      "url": "https://help.ascon.ru/KOMPAS/24/ru-RU/ploskost_razmera.html",
+      "checked": "2026-11-03",
+      "scope": "Плоскость может задавать проекционное значение, не истинное пространственное расстояние."
+    },
+    {
+      "id": "K-ANN",
+      "product": "КОМПАС-3D v24",
+      "url": "https://help.ascon.ru/KOMPAS/24/ru-RU/oboznacheniya_3d_obzor.html",
+      "checked": "2026-11-03",
+      "scope": "Пространственные шероховатость, базы, допуски формы, выноски; обозначение может остаться после исчезновения источника."
+    },
+    {
+      "id": "K-TT",
+      "product": "КОМПАС-3D v24",
+      "url": "https://help.ascon.ru/KOMPAS/24/ru-RU/1006_gl_104_tech_treb.html",
+      "checked": "2026-11-03",
+      "scope": "ТТ модели отображаются поверх сцены; не текст на пространственной плоскости."
+    },
+    {
+      "id": "K-VIEWS",
+      "product": "КОМПАС-3D v24",
+      "url": "https://help.ascon.ru/KOMPAS/24/ru-RU/cm_viewproj_settings.html",
+      "checked": "2026-11-03",
+      "scope": "Сохранённые ориентации со слоями и сечением."
+    },
+    {
+      "id": "TF-ANN",
+      "product": "T-FLEX CAD 17",
+      "url": "https://www.tflex.com/help/eng/T-FLEX%20CAD/17/3d_annotations.htm",
+      "checked": "2026-11-03",
+      "scope": "Собственные 3D-аннотации отдельно от отображаемых 2D-элементов рабочей плоскости; размеры, GD&T, базы, шероховатость, сварка."
+    },
+    {
+      "id": "TF-DIM",
+      "product": "T-FLEX CAD 17",
+      "url": "https://www.tflex.com/help/eng/T-FLEX%20CAD/17/10_dimension_3d.htm",
+      "checked": "2026-11-03",
+      "scope": "Опоры грань/ребро/вершина/ось/путь/узел, плоскости, отдельное управление через параметрические связи."
+    },
+    {
+      "id": "TF-ORIENT",
+      "product": "T-FLEX CAD 18",
+      "url": "https://www.tflexcad.ru/help/cad/18/22_1_orient.htm",
+      "checked": "2026-11-03",
+      "scope": "Ориентация по сцене, рабочей плоскости, грани, ЛСК; обращение к экрану документировано для надписей."
+    },
+    {
+      "id": "TF-SCENE",
+      "product": "T-FLEX CAD 18",
+      "url": "https://www.tflexcad.ru/help/cad/18/07_scene_create.htm",
+      "checked": "2026-11-03",
+      "scope": "Сцены: камера, видимость геометрии/аннотаций, сечения, экранное наложение страницы."
+    },
+    {
+      "id": "TF-TT17",
+      "product": "T-FLEX CAD 17",
+      "url": "https://www.tflexcad.ru/help/cad/17/technicalrequirements.htm",
+      "checked": "2026-11-03",
+      "scope": "ТТ страницы после вставки не сохраняют ассоциативную связь с ТТ документа."
+    },
+    {
+      "id": "TF-TT18",
+      "product": "T-FLEX CAD 18",
+      "url": "https://www.tflexcad.ru/help/cad/18/10_drawingnotes_place.htm",
+      "checked": "2026-11-03",
+      "scope": "Изменённая семантика: двусторонняя связь размещённых ТТ; на странице 3D — экранное наложение."
+    },
+    {
+      "id": "FC-DIM",
+      "product": "FreeCAD Draft, документация нескольких версий",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/Draft_Dimension.md",
+      "checked": "2026-11-03",
+      "scope": "Размеры в 3D-виде: связанные линейные/радиальные; угловые по документации не параметрические."
+    },
+    {
+      "id": "FC-LABEL",
+      "product": "FreeCAD Draft, документация нескольких версий",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/Draft_Label.md",
+      "checked": "2026-11-03",
+      "scope": "Выноска, объект/подэлемент, текст свойств, World/Screen. Не полноценный GD&T."
+    },
+    {
+      "id": "RHINO-ANN",
+      "product": "Rhino, developer guide",
+      "url": "https://developer.rhino3d.com/guides/cpp/annotation-objects/",
+      "checked": "2026-11-03",
+      "scope": "Text/Leader/Dimension, плоскость, положение, стиль; SDK-архитектура, не доказательство семантического PMI."
+    },
+    {
+      "id": "RHINO-STYLE",
+      "product": "Rhino 8",
+      "url": "https://docs.mcneel.com/rhino/8/help/en-us/documentproperties/annotation.htm",
+      "checked": "2026-11-03",
+      "scope": "Стили, model/layout scale, читаемость с обратной стороны, горизонтально к виду, маска, предупреждения шрифтов."
+    },
+    {
+      "id": "SKETCHUP",
+      "product": "SketchUp, текущая справка",
+      "url": "https://help.sketchup.com/en/sketchup/adding-text-labels-and-dimensions-model",
+      "checked": "2026-11-03",
+      "scope": "Screen text, leader text, геометрический 3D Text и динамические размеры — разные инструменты."
+    },
+    {
+      "id": "AUTOCAD",
+      "product": "AutoCAD, support article",
+      "url": "https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-annotate-a-3D-object-in-AutoCAD.html",
+      "checked": "2026-11-03",
+      "scope": "Размещение размеров 3D-объекта через UCS; проверен индексируемый текст, full body недоступен в браузере исследования."
+    },
+    {
+      "id": "BRICS-UCS",
+      "product": "BricsCAD, текущая справка UCS",
+      "url": "https://help.bricsys.com/en-us/document/bricscad/drawing-accurately/user-coordinate-systems",
+      "checked": "2026-11-03",
+      "scope": "Произвольные UCS в 3D и плоское создание объектов; не доказательство самостоятельной семантической PMI-подсистемы."
+    },
+    {
+      "id": "NANO",
+      "product": "nanoCAD, компонент 3D, без версии на странице",
+      "url": "https://nanocad.ru/products/platforma/komponent_3d/features/",
+      "checked": "2026-11-03",
+      "scope": "Моделирование и ассоциативная 2D-документация; семантический 3D PMI по этой странице не установлен."
+    },
+    {
+      "id": "REVIT",
+      "product": "Revit 2024",
+      "url": "https://help.autodesk.com/cloudhelp/2024/ENU/Revit-DocumentPresent/files/GUID-CEF1A80C-C184-4FC1-8679-D211BE2361E9.htm",
+      "checked": "2026-11-03",
+      "scope": "Tags/keynotes только в locked 3D view; не perspective/default; при unlock скрыты; новая сохранённая ориентация может удалить прежние."
+    },
+    {
+      "id": "ARCHICAD",
+      "product": "ARCHICAD 24",
+      "url": "https://help.graphisoft.com/AC/24/INT/_AC24_Help/050_ViewsVB/050_ViewsVB-57.htm",
+      "checked": "2026-11-03",
+      "scope": "3D Document основан на модели/плане, к нему добавляются 2D dimensions/labels; не свободно вращаемая 3D PMI-сцена."
+    }
+  ],
+  "systems": [
+    {
+      "name": "NX",
+      "module": "June 2023; PMI guide 2025",
+      "evidenceLevel": "documented-3d",
+      "tools": "Размеры, GTOL/базы, заметки, правила, плоскости, импорт Convert PMI.",
+      "boundary": "Импорт сопровождается предупреждениями; охват любого формата не доказан.",
+      "sources": [
+        "NX-MBD",
+        "NX-PMI"
+      ]
+    },
+    {
+      "name": "Creo",
+      "module": "Parametric 12",
+      "evidenceLevel": "documented-3d",
+      "tools": "Размеры/GTOL/символы/заметки; Semantic Query, DRF; combined states.",
+      "boundary": "Управляющий размер и оформление различаются; семантический запрос требует семантической опоры.",
+      "sources": [
+        "CREO-MBD",
+        "CREO-QUERY",
+        "CREO-VIEWS"
+      ]
+    },
+    {
+      "name": "CATIA",
+      "module": "V5 FT1; отдельно 3DEXPERIENCE TAD",
+      "evidenceLevel": "documented-3d",
+      "tools": "Аннотации и плоскости; в TAD — advisor и captures.",
+      "boundary": "FT1 прямо имеет неполную семантическую ассоциативность. Роли и поколения не складываются в одну лицензию.",
+      "sources": [
+        "CATIA-FT1",
+        "CATIA-TAD"
+      ]
+    },
+    {
+      "name": "SOLIDWORKS",
+      "module": "2026 DimXpert; отдельный MBD",
+      "evidenceLevel": "documented-3d",
+      "tools": "Размеры/допуски модели, автоматизация; MBD — виды, 3D PDF/STEP 242.",
+      "boundary": "Базовые аннотации доступны в Standard; MBD — отдельный продукт. Экспорт не доказывает lossless round-trip.",
+      "sources": [
+        "SW-DIMX",
+        "SW-MBD",
+        "SW-TOOLS"
+      ]
+    },
+    {
+      "name": "Solid Edge",
+      "module": "MBD / Advanced PMI, datasheets 09/2024",
+      "evidenceLevel": "documented-3d",
+      "tools": "3D PDF, виды/шаблоны; Advanced PMI — авторазмеры, проверки определённости, заметки.",
+      "boundary": "Публикация MBD и автоматизация Advanced PMI — разные наборы возможностей; STEP-семантика не установлена.",
+      "sources": [
+        "SE-MBD",
+        "SE-ADV"
+      ]
+    },
+    {
+      "name": "Inventor",
+      "module": "3D Annotation 2024–2026",
+      "evidenceLevel": "documented-3d",
+      "tools": "Деталь/сборка, design views, cross-highlighting, сварка, targets, параметры текста.",
+      "boundary": "Tolerance Feature/Advisor — для детали; единицы 3DA от Active Standard. Tolerance Analysis — отдельная задача.",
+      "sources": [
+        "INV-3DA",
+        "INV-WELD",
+        "INV-2026"
+      ]
+    },
+    {
+      "name": "Onshape",
+      "module": "Part Studio MBD, текущая справка",
+      "evidenceLevel": "documented-3d",
+      "tools": "Driving/driven annotations, datum/GTOL/weld, Inspection table, CSV/STEP.",
+      "boundary": "Опоры MBD — faces; нельзя произвольно заменить edges/vertices. Определения внутри part/composite; derived меняются в источнике, closed composite STEP ограничен. Тариф по справке не установлен.",
+      "sources": [
+        "ON-MBD",
+        "ON-TABLE"
+      ]
+    },
+    {
+      "name": "Fusion",
+      "module": "Design / Manufacturing Extension, текущая справка",
+      "evidenceLevel": "documented-limited",
+      "tools": "PMI Authoring; явно Note и Hole/Thread Note, применение PMI в CAM inspection.",
+      "boundary": "Полный собственный GD&T-editor не доказан; автоматический перенос size tolerances в inspection — linear/diameter. Не путать с Drawing.",
+      "sources": [
+        "FUS-DESIGN",
+        "FUS-MFG",
+        "FUS-INSPECT"
+      ]
+    },
+    {
+      "name": "КОМПАС-3D",
+      "module": "v24",
+      "evidenceLevel": "documented-3d",
+      "tools": "Размеры модели, производные размеры, GD&T/базы/шероховатость, выноски, ТТ, ориентации.",
+      "boundary": "Плоскость может задавать проекционный размер; ТТ — overlay. Потеря источника может оставить графику на месте.",
+      "sources": [
+        "K-DIMS",
+        "K-PLANE",
+        "K-ANN",
+        "K-TT",
+        "K-VIEWS"
+      ]
+    },
+    {
+      "name": "T-FLEX CAD",
+      "module": "v17 и v18, различать",
+      "evidenceLevel": "documented-3d",
+      "tools": "Нативные 3D-размеры/выноски/GD&T/базы/шероховатость/сварка; опоры, плоскости и сцены.",
+      "boundary": "Экранная ориентация надписи не обещает её для всех размеров. Связь размещённых ТТ v17/v18 различается.",
+      "sources": [
+        "TF-ANN",
+        "TF-DIM",
+        "TF-ORIENT",
+        "TF-SCENE",
+        "TF-TT17",
+        "TF-TT18"
+      ]
+    },
+    {
+      "name": "FreeCAD",
+      "module": "Draft; архивированная документация нескольких версий",
+      "evidenceLevel": "documented-limited",
+      "tools": "3D-view Dimension и Label, опоры и свойства, World/Screen.",
+      "boundary": "Не TechDraw-лист. Угловой Draft Dimension не параметрический по источнику. Это не доказательство полной GD&T/семантической PMI.",
+      "sources": [
+        "FC-DIM",
+        "FC-LABEL"
+      ]
+    },
+    {
+      "name": "Rhino",
+      "module": "8 + developer guide",
+      "evidenceLevel": "documented-limited",
+      "tools": "Text, Leader, размеры, плоскости, стили, читаемость, маски и scale.",
+      "boundary": "Плоские annotation objects в 3D-сцене не равны семантическому GD&T; история ассоциативности ко всем исходным граням не установлена.",
+      "sources": [
+        "RHINO-ANN",
+        "RHINO-STYLE"
+      ]
+    },
+    {
+      "name": "SketchUp",
+      "module": "Текущая справка",
+      "evidenceLevel": "documented-limited",
+      "tools": "Экранный текст, связанные выноски, динамические размеры; отдельный 3D Text.",
+      "boundary": "3D Text — геометрия, не аннотация. Из наличия размеров не следует семантический PMI.",
+      "sources": [
+        "SKETCHUP"
+      ]
+    },
+    {
+      "name": "AutoCAD",
+      "module": "Support article, версия не задана",
+      "evidenceLevel": "limited-evidence",
+      "tools": "Размеры 3D-объекта с учётом UCS.",
+      "boundary": "Это model-space оформление; инженерная семантика PMI и охват Mechanical не подтверждены. Full body источника недоступен.",
+      "sources": [
+        "AUTOCAD"
+      ]
+    },
+    {
+      "name": "BricsCAD",
+      "module": "Проверена справка UCS",
+      "evidenceLevel": "limited-evidence",
+      "tools": "Пространственные UCS и плоскость создания объектов.",
+      "boundary": "Самостоятельное авторство семантического PMI в 3D этим источником не установлено; не вывод об отсутствии.",
+      "sources": [
+        "BRICS-UCS"
+      ]
+    },
+    {
+      "name": "nanoCAD",
+      "module": "Компонент 3D, страница без версии",
+      "evidenceLevel": "not-established",
+      "tools": "Подтверждены моделирование и ассоциативная 2D-документация.",
+      "boundary": "Нативная семантическая 3D PMI-подсистема по проверенным страницам не установлена.",
+      "sources": [
+        "NANO"
+      ]
+    },
+    {
+      "name": "Revit",
+      "module": "2024; отдельная BIM-категория",
+      "evidenceLevel": "view-bound",
+      "tools": "Tags/keynotes в сохранённом locked ортографическом 3D-виде.",
+      "boundary": "Не свободное размещение PMI при orbit. Perspective/default и некоторые категории tags исключены; новая ориентация может удалить tags.",
+      "sources": [
+        "REVIT"
+      ]
+    },
+    {
+      "name": "ARCHICAD",
+      "module": "24; отдельная BIM-категория",
+      "evidenceLevel": "document-bound",
+      "tools": "3D Document с размерами/подписями/2D-элементами.",
+      "boundary": "Аннотируется производный документ, не произвольная вращаемая 3D-сцена.",
+      "sources": [
+        "ARCHICAD"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "id": "MG01",
+      "title": "Заметки и подписи модели",
+      "sources": [
+        "FC-LABEL",
+        "SKETCHUP",
+        "NX-PMI"
+      ],
+      "commands": [
+        {
+          "id": "MNA-001",
+          "title": "Создать пространственную заметку",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-002",
+          "title": "Создать подпись компонента",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-003",
+          "title": "Создать экранную заметку документа",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-004",
+          "title": "Создать заметку со ссылкой на объект",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-005",
+          "title": "Выбрать режим World/Screen",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-006",
+          "title": "Редактировать многострочный текст",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-007",
+          "title": "Превратить геометрический текст в отдельную задачу моделирования",
+          "stage": "C",
+          "requires": [
+            "text-to-geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false,
+          "scope": "boundary-to-modeling"
+        }
+      ]
+    },
+    {
+      "id": "MG02",
+      "title": "Опоры и контекст сборки",
+      "sources": [
+        "TF-DIM",
+        "ON-TABLE",
+        "CREO-QUERY"
+      ],
+      "commands": [
+        {
+          "id": "MNA-008",
+          "title": "Привязать к компоненту",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-009",
+          "title": "Привязать к грани",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-010",
+          "title": "Привязать к ребру",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-011",
+          "title": "Привязать к вершине",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-012",
+          "title": "Привязать к оси или плоскости",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-013",
+          "title": "Выбрать экземпляр в сборке",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-014",
+          "title": "Добавить несколько опор",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-015",
+          "title": "Показать источник и его контекст",
+          "stage": "B",
+          "requires": [
+            "reference-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG03",
+      "title": "Плоскости и ориентация",
+      "sources": [
+        "RHINO-ANN",
+        "TF-ORIENT",
+        "K-PLANE",
+        "NX-PMI"
+      ],
+      "commands": [
+        {
+          "id": "MNA-016",
+          "title": "Выбрать плоскость аннотации",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-017",
+          "title": "Задать локальную систему координат",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-018",
+          "title": "Разместить параллельно грани",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-019",
+          "title": "Разместить в плоскости грани",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-020",
+          "title": "Повернуть текст в плоскости",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-021",
+          "title": "Ориентировать надпись к экрану",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-022",
+          "title": "Перенести на другую плоскость без изменения требования",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-023",
+          "title": "Показать тип измерения: пространственный или проекционный",
+          "stage": "A",
+          "requires": [
+            "annotation-frame"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG04",
+      "title": "Размеры модели и измерения",
+      "sources": [
+        "SW-DIMX",
+        "K-DIMS",
+        "K-PLANE",
+        "TF-DIM",
+        "ON-MBD"
+      ],
+      "commands": [
+        {
+          "id": "MNA-024",
+          "title": "Линейный пространственный размер",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-025",
+          "title": "Проекционный размер по оси или плоскости",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-026",
+          "title": "Угловой размер",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-027",
+          "title": "Радиус и диаметр",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-028",
+          "title": "Размер фаски или скругления",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-029",
+          "title": "Размерная заметка отверстия/резьбы",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-030",
+          "title": "Минимальное и максимальное расстояние при поддержке геометрии",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-031",
+          "title": "Производная аннотация параметра эскиза/операции",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-032",
+          "title": "Показать допуск размера",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-033",
+          "title": "Перейти к управляющему параметру в его редакторе",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-034",
+          "title": "Отличить driven/manual/driving и запретить неверное редактирование",
+          "stage": "B",
+          "requires": [
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG05",
+      "title": "Геометрические требования PMI",
+      "sources": [
+        "CREO-QUERY",
+        "NX-PMI",
+        "SW-DIMX",
+        "ON-TABLE"
+      ],
+      "commands": [
+        {
+          "id": "MNA-035",
+          "title": "Создать типизированную рамку FCF",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-036",
+          "title": "Обозначить базовый элемент",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-037",
+          "title": "Собрать систему баз",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-038",
+          "title": "Создать базовый участок",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-039",
+          "title": "Связать допуск с контролируемыми поверхностями",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-040",
+          "title": "Показать семантические зависимости и DRF",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-041",
+          "title": "Проверить модификаторы и редакцию стандарта",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-042",
+          "title": "Различить графическую и семантическую PMI",
+          "stage": "C",
+          "requires": [
+            "semantic-pmi",
+            "standard-rules",
+            "geometry-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG06",
+      "title": "Технологические требования модели",
+      "sources": [
+        "K-ANN",
+        "TF-ANN",
+        "INV-WELD",
+        "ON-TABLE",
+        "FUS-MFG"
+      ],
+      "commands": [
+        {
+          "id": "MNA-043",
+          "title": "Шероховатость/текстура на поверхности",
+          "stage": "C",
+          "requires": [
+            "typed-requirements",
+            "standard-rules"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-044",
+          "title": "Сварочный знак на модели",
+          "stage": "C",
+          "requires": [
+            "typed-requirements",
+            "standard-rules"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-045",
+          "title": "Обозначение кромки",
+          "stage": "C",
+          "requires": [
+            "typed-requirements",
+            "standard-rules"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-046",
+          "title": "Требование покрытия",
+          "stage": "C",
+          "requires": [
+            "typed-requirements",
+            "standard-rules"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-047",
+          "title": "Требование термообработки",
+          "stage": "C",
+          "requires": [
+            "typed-requirements",
+            "standard-rules"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-048",
+          "title": "Общие технические требования документа",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-049",
+          "title": "Примечание к отверстию/резьбе из данных операции",
+          "stage": "C",
+          "requires": [
+            "typed-requirements",
+            "standard-rules"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-050",
+          "title": "Указать источник и статус ручного требования",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG07",
+      "title": "Текст, поля и стили",
+      "sources": [
+        "RHINO-STYLE",
+        "SE-ADV",
+        "FC-LABEL"
+      ],
+      "commands": [
+        {
+          "id": "MNA-051",
+          "title": "Шрифт и размер надписи",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-052",
+          "title": "Фрагменты и инженерные символы",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-053",
+          "title": "Поле имени/материала/свойства компонента",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-054",
+          "title": "Единицы и точность отображения",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-055",
+          "title": "Фон/маска и рамка",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-056",
+          "title": "Стиль документа и локальные переопределения",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-057",
+          "title": "Экранный размер отдельно от размера в единицах модели",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-058",
+          "title": "Диагностика недоступного шрифта",
+          "stage": "A",
+          "requires": [
+            "text-style-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG08",
+      "title": "Выноски и размещение",
+      "sources": [
+        "INV-2026",
+        "FC-LABEL",
+        "SKETCHUP"
+      ],
+      "commands": [
+        {
+          "id": "MNA-059",
+          "title": "Создать выноску",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-060",
+          "title": "Добавить/удалить ветвь",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-061",
+          "title": "Изменить стрелку и полку",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-062",
+          "title": "Переставить текст без изменения опоры",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-063",
+          "title": "Изменить опору отдельно от положения текста",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-064",
+          "title": "Переключить пространственную/экранную трассу",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-065",
+          "title": "Выравнять группу надписей",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-066",
+          "title": "Устранить перекрытие с сохранением ручной позиции",
+          "stage": "A",
+          "requires": [
+            "leader-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG09",
+      "title": "Видимость и читаемость",
+      "sources": [
+        "RHINO-STYLE",
+        "NX-PMI",
+        "CREO-VIEWS"
+      ],
+      "commands": [
+        {
+          "id": "MNA-067",
+          "title": "Показать/скрыть выбранные аннотации",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-068",
+          "title": "Фильтровать по типу и компоненту",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-069",
+          "title": "Показать только выбранное требование",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-070",
+          "title": "Настроить поведение за геометрией",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-071",
+          "title": "Предупредить о скрытой/потерянной опоре",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-072",
+          "title": "Разворачивать читаемую надпись с обратной стороны",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-073",
+          "title": "Ограничить плотность подписей при zoom",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-074",
+          "title": "Найти и сфокусировать аннотацию",
+          "stage": "B",
+          "requires": [
+            "scene-annotation-renderer"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG10",
+      "title": "Виды аннотаций и сцены",
+      "sources": [
+        "CREO-VIEWS",
+        "TF-SCENE",
+        "K-VIEWS",
+        "SW-MBD"
+      ],
+      "commands": [
+        {
+          "id": "MNA-075",
+          "title": "Создать сохранённый вид аннотаций",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-076",
+          "title": "Сохранить камеру и плоскости",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-077",
+          "title": "Сохранить набор видимых аннотаций",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-078",
+          "title": "Добавить сечение к виду",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-079",
+          "title": "Связать вид с состоянием сборки/взрывом",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-080",
+          "title": "Обновить вид явно",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-081",
+          "title": "Заблокировать ориентацию при необходимости",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-082",
+          "title": "Просмотреть последовательность видов",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-083",
+          "title": "Передать вид в чертёж через отдельный адаптер",
+          "stage": "B",
+          "requires": [
+            "saved-view-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG11",
+      "title": "Выбор и редактирование",
+      "sources": [
+        "ON-MBD",
+        "ON-TABLE",
+        "CREO-QUERY"
+      ],
+      "commands": [
+        {
+          "id": "MNA-084",
+          "title": "Выбрать аннотацию в сцене и дереве",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-085",
+          "title": "Подсветить опоры по аннотации",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-086",
+          "title": "Подсветить аннотации по геометрии",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-087",
+          "title": "Множественный выбор и пакетный стиль",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-088",
+          "title": "Редактировать с Apply/OK/Cancel",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-089",
+          "title": "Дублировать с явным выбором копирования опор",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-090",
+          "title": "Удалить аннотацию отдельно от геометрии",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-091",
+          "title": "Отменить/повторить одной транзакцией",
+          "stage": "A",
+          "requires": [
+            "annotation-selection",
+            "document-history"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG12",
+      "title": "Ассоциативность и восстановление",
+      "sources": [
+        "K-ANN",
+        "FC-LABEL",
+        "ON-MBD"
+      ],
+      "commands": [
+        {
+          "id": "MNA-092",
+          "title": "Обновить подпись при изменении свойства",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-093",
+          "title": "Пересчитать размер по геометрии",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-094",
+          "title": "Пометить потерянную опору",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-095",
+          "title": "Перепривязать без потери исходного требования",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-096",
+          "title": "Выявить устаревшее значение",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-097",
+          "title": "Проследить derived-источник",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-098",
+          "title": "Проверить контекст конфигурации/экземпляра",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-099",
+          "title": "Запретить запись устаревшего асинхронного результата",
+          "stage": "B",
+          "requires": [
+            "reference-adapter",
+            "diagnostics"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG13",
+      "title": "Шаблоны и автоматизация",
+      "sources": [
+        "SE-ADV",
+        "NX-MBD",
+        "ON-TABLE"
+      ],
+      "commands": [
+        {
+          "id": "MNA-100",
+          "title": "Сохранить шаблон заметки",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-101",
+          "title": "Применить библиотеку требований",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-102",
+          "title": "Сформировать подписи по свойствам",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-103",
+          "title": "Предложить плоскость и положение",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-104",
+          "title": "Создать аннотации по поддерживаемым операциям",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-105",
+          "title": "Показать предпросмотр пакетного создания",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-106",
+          "title": "Применить допуски по явной библиотеке правил",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-107",
+          "title": "Сообщить о неподдерживаемых типах",
+          "stage": "B",
+          "requires": [
+            "template-schema",
+            "capability-registry"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG14",
+      "title": "Наборы MBD и ревизии",
+      "sources": [
+        "ON-TABLE",
+        "SE-ADV",
+        "SW-MBD"
+      ],
+      "commands": [
+        {
+          "id": "MNA-108",
+          "title": "Организовать дерево наборов аннотаций",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-109",
+          "title": "Связать набор с деталью/экземпляром",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-110",
+          "title": "Показать таблицу требований",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-111",
+          "title": "Назначить идентификатор требования",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-112",
+          "title": "Сохранить контекст версии/конфигурации",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-113",
+          "title": "Сравнить изменения требований",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-114",
+          "title": "Подготовить пакет модели и видов для ревью",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-115",
+          "title": "Запретить неявную перезапись read-only/derived данных",
+          "stage": "B",
+          "requires": [
+            "document-schema",
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG15",
+      "title": "Публикация и обмен",
+      "sources": [
+        "SW-MBD",
+        "SE-MBD",
+        "NX-MBD",
+        "ON-MBD"
+      ],
+      "commands": [
+        {
+          "id": "MNA-116",
+          "title": "Сохранить нативные данные аннотаций",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-117",
+          "title": "Экспортировать снимок текущего вида",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-118",
+          "title": "Опубликовать интерактивный 3D PDF через адаптер",
+          "stage": "C",
+          "requires": [
+            "exchange-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-119",
+          "title": "Экспортировать STEP AP242 с объявленным покрытием",
+          "stage": "C",
+          "requires": [
+            "exchange-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-120",
+          "title": "Импортировать графический PMI отдельно от семантического",
+          "stage": "C",
+          "requires": [
+            "exchange-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-121",
+          "title": "Преобразовать импорт в редактируемые объекты с отчётом",
+          "stage": "C",
+          "requires": [
+            "exchange-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-122",
+          "title": "Проверить round-trip опор/полей/видов",
+          "stage": "C",
+          "requires": [
+            "exchange-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-123",
+          "title": "Экспортировать таблицу требований CSV",
+          "stage": "B",
+          "requires": [
+            "annotation-sets"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-124",
+          "title": "Подключить JT/QIF только при наличии адаптера",
+          "stage": "C",
+          "requires": [
+            "exchange-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-125",
+          "title": "Показать отчёт потерь до экспорта",
+          "stage": "C",
+          "requires": [
+            "exchange-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "MG16",
+      "title": "Проверки и измерительный контроль",
+      "sources": [
+        "SE-ADV",
+        "CREO-QUERY",
+        "FUS-INSPECT"
+      ],
+      "commands": [
+        {
+          "id": "MNA-126",
+          "title": "Проверить структуру и ссылки",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-127",
+          "title": "Проверить нормативный набор правил",
+          "stage": "C",
+          "requires": [
+            "validation-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-128",
+          "title": "Найти недо-/переопределённые требования при поддержке анализа",
+          "stage": "C",
+          "requires": [
+            "validation-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-129",
+          "title": "Экспортировать измеряемые характеристики",
+          "stage": "C",
+          "requires": [
+            "validation-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-130",
+          "title": "Связать результат измерения с требованием",
+          "stage": "C",
+          "requires": [
+            "validation-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-131",
+          "title": "Отличить номинальное требование от фактического результата",
+          "stage": "C",
+          "requires": [
+            "validation-adapter"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-132",
+          "title": "Проверить доступность и читаемость вида",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "MNA-133",
+          "title": "Проверить сохранение, Undo/Redo и миграцию",
+          "stage": "A",
+          "requires": [
+            "model-annotation-schema"
+          ],
+          "status": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    }
+  ]
+}
