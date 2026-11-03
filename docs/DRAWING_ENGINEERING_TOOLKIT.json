@@ -1,0 +1,1028 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-03",
+  "scope": "Исследовательский каталог инженерных обозначений, не реализация и не сертификация стандартов",
+  "idPrefix": "SYM",
+  "baseline": "11ecf58dfc08f48eaa18aed155f025740a35721e",
+  "sources": [
+    {
+      "id": "SW-GDT",
+      "system": "SOLIDWORKS 2026",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/c_geometric_tolerance_symbols.htm",
+      "evidence": "FCF; руководство прямо указывает ASME Y14.5-2009, несмотря на версию продукта 2026.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "SW-RULES",
+      "system": "SOLIDWORKS 2026",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/t_limiting_gtol_standard.htm",
+      "evidence": "Ограничение символов стандартом; опция разрешения символов всех стандартов снимает ограничение.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "SW-SURFACE",
+      "system": "SOLIDWORKS 2026",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/c_surface_finish_symbols.htm",
+      "evidence": "Символ + направление неровностей, привязка к грани; отдельный режим обозначений 2002 года.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "SW-WELD",
+      "system": "SOLIDWORKS 2026",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/c_weld_symbols.htm",
+      "evidence": "Библиотеки ANSI, ISO, GOST, JIS; независимые обозначения и перенос обозначений модельных швов в чертёж.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "SW-DATUM",
+      "system": "SOLIDWORKS 2026",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/c_datum_feature_symbols.htm",
+      "evidence": "Базы на поверхностях, рамках и размерах с ограничениями допустимых видов размеров.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "SW-TARGET",
+      "system": "SOLIDWORKS 2026",
+      "url": "https://help.solidworks.com/2026/english/SolidWorks/sldworks/t_datum_targets.htm",
+      "evidence": "Отдельные обозначения базовых точек/участков, привязка к грани или ребру.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "ON-GDT",
+      "system": "Onshape",
+      "url": "https://cad.onshape.com/help/Content/Drawing/geometric_tolerance.htm",
+      "evidence": "Поля GTOL, модификаторы, составные рамки, привязки; на этой странице также описаны datum targets.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "ON-SURFACE",
+      "system": "Onshape",
+      "url": "https://cad.onshape.com/help/Content/Drawing/surface_finish.htm",
+      "evidence": "Тип обработки, направление неровностей, поля и дополнительные строки, несколько ветвей выноски.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "ON-WELD",
+      "system": "Onshape",
+      "url": "https://cad.onshape.com/help/Content/Drawing/weld_symbol.htm",
+      "evidence": "Разные диалоги ISO/ANSI, стороны, тип соединения, флаг, круг, текст хвоста и несколько выносок.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "ON-DATUM",
+      "system": "Onshape",
+      "url": "https://cad.onshape.com/help/Content/Drawing/datum.htm",
+      "evidence": "Буквенные идентификаторы баз с привязкой к линейным и круговым рёбрам.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "FUSION",
+      "system": "Autodesk Fusion Drawing",
+      "url": "https://help.autodesk.com/cloudhelp/ENU/Fusion-Drawing/files/DWG-SYMBOLS.htm",
+      "evidence": "FCF, базы, шероховатость, сварка, конусность/уклон, кромки, sketch symbols; ассоциативность, Annotation Monitor и перепривязка; поведение ASME/ISO.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "BRICS",
+      "system": "BricsCAD Lite/Pro",
+      "url": "https://help.bricsys.com/en-us/document/command-reference/t/tolerance",
+      "evidence": "TOLERANCE: характеристика, две зоны, диаметр, материал, три базы, высота проекции. Не источник о Mechanical-сварке.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "GSTAR",
+      "system": "GstarCAD 2026",
+      "url": "https://cdn-sg-gw.gstarcad.net/gstarsoft_pdf/GstarCAD_2026_User_Guide.pdf",
+      "evidence": "User Guide §9.4, печатные стр.140–142: рамки, базы, условия материала, проецируемые и составные допуски.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "K-GDT",
+      "system": "КОМПАС-3D v25",
+      "url": "https://help.ascon.ru/KOMPAS/25/ru-RU/cm_formtolerance.html",
+      "evidence": "Специализированная команда допуска формы: рамка, таблица надписи, контур/выносная линия размера, точки привязки.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "K-SURFACE",
+      "system": "КОМПАС-3D v25",
+      "url": "https://help.ascon.ru/KOMPAS/25/ru-RU/cm_rough.html",
+      "evidence": "Специализированное обозначение шероховатости, источник, полка, выноска, размещение на контуре.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "K-FIELDS",
+      "system": "КОМПАС-3D v25",
+      "url": "https://help.ascon.ru/KOMPAS/25/ru-RU/221_28_3_1_vvod_nadpisi_oboznac.html",
+      "evidence": "Поля параметров Ra/Rz/Rmax/Sm/S/tp, базовая длина, обработка, направление; различаются ГОСТ 2.309-73 и изменение №3 2003 года.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "K-DATUM",
+      "system": "КОМПАС-3D v25",
+      "url": "https://help.ascon.ru/KOMPAS/25/ru-RU/cm_base.html",
+      "evidence": "Отдельная команда обозначения базы.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "TF-GDT",
+      "system": "T-FLEX CAD 15",
+      "url": "https://www.tflex.com/help/eng/T-FLEX%20CAD/15/tolerancing_formlimits.htm",
+      "evidence": "Редактор рамок допусков/баз, несколько выносок, привязки, параметры. Проверена документация v15, не текущая версия.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "TF-SURFACE",
+      "system": "T-FLEX CAD 15",
+      "url": "https://www.tflex.com/help/eng/T-FLEX%20CAD/15/roughness_symbols.htm",
+      "evidence": "Параметры шероховатости, привязки к линиям/кривым/размерам, отвязка; размер связан со шрифтом.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "FC-GDT",
+      "system": "FreeCAD TechDraw",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_Geometric_dimensioning_and_tolerancing.md",
+      "evidence": "Документ описывает ограниченный GD&T и оформление через Balloon/Unicode; это не доказательство полноценной семантической FCF.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "FC-SURFACE",
+      "system": "FreeCAD TechDraw",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_SurfaceFinishSymbols.md",
+      "evidence": "Отдельный инструмент с v0.21: шесть кнопок символов, угол, ISO/ASME, атрибуты.",
+      "accessed": "2026-11-03"
+    },
+    {
+      "id": "FC-WELD",
+      "system": "FreeCAD TechDraw",
+      "url": "https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/TechDraw_WeldSymbol.md",
+      "evidence": "С v0.19: символ на существующей выноске, две SVG-плитки сторон, all-around, field, alternating, tail и текстовые поля. Редакция стандарта не установлена.",
+      "accessed": "2026-11-03"
+    }
+  ],
+  "groups": [
+    {
+      "id": "G01",
+      "title": "Общий редактор и размещение",
+      "stage": "A",
+      "sources": [
+        "FUSION",
+        "ON-GDT",
+        "TF-GDT"
+      ],
+      "commands": [
+        {
+          "id": "SYM-001",
+          "title": "Создать инженерное обозначение",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-002",
+          "title": "Изменить параметры обозначения",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-003",
+          "title": "Повторить последнее обозначение",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-004",
+          "title": "Копировать свойства",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-005",
+          "title": "Разместить на контуре или размере",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-006",
+          "title": "Добавить и удалить ветвь выноски",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-007",
+          "title": "Перепривязать потерянный источник",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-008",
+          "title": "Редактировать через Apply/OK/Cancel",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G02",
+      "title": "Допуски формы",
+      "stage": "B",
+      "sources": [
+        "SW-GDT",
+        "K-GDT",
+        "BRICS"
+      ],
+      "commands": [
+        {
+          "id": "SYM-009",
+          "title": "Прямолинейность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-010",
+          "title": "Плоскостность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-011",
+          "title": "Круглость",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-012",
+          "title": "Цилиндричность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G03",
+      "title": "Допуски профиля",
+      "stage": "B",
+      "sources": [
+        "SW-GDT",
+        "ON-GDT"
+      ],
+      "commands": [
+        {
+          "id": "SYM-013",
+          "title": "Профиль линии",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-014",
+          "title": "Профиль поверхности",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-015",
+          "title": "Ограничить участок профиля",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-016",
+          "title": "Задать несимметричную зону по выбранному правилу",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G04",
+      "title": "Допуски ориентации",
+      "stage": "B",
+      "sources": [
+        "SW-GDT",
+        "BRICS"
+      ],
+      "commands": [
+        {
+          "id": "SYM-017",
+          "title": "Параллельность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-018",
+          "title": "Перпендикулярность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-019",
+          "title": "Наклонность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G05",
+      "title": "Допуски расположения",
+      "stage": "B",
+      "sources": [
+        "SW-GDT",
+        "BRICS",
+        "GSTAR"
+      ],
+      "commands": [
+        {
+          "id": "SYM-020",
+          "title": "Позиционный допуск",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-021",
+          "title": "Составной позиционный допуск",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-022",
+          "title": "Соосность/концентричность в допустимой редакции",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-023",
+          "title": "Симметричность в допустимой редакции",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G06",
+      "title": "Допуски биения",
+      "stage": "B",
+      "sources": [
+        "SW-GDT",
+        "BRICS"
+      ],
+      "commands": [
+        {
+          "id": "SYM-024",
+          "title": "Круговое биение",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-025",
+          "title": "Полное биение",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-026",
+          "title": "Указать контролируемое направление/поверхность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G07",
+      "title": "Базы и системы баз",
+      "stage": "B",
+      "sources": [
+        "SW-DATUM",
+        "ON-DATUM",
+        "K-DATUM"
+      ],
+      "commands": [
+        {
+          "id": "SYM-027",
+          "title": "Обозначить базовый элемент",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-028",
+          "title": "Назначить первичную базу",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-029",
+          "title": "Назначить вторичную и третичную базы",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-030",
+          "title": "Задать общую базу при разрешении правил",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-031",
+          "title": "Изменить идентификатор с проверкой ссылок",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-032",
+          "title": "Показать зависимые рамки",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G08",
+      "title": "Базовые точки и участки",
+      "stage": "B",
+      "sources": [
+        "SW-TARGET",
+        "ON-GDT"
+      ],
+      "commands": [
+        {
+          "id": "SYM-033",
+          "title": "Базовая точка",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-034",
+          "title": "Базовая линия",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-035",
+          "title": "Базовый участок",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-036",
+          "title": "Размер и координаты участка",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-037",
+          "title": "Номер участка и связь с базой",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-038",
+          "title": "Подвижный базовый участок / datum target при разрешении правил",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G09",
+      "title": "Зоны и модификаторы FCF",
+      "stage": "B",
+      "sources": [
+        "ON-GDT",
+        "BRICS",
+        "GSTAR",
+        "SW-RULES"
+      ],
+      "commands": [
+        {
+          "id": "SYM-039",
+          "title": "Допуск и единица",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-040",
+          "title": "Диаметральная зона",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-041",
+          "title": "Максимум материала MMC",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-042",
+          "title": "Минимум материала LMC",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-043",
+          "title": "Отсутствие условия материала/RFS по правилам",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-044",
+          "title": "Проецируемая зона и высота",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-045",
+          "title": "Свободное состояние",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-046",
+          "title": "Касательная плоскость",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-047",
+          "title": "Несколько сегментов рамки",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-048",
+          "title": "Составная рамка с общим знаком",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-049",
+          "title": "Модификаторы ссылок на базы",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-050",
+          "title": "Дополнительные указания над и под рамкой",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G10",
+      "title": "Текстура поверхности: современный профиль",
+      "stage": "B",
+      "sources": [
+        "SW-SURFACE",
+        "ON-SURFACE",
+        "FC-SURFACE"
+      ],
+      "commands": [
+        {
+          "id": "SYM-051",
+          "title": "Базовое обозначение текстуры",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-052",
+          "title": "Обязательное удаление материала",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-053",
+          "title": "Удаление материала запрещено",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-054",
+          "title": "Параметр и пределы текстуры",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-055",
+          "title": "Единицы и несколько требований",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-056",
+          "title": "Направление неровностей",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-057",
+          "title": "Способ обработки",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-058",
+          "title": "Припуск на обработку",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-059",
+          "title": "Условия измерения/фильтрации по профилю",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-060",
+          "title": "Обозначение по всему контуру",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G11",
+      "title": "Шероховатость: наследуемые обозначения",
+      "stage": "B",
+      "sources": [
+        "K-FIELDS",
+        "K-SURFACE",
+        "TF-SURFACE"
+      ],
+      "commands": [
+        {
+          "id": "SYM-061",
+          "title": "Профиль ISO 1302 без автоматической конвертации",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-062",
+          "title": "Профиль ГОСТ 2.309 с редакцией",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-063",
+          "title": "Ra/Rz и другие разрешённые параметры",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-064",
+          "title": "Базовая длина",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-065",
+          "title": "Несколько строк требований",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-066",
+          "title": "Неуказанная шероховатость листа",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-067",
+          "title": "Явное преобразование с отчётом потерь",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G12",
+      "title": "Сварные швы: основные обозначения",
+      "stage": "B",
+      "sources": [
+        "SW-WELD",
+        "ON-WELD",
+        "FC-WELD"
+      ],
+      "commands": [
+        {
+          "id": "SYM-068",
+          "title": "Выбрать систему обозначений и редакцию",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-069",
+          "title": "Сторона стрелки",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-070",
+          "title": "Обратная сторона",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-071",
+          "title": "Двустороннее обозначение",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-072",
+          "title": "Угловой шов",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-073",
+          "title": "Стыковые типы и подготовка кромок",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-074",
+          "title": "Точечный/роликовый/пробочный тип по библиотеке",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-075",
+          "title": "Перевернуть обозначение с сохранением смысла",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G13",
+      "title": "Сварные швы: параметры и дополнения",
+      "stage": "B",
+      "sources": [
+        "ON-WELD",
+        "FC-WELD",
+        "SW-WELD"
+      ],
+      "commands": [
+        {
+          "id": "SYM-076",
+          "title": "Катет или расчётная толщина",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-077",
+          "title": "Длина шва",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-078",
+          "title": "Шаг и число участков",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-079",
+          "title": "Прерывистый и шахматный шов",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-080",
+          "title": "Контур поверхности шва",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-081",
+          "title": "Способ окончательной обработки",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-082",
+          "title": "Шов по замкнутому контуру",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-083",
+          "title": "Монтажный шов",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-084",
+          "title": "Хвост: процесс/ссылка на документ",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-085",
+          "title": "Несколько операций/полок по правилам",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-086",
+          "title": "Связать обозначение с модельным швом",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G14",
+      "title": "Кромки и технологические обозначения",
+      "stage": "B",
+      "sources": [
+        "FUSION"
+      ],
+      "commands": [
+        {
+          "id": "SYM-087",
+          "title": "Обозначение кромки по профилю ISO 13715",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-088",
+          "title": "Допустимый избыток/недостаток материала кромки",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-089",
+          "title": "Уклон",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-090",
+          "title": "Конусность",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-091",
+          "title": "Покрытие как типизированное требование",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-092",
+          "title": "Термообработка как типизированное требование",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-093",
+          "title": "Пользовательский технологический знак с происхождением",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G15",
+      "title": "Стандарты, библиотеки и оформление",
+      "stage": "A",
+      "sources": [
+        "SW-RULES",
+        "K-FIELDS",
+        "SW-WELD"
+      ],
+      "commands": [
+        {
+          "id": "SYM-094",
+          "title": "Профиль стандарта с точной редакцией",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-095",
+          "title": "Проверка разрешённых сочетаний полей",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-096",
+          "title": "Шаблон обозначения",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-097",
+          "title": "Библиотека векторных знаков",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-098",
+          "title": "Стили листа и масштаб",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-099",
+          "title": "Предпросмотр по выбранному стандарту",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-100",
+          "title": "Предупреждение о смешении профилей",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        },
+        {
+          "id": "SYM-101",
+          "title": "Миграция без потери неизвестных кодов",
+          "delivery": "planned",
+          "runtimeIntegrated": false
+        }
+      ]
+    },
+    {
+      "id": "G16",
+      "title": "Ассоциативность, обмен и контроль",
+      "stage": "A/B/C — по команде",
+      "sources": [
+        "FUSION",
+        "SW-WELD",
+        "FC-GDT"
+      ],
+      "commands": [
+        {
+          "id": "SYM-102",
+          "title": "Устойчивые ссылки на геометрию",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "A/B"
+        },
+        {
+          "id": "SYM-103",
+          "title": "Диагностика оборванных ссылок",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "A/B"
+        },
+        {
+          "id": "SYM-104",
+          "title": "Перенос PMI модели в чертёж",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "C"
+        },
+        {
+          "id": "SYM-105",
+          "title": "Семантический импорт/экспорт через отдельные адаптеры",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "C"
+        },
+        {
+          "id": "SYM-106",
+          "title": "Векторный SVG/PDF с сохранением вида",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "A/B"
+        },
+        {
+          "id": "SYM-107",
+          "title": "Отчёт потерь DXF/DWG",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "A/B"
+        },
+        {
+          "id": "SYM-108",
+          "title": "Экспорт требований для измерительного контроля",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "C"
+        },
+        {
+          "id": "SYM-109",
+          "title": "Проверка геометрии через проверенный геометрический/метрологический backend",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "C"
+        },
+        {
+          "id": "SYM-110",
+          "title": "Ссылка на WPS без подмены расчёта сварки",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "B"
+        },
+        {
+          "id": "SYM-111",
+          "title": "Проверка Undo/Redo и восстановления документа",
+          "delivery": "planned",
+          "runtimeIntegrated": false,
+          "stage": "A/B"
+        }
+      ]
+    }
+  ]
+}
