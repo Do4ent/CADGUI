@@ -134,5 +134,6 @@ export function formatDimension(measurement:DimensionMeasurement,definition:Dime
  if(f.alternateUnit){if(measurement.unit!=='mm')throw new Error('Альтернативная линейная единица неприменима к углу');const alt=withTolerance(measurement.value,finite(f.factor*linearUnitFactor[f.alternateUnit],'Альтернативная единица'),{...f,roundingIncrement:0},t,f.alternatePrecision);body+=` [${alt} ${f.alternateUnit}]`;}
  let text=f.prefix+body+f.suffix;
  if(definition.manualText!==undefined){if(typeof definition.manualText!=='string'||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(definition.manualText))throw new Error('Некорректный ручной текст размера');text=definition.manualText.split('<>').join(text);}
+ if(definition.inspection!==undefined){const inspection=definition.inspection;if(!inspection||typeof inspection.label!=='string'||!inspection.label.trim()||/[\u0000-\u001f]/.test(inspection.label))throw new Error('Контрольный размер: требуется непустая безопасная метка');const rate=finite(inspection.rate,'Процент контроля');if(rate<0||rate>100)throw new Error('Процент контроля должен быть от 0 до 100');text=`[${inspection.label.trim()}] ${text} (${String(rate).replace('.',f.decimalSeparator)}%)`;}
  return text;
 }
