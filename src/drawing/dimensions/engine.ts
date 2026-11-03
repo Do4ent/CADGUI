@@ -39,14 +39,14 @@ function line(ref:DimensionReference,doc:DrawingDocument):[Point2,Point2] {
  const a=transform(e,point(e.geometry.points[0],'Начало линии'),doc),b=transform(e,point(e.geometry.points[1],'Конец линии'),doc);unit(subtract(b,a));return [a,b];
 }
 function circle(ref:DimensionReference,doc:DrawingDocument):{entity:DrawingEntity;center:Point2;radius:number;rim:Point2} {
- const e=entityFor(ref,doc);if(e.kind!=='geometry'||e.geometry?.type!=='ellipse')throw new Error('Радиус/диаметр поддерживает круг, а не текст, эллипс или 3D-проекцию');
+ const e=entityFor(ref,doc);if(e.kind==='geometry'&&e.geometry?.type==='arc'){const arc=arcGeometry(ref,doc);return {entity:e,center:arc.center,radius:arc.radius,rim:arc.start};}if(e.kind!=='geometry'||e.geometry?.type!=='ellipse')throw new Error('Радиус/диаметр поддерживает круг или дугу окружности, а не текст, эллипс или 3D-проекцию');
  const w=positive(e.width,'Диаметр круга'),h=positive(e.height,'Диаметр круга');if(Math.abs(w-h)>Math.max(w,h)*EPS)throw new Error('Эллипс с разными осями не является кругом');
  const radius=w/2;positive(radius,'Радиус');return {entity:e,center:transform(e,[w/2,h/2],doc),radius,rim:transform(e,[w,h/2],doc)};
 }
 function resolvePoint(ref:DimensionReference,doc:DrawingDocument):Point2 {
  if(!ref||typeof ref!=='object')throw new Error('Пустая ссылка размера');
  if(ref.point!==undefined){if(ref.entityId!==undefined)throw new Error('Точка и entityId взаимоисключающие');return point(ref.point,'Ручная точка');}
- const e=entityFor(ref,doc),anchor=ref.anchor??'center';if(!['start','end','mid','center'].includes(anchor))throw new Error('Неизвестная опора точки');
+ const e=entityFor(ref,doc),anchor=ref.anchor??'center';if(e.kind!=='geometry'||!e.geometry)throw new Error('Точки размера должны ссылаться на геометрию, а не на рамку текста/аннотации');if(!['start','end','mid','center'].includes(anchor))throw new Error('Неизвестная опора точки');
  if(e.geometry?.type==='line'){
   const [a,b]=line(ref,doc);if(anchor==='start')return a;if(anchor==='end')return b;return add(a,multiply(subtract(b,a),0.5));
  }
