@@ -475,7 +475,7 @@
         },
         {
           "id": "SYM-038",
-          "title": "Подвижная база при разрешении правил",
+          "title": "Подвижный базовый участок / datum target при разрешении правил",
           "delivery": "planned",
           "runtimeIntegrated": false
         }
@@ -945,7 +945,7 @@
     {
       "id": "G16",
       "title": "Ассоциативность, обмен и контроль",
-      "stage": "C",
+      "stage": "A/B/C — по команде",
       "sources": [
         "FUSION",
         "SW-WELD",
@@ -956,61 +956,71 @@
           "id": "SYM-102",
           "title": "Устойчивые ссылки на геометрию",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "A/B"
         },
         {
           "id": "SYM-103",
           "title": "Диагностика оборванных ссылок",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "A/B"
         },
         {
           "id": "SYM-104",
           "title": "Перенос PMI модели в чертёж",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "C"
         },
         {
           "id": "SYM-105",
           "title": "Семантический импорт/экспорт через отдельные адаптеры",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "C"
         },
         {
           "id": "SYM-106",
           "title": "Векторный SVG/PDF с сохранением вида",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "A/B"
         },
         {
           "id": "SYM-107",
           "title": "Отчёт потерь DXF/DWG",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "A/B"
         },
         {
           "id": "SYM-108",
           "title": "Экспорт требований для измерительного контроля",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "C"
         },
         {
           "id": "SYM-109",
-          "title": "Проверка геометрии только через ядро",
+          "title": "Проверка геометрии через проверенный геометрический/метрологический backend",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "C"
         },
         {
           "id": "SYM-110",
           "title": "Ссылка на WPS без подмены расчёта сварки",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "B"
         },
         {
           "id": "SYM-111",
           "title": "Проверка Undo/Redo и восстановления документа",
           "delivery": "planned",
-          "runtimeIntegrated": false
+          "runtimeIntegrated": false,
+          "stage": "A/B"
         }
       ]
     }
