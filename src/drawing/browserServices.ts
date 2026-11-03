@@ -77,8 +77,8 @@ export async function probeFontAvailability(fontFamily:string):Promise<FontProbe
  return {available:document.fonts.check(`72px "${font}"`)&&differing,method:'canvas-width+fontfaceset',certain:false};
 }
 function usedFonts(doc:DrawingDocument):Set<string>{
- const fonts=new Set(doc.styles.map(style=>style.fontFamily));
- for(const sheet of doc.sheets)for(const entity of sheet.entities){if(entity.overrides.fontFamily)fonts.add(entity.overrides.fontFamily);for(const paragraph of paragraphs(entity))for(const run of paragraph.runs)if(run.format?.fontFamily)fonts.add(run.format.fontFamily);}
+ const fonts=new Set([...doc.styles.map(style=>style.fontFamily),...(doc.dimensionStyles??[]).map(style=>style.fontFamily)]);
+ for(const sheet of doc.sheets)for(const entity of sheet.entities){if(entity.dimension)fonts.add(entity.dimension.style.fontFamily);if(entity.overrides.fontFamily)fonts.add(entity.overrides.fontFamily);for(const paragraph of paragraphs(entity))for(const run of paragraph.runs)if(run.format?.fontFamily)fonts.add(run.format.fontFamily);}
  return fonts;
 }
 export async function diagnoseFonts(document:DrawingDocument):Promise<Diagnostic[]>{

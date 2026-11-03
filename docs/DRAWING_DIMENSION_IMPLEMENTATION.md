@@ -53,9 +53,43 @@ Catalog parity tests check all 126 IDs, 16 groups, labels/descriptions/phases,
 known actions and kinds, capability explanations, shared group identity and
 unknown-ID rejection. These tests verify metadata, not route execution.
 
-Integration of the engine, renderer, editor, persistence and Workspace is ongoing.
-This document makes no completed browser-suite or successful delivery-head CI
-claim. Populate exact commit/run evidence only after those checks complete.
+The integrated delivery has passed 23 local module/static/functional suites and
+TypeScript/Vite production build. Browser and CI evidence is recorded in the
+pull-request checks for the delivery commit; catalog tests alone are not browser
+acceptance evidence.
+
+## Delivered interaction and limits
+
+- 126 stable IDs in 16 groups: 74 routed commands and 52 explicitly unavailable
+  capabilities. A routed command is a real interaction, not a declaration that
+  every detail of its broader research contract is complete.
+- Create/edit fourteen 2D measurement kinds; entity anchors and manual points;
+  actual dimension/extension lines, arrows, labels, masks and selectable bounds.
+- Geometry editor for source lines, circles/ellipses and explicit circular arcs.
+  Source changes rebuild both measurement and graphic layout. Dimension hit
+  boxes do not cover and intercept unrelated source geometry.
+- Shared-base, chain and ordinate groups preserve source identities and use one
+  history transaction. Snapshot/resume/detach preserves measured geometry.
+- Embedded and named styles, copy/reset/apply, alignment/spacing, filtered
+  selection, inspection labels, manual label restoration and source diagnostics.
+- Primary/alternate units, decimal precision, trailing zeros, rounding increment,
+  signed tolerances, limits, basic frames and reference formatting. A tolerance
+  value or text override never modifies the source geometry.
+- Native JSON stores definitions, styles, references and snapshots. SVG/PDF are
+  static representations. Static DXF emits text and line geometry; circular
+  graphics are tessellated with a declared 0.01mm target and 2048-segment limit.
+  It is not semantic DIMENSION/DWG/PMI interchange.
+
+Remaining constraints are visible and deliberate: horizontal/vertical uses the
+paper axes; point-line/parallel measurements use infinite support lines;
+angular dimensions use the smaller 0–180° angle. Arbitrary reflex sectors,
+finite-segment distance mode, model/view coordinate conversion, fractional and
+architectural unit strings, leading-zero suppression and dashed dimension line
+styles are not implemented. Numeric labels are plain/formatted text, not full
+rich-text runs. Text metrics, label collisions and font availability probes are
+approximate; font probing does not certify full Unicode coverage. Template
+standard profiles do not imply ISO/ASME/GOST certification. Advanced disabled
+routes explain their specific missing adapter or workflow.
 
 ## Bounded acceptance gates
 

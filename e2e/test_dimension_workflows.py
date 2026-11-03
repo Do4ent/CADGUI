@@ -42,8 +42,13 @@ def test_round_geometry_creates_actual_radial_diametric_and_arc_length_measureme
     page.reload(wait_until='domcontentloaded')
     workspace(page)
     assert float(dimension_graphics(page).last.get_attribute('data-dimension-value')) == pytest.approx(value)
-    sheet(page).locator(f'[data-drawing-id="{source_id}"] [data-drawing-ui="true"]').dblclick()
+    sheet(page).locator(f'[data-drawing-id="{source_id}"] [data-drawing-ui="true"]').scroll_into_view_if_needed()
+    # Pick visible source geometry away from the dimension's actual lines/text.
+    source_point = [120 + 20 / math.sqrt(2), 90 + 20 / math.sqrt(2)] if source == 'Дуга' else [140, 130]
+    screen = sheet(page).evaluate('(svg, p) => {const q = new DOMPoint(...p).matrixTransform(svg.getScreenCTM());return {x:q.x,y:q.y};}', source_point)
+    page.mouse.dblclick(screen['x'], screen['y'])
     geometry_editor = page.get_by_role('dialog', name='Геометрия опоры', exact=True)
+    expect(geometry_editor).to_be_visible()
     if source == 'Дуга':
         geometry_editor.get_by_label('Радиус дуги', exact=True).fill('40')
     else:

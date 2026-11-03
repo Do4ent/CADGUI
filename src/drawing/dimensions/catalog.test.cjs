@@ -8,7 +8,7 @@ const features=spec.groups.flatMap(group=>group.features.map(feature=>({...featu
 assert.equal(dimensionCommands.length,126);assert.equal(dimensionCommandGroups.length,16);
 assert.equal(new Set(dimensionCommands.map(command=>command.id)).size,126);
 const kinds=new Set(['horizontal','vertical','aligned','rotated','point-line','parallel','radius','diameter','angle','angle3','arc-length','ordinate-x','ordinate-y','chamfer']);
-const actions=new Set(['create','create-context','group-chain','group-baseline','group-ordinate','edit','source','diagnose','freeze','detach','restore','duplicate','delete','select','align','distribute','copy-style','reset-style','styles','bulk-style','inspection','json','export','history','unavailable']);
+const actions=new Set(['create','create-context','group-chain','group-baseline','group-ordinate','edit','source','diagnose','freeze','detach','restore','duplicate','delete','select','align','distribute','copy-style','reset-style','styles','bulk-style','inspection','json','export','history','fonts','unavailable']);
 for(const feature of features){
  const command=getDimensionCommand(feature.id);assert.ok(command,feature.id);
  for(const key of ['id','label','groupId','phase'])assert.equal(command[key],feature[key],feature.id+' '+key);

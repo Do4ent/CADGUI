@@ -59,3 +59,9 @@ const reporting=json(copied);by(reporting,ids[0]).dimension.manualText='Конт
 const report=o.dimensionReport(reporting);assert.ok(report.some(line=>line.includes('10 mm')&&line.includes('ручная подпись')));assert.ok(report.some(line=>line.includes('missing-report-source')));
 const duplicate=saved(first.document,definition());assert.ok(o.dimensionReport(duplicate.document).some(line=>line.includes('дубликат')));
 console.log('PASS dimension workspace atomic edits, source groups, radial freeze/detach, visual styles, spacing and reports');
+
+{
+const custom=m.createDrawingDocument();custom.styles[0].id='custom-only';const customDef=d.defaultDimensionDefinition('aligned');customDef.refs=[{point:[0,0]},{point:[3,4]}];const customSaved=o.saveDimension(custom,customDef);assert.equal(customSaved.document.sheets[0].entities[0].styleId,'custom-only');
+const legacy=m.createTextEntity('symbol','legacy');legacy.styleId='custom-only';Object.assign(legacy,{x:100,y:90,annotation:{type:'dimension',fields:{},prefix:'L='}});custom.sheets[0].entities.push(legacy);const upgraded=o.saveDimension(custom,customDef,legacy.id).document.sheets[0].entities[0];assert.equal(upgraded.id,legacy.id);assert.equal(upgraded.x,0);assert.equal(upgraded.y,0);assert.ok(upgraded.dimension);
+console.log('PASS dimensions respect valid custom-only document styles and migrate legacy placement once');
+}

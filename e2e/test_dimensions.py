@@ -137,6 +137,7 @@ def test_invalid_dimension_references_and_cancel_do_not_mutate_document(page, tm
 
 def test_dimension_palette_preserves_all_126_catalog_ids(page):
     workspace(page)
+    page.get_by_role('navigation', name='Категория аннотаций').get_by_role('button', name='Размеры', exact=True).click()
     panel = page.get_by_role('region', name='Инструменты размеров', exact=True)
     catalog = json.loads((Path(__file__).resolve().parents[1] / 'docs' / 'DRAWING_DIMENSION_TOOLKIT.json').read_text())
     expected = {feature['id'] for group in catalog['groups'] for feature in group['features']}

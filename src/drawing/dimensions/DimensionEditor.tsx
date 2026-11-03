@@ -42,6 +42,7 @@ export function dimensionNumberError(raw:string,spec:Pick<NumberSpec,'min'|'max'
 
 export function DimensionEditor({document,selection,entity,initialKind='aligned',onConfirm,onCancel}:DimensionEditorProps){
  const [draft,setDraft]=useState(()=>createDimensionEditorDraft(document,selection,entity,initialKind));
+ const [submitError,setSubmitError]=useState('');
  const [rawNumbers,setRawNumbers]=useState<Record<string,string>>({});
  const geometry=activeGeometry(document);
  const patchStyle=<K extends keyof DimensionStyle,>(key:K,value:DimensionStyle[K])=>setDraft(previous=>({...previous,style:{...previous.style,[key]:value}}));
@@ -94,7 +95,7 @@ export function DimensionEditor({document,selection,entity,initialKind='aligned'
     </>}
    </fieldset>;
   })}</div>
-  {draft.frozen&&<div className="dimension-notice"><strong>Измерение зафиксировано: {draft.frozen.value} {draft.frozen.unit}</strong><p>Опоры сохранены; пересчёт начнётся после снятия фиксации.</p><button type="button" onClick={()=>setDraft(previous=>{const next={...previous};delete next.frozen;return next;})}>Снять фиксацию</button></div>}
+  {draft.frozen&&<div className="dimension-notice"><strong>Измерение зафиксировано: {draft.frozen.value} {draft.frozen.unit}</strong><p>Опоры сохранены; пересчёт начнётся после снятия фиксации.</p><button type="button" onClick={()=>setDraft(previous=>{const next={...previous};delete next.frozen;if(!next.refs.length)next.refs=Array.from({length:referenceCount(next.kind)},()=>({}));return next;})}>Снять фиксацию</button></div>}
   {draft.groupId&&<p>Группа: {draft.groupId} · {draft.groupType}</p>}
  </fieldset>;
 
@@ -159,15 +160,18 @@ export function DimensionEditor({document,selection,entity,initialKind='aligned'
   computed=`${measurement.value} ${measurement.unit==='deg'?'°':'мм'}`;
   formatted=formatDimension(measurement,draft);
  }catch(error){errors.push(error instanceof Error?error.message:String(error));}
- const confirm=()=>{if(errors.length)return;const measurement=evaluateDimension(draft,document);formatDimension(measurement,draft);onConfirm(clone(draft));};
+ const confirm=()=>{if(errors.length)return;try{const measurement=evaluateDimension(draft,document);formatDimension(measurement,draft);onConfirm(clone(draft));}catch(error){setSubmitError(error instanceof Error?error.message:String(error))}};
  return <Dialog open title="Редактор размера" onCancel={onCancel} onConfirm={confirm} confirmDisabled={errors.length>0}>
   <div className="dimension-editor" data-dimension-editor="true">
+   {submitError&&<p role="alert">{submitError}</p>}
    <p>Измеряющий 2D-размер: опоры → значение → оформление. Подтверждение не изменяет геометрию источников.</p>
    <section className="dimension-preview" aria-label="Предпросмотр размера">
     <span data-dimension-measurement="true">Вычисленное значение: {computed??'не определено'}</span>
     <strong data-dimension-label="true">Подпись: {formatted??'не определена'}</strong>
     {draft.manualText!==undefined&&<span>Ручное переопределение включено</span>}
    </section>
+   {['point-line','parallel'].includes(draft.kind)&&<p>Опорные линии рассматриваются как бесконечные прямые.</p>}
+   {['angle','angle3'].includes(draft.kind)&&<p>Измеряется меньший угол 0–180°. Выбор внешнего сектора пока недоступен.</p>}
    {sourceSection}{placementSection}{styleSection}{valueSection}{toleranceSection}
    {errors.length>0&&<div className="dimension-errors" role="alert"><strong>Проверьте параметры:</strong><ul>{[...new Set(errors)].map(error=><li key={error}>{error}</li>)}</ul></div>}
   </div>

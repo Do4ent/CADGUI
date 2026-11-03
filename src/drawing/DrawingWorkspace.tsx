@@ -12,6 +12,10 @@ import {TechnicalIcon} from '../components/icons/TechnicalIcon';
 import {exportDrawingDxf,parseDrawingDxf,serializeDrawingSvg} from './exchange/vector';
 import './drawing.css';
 import './workspace.css';
+import {DimensionTools} from './dimensions/DimensionTools';
+import {GeometryEditor} from './dimensions/GeometryEditor';
+import {defaultDimensionDefinition} from './dimensions/defaults';
+import {saveDimension} from './dimensions/operations';
 export type DrawingWorkspaceProps={document:DrawingDocument;context:DrawingContext;selection:string[];onSelect:(ids:string[])=>void;onChange:(doc:DrawingDocument,label:string)=>void;onUndo:()=>void;onRedo:()=>void;historyCount:number;futureCount:number};
 type Edit={command:string;entity:DrawingEntity;selection:string[]};
 type Files='text'|'dxf'|'json'|'ocr'|'outlines'|'table';
@@ -25,6 +29,7 @@ const readOnly=new Set(['TXT-073','TXT-082','TXT-094','TXT-095']);
 export function DrawingWorkspace(props:DrawingWorkspaceProps){
  const {document:doc,context,selection,onSelect,onChange,onUndo,onRedo,historyCount,futureCount}=props;
  const root=useRef<HTMLDivElement>(null),file=useRef<HTMLInputElement>(null),fileMode=useRef<Files>('text');
+ const [toolMode,setToolMode]=useState<'text'|'dimensions'>('text'),[dimensionRequest,setDimensionRequest]=useState(0),[dimensionEdit,setDimensionEdit]=useState<string|undefined>(),[geometryEdit,setGeometryEdit]=useState<DrawingEntity|null>(null);
  const [query,setQuery]=useState(''),[command,setCommand]=useState<DrawingCommand|null>(null),[edit,setEdit]=useState<Edit|null>(null);
  const [error,setError]=useState(''),[status,setStatus]=useState('Готово'),[report,setReport]=useState<Diagnostic[]>([]),[reportText,setReportText]=useState('');
  const [busy,setBusy]=useState(false),[progress,setProgress]=useState(0),[zoom,setZoom]=useState(.8),[preview,setPreview]=useState<string|null>(null);
@@ -110,25 +115,18 @@ export function DrawingWorkspace(props:DrawingWorkspaceProps){
  };
  const addSheet=()=>{const next=cloneDrawing(doc);const id=drawingId('sheet');next.sheets.push({id,name:`Лист ${next.sheets.length+1}`,width:297,height:210,scale:1,entities:[]});next.activeSheetId=id;commit(next,'Добавлен лист',[]);};
  const addReferenceLine=()=>{const next=cloneDrawing(doc);const entity=createTextEntity('geometry','');entity.name='Опорная линия';entity.x=20;entity.y=80;entity.width=100;entity.height=1;entity.geometry={type:'line',points:[[0,0],[100,0]]};activeDrawingSheet(next).entities.push(entity);commit(next,'Создана опорная линия',[entity.id]);};
- const addDimension=()=>{try{
-  const source=selected.find(e=>e.kind==='geometry'&&e.geometry?.type==='line');
-  if(!source||!geometryLineEndpoints(source))throw new Error('Для размера нужна линия, содержащая ровно две точки');
-  const [a,b]=source.geometry!.points!;
-  const length=Math.hypot(b[0]-a[0],b[1]-a[1]);
-  if(!Number.isFinite(length)||length<=0)throw new Error('Для размера нужна линия ненулевой длины');
-  const next=cloneDrawing(doc),entity=createTextEntity('symbol',String(length));
-  entity.name='Размер линии';entity.x=source.x;entity.y=source.y+10;
-  entity.annotation={type:'dimension',sourceId:source.id,fields:{value:String(Number(length.toFixed(3)))}};
-  activeDrawingSheet(next).entities.push(entity);commit(next,'Создан размер опорной линии',[entity.id]);
- }catch(e){fail(e)}};
+ const addDimension=()=>{try{const source=selected.find(e=>e.kind==='geometry'&&e.geometry?.type==='line');if(!source||!geometryLineEndpoints(source))throw new Error('Для размера нужна линия, содержащая ровно две точки');const points=source.geometry!.points!;if(Math.hypot(points[1][0]-points[0][0],points[1][1]-points[0][1])<=0)throw new Error('Для размера нужна линия ненулевой длины');const def=defaultDimensionDefinition('aligned');def.refs=[{entityId:source.id}];const result=saveDimension(doc,def);commit(result.document,'Создан размер опорной линии',result.ids);}catch(e){fail(e)}};
+ const addRound=(arc=false)=>{try{const next=cloneDrawing(doc),entity=createTextEntity('geometry','');Object.assign(entity,{name:arc?'Дуга':'Окружность',x:120,y:90,width:40,height:40,paragraphs:[],geometry:arc?{type:'arc',points:[[0,0]],radius:20,startAngle:0,endAngle:90,clockwise:true}:{type:'ellipse'}});activeDrawingSheet(next).entities.push(entity);commit(next,arc?'Создана дуга':'Создана окружность',[entity.id]);}catch(e){fail(e)}};
+ const openDimension=(id?:string)=>{setToolMode('dimensions');setDimensionEdit(id);setDimensionRequest(n=>n+1)};
+
  const filtered=(definition:DrawingCommand)=>!query||`${definition.id} ${definition.label} ${definition.description}`.toLocaleLowerCase().includes(query.toLocaleLowerCase());
  const blockReason=(definition:DrawingCommand)=>unavailable[definition.id]??((definition.requiresSelection||['TXT-009','TXT-084','TXT-097','TXT-102'].includes(definition.id))&&!selection.length&&!['TXT-063','TXT-070','TXT-071'].includes(definition.id)?'Выберите объект на листе':undefined);
  return <div className="drawing-workspace" ref={root} role="region" aria-label="Инструменты текста чертежа">
-  <aside className="drawing-toolbox"><h2>Текст и аннотации</h2><label>Поиск инструмента<input aria-label="Поиск текстовых команд" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Название или TXT-001"/></label><small>{drawingCommands.length} команды · 12 групп</small>
+  <aside className="drawing-toolbox"><nav aria-label="Категория аннотаций"><button onClick={()=>setToolMode('text')} aria-pressed={toolMode==='text'}>Текст</button><button onClick={()=>setToolMode('dimensions')} aria-pressed={toolMode==='dimensions'}>Размеры</button></nav><div hidden={toolMode!=='text'}><h2>Текст и аннотации</h2><label>Поиск инструмента<input aria-label="Поиск текстовых команд" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Название или TXT-001"/></label><small>{drawingCommands.length} команды · 12 групп</small>
    {drawingCommandGroups.map(group=><section key={group.id} data-drawing-group={group.id}><h3>{group.label}</h3>{group.commands.filter(filtered).map(definition=>{const reason=blockReason(definition);return <button key={definition.id} type="button" data-drawing-command={definition.id} aria-label={`${definition.id} ${definition.label}`} disabled={busy||Boolean(reason)} title={reason??definition.description} onClick={()=>open(definition.id)}><TechnicalIcon kind={definition.icon} size={18}/><span>{definition.label}<small>{definition.id}</small></span>{unavailable[definition.id]&&<span aria-label="Недоступно">⊘</span>}</button>})}</section>)}
-  </aside>
+  </div><div hidden={toolMode!=='dimensions'}><DimensionTools document={doc} selection={selection} onSelect={onSelect} onChange={(next,label,ids)=>commit(next,label,ids)} onError={fail} onExport={type=>{if(type==='svg')exportSvg();else if(type==='dxf')exportDxf();else void exportPdf()}} onImport={()=>chooseFile('json')} onUndo={onUndo} onRedo={onRedo} openRequest={dimensionRequest} editEntityId={dimensionEdit} onEditorClose={()=>setDimensionEdit(undefined)}/></div></aside>
   <section className="drawing-studio"><div className="drawing-toolbar" aria-label="Команды листа">
-   <button onClick={()=>open('TXT-002')}>Текст</button><button onClick={()=>open('TXT-005')}>Выноска</button><button onClick={()=>open('TXT-007')}>Таблица</button><button onClick={addReferenceLine}>Опорная линия</button><button onClick={addDimension} disabled={!selected.some(e=>e.geometry?.type==='line')}>Размер линии</button>
+   <button onClick={()=>open('TXT-002')}>Текст</button><button onClick={()=>open('TXT-005')}>Выноска</button><button onClick={()=>open('TXT-007')}>Таблица</button><button onClick={addReferenceLine}>Опорная линия</button><button onClick={()=>addRound()}>Окружность</button><button onClick={()=>addRound(true)}>Дуга</button><button onClick={()=>openDimension()}>Размеры</button><button onClick={addDimension} disabled={!selected.some(e=>e.geometry?.type==='line')}>Размер линии</button>
    <button onClick={onUndo} disabled={!historyCount}>Отменить чертёж</button><button onClick={onRedo} disabled={!futureCount}>Повторить чертёж</button><button onClick={duplicate} disabled={!selection.length}>Копия</button><button onClick={remove} disabled={!selection.length}>Удалить текст</button>
    <button onClick={exportSvg}>Экспорт SVG</button><button onClick={exportDxf}>Экспорт DXF</button><button onClick={()=>void exportPdf()} disabled={busy}>Экспорт PDF</button><button onClick={()=>chooseFile('dxf')}>Импорт DXF</button>
    <button onClick={()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),'чертёж.json')}>JSON чертежа</button><button onClick={()=>chooseFile('json')}>Импорт чертежа JSON</button>
@@ -136,11 +134,12 @@ export function DrawingWorkspace(props:DrawingWorkspaceProps){
   <div className="drawing-sheet-tools"><label>Лист<select aria-label="Лист чертежа" value={doc.activeSheetId} onChange={e=>{commit({...doc,activeSheetId:e.target.value},'Выбран лист',[])}}>{doc.sheets.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><button onClick={addSheet}>Добавить лист</button><label>Масштаб вида<input aria-label="Масштаб вида листа" type="number" min="0.01" step="0.1" value={sheet.scale} onChange={e=>{const n=Number(e.target.value);if(n>0&&Number.isFinite(n)){const next=cloneDrawing(doc);activeDrawingSheet(next).scale=n;commit(next,'Изменён масштаб вида')}}}/></label><label>Экран<select aria-label="Масштаб экрана" value={zoom} onChange={e=>setZoom(Number(e.target.value))}>{[.5,.8,1,1.5,2].map(n=><option key={n} value={n}>{Math.round(n*100)}%</option>)}</select></label><span>мм · SVG-лист · {selection.length} выбрано</span></div>
   {error&&<div role="alert" className="drawing-error">{error}<button aria-label="Закрыть ошибку чертежа" onClick={()=>setError('')}>×</button></div>}
   {busy&&<div role="status">Обработка… {Math.round(progress*100)}% <button onClick={()=>controller.current?.abort()}>Отменить распознавание</button></div>}
-  <DrawingSheet document={doc} context={context} selection={selection} onSelect={onSelect} onChange={(next,label)=>{try{commit(next,label)}catch(e){fail(e)}}} onEdit={id=>{const entity=sheet.entities.find(e=>e.id===id);if(entity)openEditor('TXT-003',entity)}} zoom={zoom}/>
+  <DrawingSheet document={doc} context={context} selection={selection} onSelect={onSelect} onChange={(next,label)=>{try{commit(next,label)}catch(e){fail(e)}}} onEdit={id=>{const entity=sheet.entities.find(e=>e.id===id);if(entity){if(entity.dimension||entity.annotation?.type==='dimension')openDimension(entity.id);else if(entity.kind==='geometry')setGeometryEdit(cloneDrawing(entity));else openEditor('TXT-003',entity)}}} zoom={zoom}/>
   <div role="status" className="drawing-status">{status} · Компоновка и метрики шрифтов приближённые; точное CAD-ядро не подключено.</div>
   <section role="region" aria-label="Проверка чертежа" className="drawing-reports"><button onClick={()=>setReport(diagnoseDrawing(doc,context))}>Проверить чертёж</button>{reportText&&<pre>{reportText}</pre>}{report.length>0?<ul>{report.map((item,i)=><li key={i} data-severity={item.severity}><button onClick={()=>{if(item.entityId)onSelect([item.entityId])}}>{item.message}</button></li>)}</ul>:<span>Замечаний в текущем отчёте нет</span>}</section>
   </section>
   <input ref={file} type="file" hidden aria-label="Файл инструментария чертежа" onChange={e=>void handleFile(e)}/>
+  {geometryEdit&&<GeometryEditor entity={geometryEdit} onCancel={()=>setGeometryEdit(null)} onConfirm={entity=>{try{const next=cloneDrawing(doc);activeDrawingSheet(next).entities=sheet.entities.map(e=>e.id===entity.id?entity:e);commit(next,'Изменена геометрия опоры',[entity.id]);setGeometryEdit(null)}catch(e){fail(e);throw e}}}/>}
   {edit&&<TextEditor entity={edit.entity} styles={doc.styles} onCancel={()=>setEdit(null)} onConfirm={entity=>{try{const result=executeDrawingCommand(doc,edit.selection,edit.command,{entity},context);commit(result.document,edit.command==='TXT-003'?'Изменён текст':'Добавлен текст',result.selection);setEdit(null)}catch(e){fail(e)}}}/>}
   {command&&<CommandDialog key={command.id} command={command} document={doc} selection={selection} context={context} onCancel={()=>setCommand(null)} onConfirm={input=>execute(command.id,input)}/>}
   {special&&<Dialog open title={special==='font'?'Шрифты чертежа':special==='spelling'?'Проверка орфографии':special==='native'?'Направление текста':special==='outlines'?(specialId==='TXT-089'?'Обмен DXF / DWG':'Текст в контуры'):'Распознавание и проверка текста'} onCancel={()=>{controller.current?.abort();epoch.current++;setBusy(false);setSpecial(null)}} onConfirm={confirmSpecial} confirmDisabled={busy||(special==='review'&&!recognized.trim())} confirmLabel={special==='ocr'?'Распознать':special==='review'?'Вставить проверенный текст':'ОК'}>
