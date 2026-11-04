@@ -11,3 +11,5 @@ export type Sketch={id:string;name:string;plane:SketchPlane;origin:[number,numbe
 export type SketchExtrusion={id:string;sketchId:string;bodyId:string;depth:number};
 export type SketchModelState={version:1;units:'mm';sketches:Sketch[];extrusions:SketchExtrusion[]};
 export type SketchSolveResult={status:'fully-constrained'|'under-constrained'|'inconsistent';dof:number;rank:number;points:SketchPoint[];residual:number;redundant:number;message?:string};
+
+export type SketchCurveProfile={kind:'circle';center:[number,number];radius:number}|{kind:'arc';center:[number,number];radius:number;startAngle:number;sweep:number};
