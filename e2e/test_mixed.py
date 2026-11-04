@@ -209,7 +209,7 @@ def test_mixed_locked_point_rejection_preserves_source_and_owned_body(page, tmp_
     field.press('Enter')
     expect(dialog.locator('[data-sketch-draft-status]')).to_have_attribute('data-sketch-draft-status', 'rejected')
     expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
-    baseline_x = next(p['x'] for p in source(before)['sketches'][0]['points'] if p['id'] == 'cl')
+    baseline_x = next(p['x'] for p in before['sketchModel']['sketches'][0]['points'] if p['id'] == 'cl')
     assert float(dialog.locator('[data-sketch-point-id="cl"]').get_attribute('data-sketch-point-x')) == pytest.approx(baseline_x, abs=1e-12)
     dialog.get_by_role('button', name='Отмена', exact=True).click()
     assert save_document(page, tmp_path, 'mixed-locked-after.json') == before
