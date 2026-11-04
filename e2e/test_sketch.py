@@ -239,7 +239,7 @@ def test_free_sketch_point_drag_respects_grid_and_persists_real_coordinates(page
     expect(dialog.locator('[data-sketch-solver-status]')).to_have_attribute('data-sketch-solver-status', 'under-constrained')
     point = dialog.locator('[data-sketch-point-id]').first
     point_id = point.get_attribute('data-sketch-point-id')
-    svg = dialog.get_by_role('img', name='Геометрия эскиза', exact=True)
+    svg = dialog.get_by_role('group', name='Геометрия эскиза', exact=True)
     def drag_to(x, y):
         point.scroll_into_view_if_needed()
         positions = svg.evaluate('''(svg, target) => {
@@ -267,3 +267,59 @@ def test_free_sketch_point_drag_respects_grid_and_persists_real_coordinates(page
     assert source['constraints'] == []
     saved_point = next(point for point in source['points'] if point['id'] == point_id)
     assert [saved_point['x'], saved_point['y']] == pytest.approx([1.25, 0.75], abs=1e-6)
+
+
+@pytest.mark.parametrize('target', ['point', 'constraint'])
+@pytest.mark.parametrize('invalid', ['', '1e309'], ids=['blank', 'nonfinite'])
+def test_uncommitted_invalid_numeric_input_blocks_parent_confirm_until_cancelled(page, tmp_path, target, invalid):
+    prepare(page)
+    sketch_id = create_sketch(page)
+    before = save_document(page, tmp_path, 'before-invalid-input.json')
+    select_sketch(page, sketch_id)
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    point_id = dialog.locator('[data-sketch-point-id]').first.get_attribute('data-sketch-point-id')
+    field = dialog.get_by_label(f'X {point_id}' if target == 'point' else 'Значение width', exact=True)
+    original = field.input_value()
+    field.fill(invalid)
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    field.blur()
+    expect(field).to_have_attribute('aria-invalid', 'true')
+    expect(dialog.get_by_text('Введите конечное число', exact=True)).to_be_visible()
+    expect(dialog.locator('[data-sketch-editor-valid]')).to_have_attribute('data-sketch-editor-valid', 'false')
+    dialog.get_by_role('button', name='Отменить ввод', exact=True).click()
+    expect(field).to_have_value(original)
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_enabled()
+    field.fill(invalid)
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'after-invalid-input.json') == before
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_enabled()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+
+
+def test_rejected_locked_point_move_blocks_confirm_until_failed_input_is_cancelled(page, tmp_path):
+    prepare(page)
+    sketch_id = create_sketch(page)
+    before = save_document(page, tmp_path, 'before-locked-point.json')
+    select_sketch(page, sketch_id)
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    point = dialog.locator('[data-sketch-point-id]').first
+    point_id = point.get_attribute('data-sketch-point-id')
+    original_x = point.get_attribute('data-sketch-point-x')
+    field = dialog.get_by_label(f'X {point_id}', exact=True)
+    field.fill(str(float(original_x) + 1))
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    field.press('Enter')
+    expect(dialog.locator('[data-sketch-draft-status]')).to_have_attribute('data-sketch-draft-status', 'rejected')
+    expect(dialog.get_by_role('alert')).to_contain_text('Изменение не применено')
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    expect(point).to_have_attribute('data-sketch-point-x', original_x)
+    dialog.get_by_role('button', name='Отменить неудачное изменение', exact=True).click()
+    expect(field).to_have_value(original_x)
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_enabled()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'after-locked-point.json') == before
