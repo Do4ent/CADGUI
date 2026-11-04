@@ -9,6 +9,7 @@ from test_regression import browser, page
 from test_drawing import save_document
 from test_kernel import prepare, create_box, rows as exact_rows, panel as exact_panel
 from test_sketch import panel, sketch_rows, extrude, inspect, select_sketch
+from test_curves import open_curve
 
 
 def model(document):
@@ -187,3 +188,44 @@ def test_schema8_native_holes_rebuild_owned_wrong_cache_and_recover(page, tmp_pa
     prepare(page)
     assert inspect(page, body_id)['volume'] == pytest.approx(63 * math.pi, rel=1e-7)
     assert model(save_document(page, tmp_path, 'ring-recovered.json')) == model(before)
+
+
+def test_accepted_hole_preview_evenodd_assignment_cancel_and_second_offset_hole(page, tmp_path):
+    prepare(page)
+    create_ring(page)
+    before = save_document(page, tmp_path, 'ring-assignment-before.json')
+    outer, inner = ring_sources(before)
+    select_sketch(page, outer['id'])
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    preview = dialog.get_by_role('img', name='Область с отверстиями', exact=True)
+    path = preview.locator('[data-sketch-region-path]')
+    expect(path).to_have_attribute('fill-rule', 'evenodd')
+    expect(path).to_have_attribute('data-sketch-region-holes', '1')
+    assert path.get_attribute('d').count('A') == 4
+    checkbox = dialog.locator(f'input[data-hole-source-id="{inner["id"]}"]')
+    expect(checkbox).to_be_checked()
+    checkbox.uncheck()
+    expect(path).to_have_attribute('data-sketch-region-holes', '0')
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'ring-assignment-cancelled.json') == before
+    # An in-plane origin translation places a separate small circle inside the outer,
+    # disjoint from the existing central hole.
+    dialog = open_curve(page, radius=.5)
+    dialog.get_by_label('Начало X', exact=True).fill('3')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    added = save_document(page, tmp_path, 'ring-second-circle.json')
+    second = next(s for s in model(added)['sketches'] if s['id'] not in (outer['id'], inner['id']))
+    select_sketch(page, outer['id'])
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    dialog.locator(f'input[data-hole-source-id="{second["id"]}"]').check()
+    expect(dialog.locator('[data-sketch-region-path]')).to_have_attribute('data-sketch-region-holes', '2')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    extrude(page, 3)
+    saved = save_document(page, tmp_path, 'ring-two-holes.json')
+    owner = next(s for s in model(saved)['sketches'] if s['id'] == outer['id'])
+    assert set(owner['holes']) == {inner['id'], second['id']}
+    assert inspect(page, model(saved)['extrusions'][0]['bodyId'])['volume'] == pytest.approx(62.25 * math.pi, rel=1e-7)
