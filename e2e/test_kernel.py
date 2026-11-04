@@ -151,3 +151,68 @@ def test_schema4_native_roundtrip_preserves_legacy_parts_notes_and_exact_brep(pa
     assert after['items'] == before['items']
     assert after['modelAnnotations'] == before['modelAnnotations']
     assert after['drawing'] == before['drawing']
+
+
+def test_step_roundtrip_preserves_disconnected_multisolid_volume_and_bounds(page, tmp_path):
+    prepare(page)
+    create_box(page)
+    create_cylinder(page, origin=(10, 0, 0))
+    operands = exact(save_document(page, tmp_path, 'operands.json'))['bodies']
+    assert len(operands) == 2
+    panel(page).get_by_role('button', name='Булева операция', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Булева операция', exact=True)
+    dialog.get_by_label('Тело A', exact=True).select_option(operands[0]['id'])
+    dialog.get_by_label('Тело B', exact=True).select_option(operands[1]['id'])
+    dialog.get_by_label('Операция', exact=True).select_option('fuse')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    # Disjoint fuse creates one compound body and retains both input bodies.
+    expect(rows(page)).to_have_count(3, timeout=120000)
+    expect(dialog).not_to_be_visible(timeout=120000)
+    result = stats(page)
+    assert result['volume'] == pytest.approx(24 + 20 * math.pi, rel=1e-8)
+    assert result['bounds'][0] == pytest.approx([0, -2, 0], abs=1e-6)
+    assert result['bounds'][1] == pytest.approx([12, 3, 5], abs=1e-6)
+    expect(panel(page).locator('[data-exact-solids]')).to_have_attribute('data-exact-solids', '2')
+    fused = exact(save_document(page, tmp_path, 'fused.json'))['bodies']
+    assert fused[:2] == operands
+    with page.expect_download(timeout=120000) as download:
+        panel(page).get_by_role('button', name='Экспорт STEP', exact=True).click()
+    target = tmp_path / 'two-solids.step'
+    download.value.save_as(target)
+    step = target.read_text()
+    assert 'ISO-10303-21;' in step and 'END-ISO-10303-21;' in step
+    page.get_by_title('Новый документ', exact=True).click()
+    expect(rows(page)).to_have_count(0)
+    panel(page).get_by_role('button', name='Импорт STEP', exact=True).click()
+    page.get_by_label('Файл STEP', exact=True).set_input_files(str(target))
+    expect(rows(page)).to_have_count(1, timeout=120000)
+    imported = stats(page)
+    assert imported['volume'] == pytest.approx(result['volume'], rel=1e-8)
+    for actual, expected in zip(imported['bounds'], result['bounds']):
+        assert actual == pytest.approx(expected, abs=1e-6)
+    expect(panel(page).locator('[data-exact-solids]')).to_have_attribute('data-exact-solids', '2')
+
+
+def test_real_wasm_loading_failure_is_atomic_and_create_can_retry(page):
+    # Abort an actual worker asset request; no kernel result is mocked.
+    blocked = []
+    wasm = re.compile(r'/assets/occt-wasm-[^/]+\.wasm(?:\?.*)?$')
+    def abort_wasm(route):
+        blocked.append(route.request.url)
+        route.abort('failed')
+    page.route(wasm, abort_wasm)
+    prepare(page)
+    original_items = items(page)
+    panel(page).get_by_role('button', name='Создать точный параллелепипед', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Точный параллелепипед', exact=True)
+    for label, value in [('Длина X', '2'), ('Ширина Y', '3'), ('Высота Z', '4')]:
+        dialog.get_by_label(label, exact=True).fill(value)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(page.get_by_role('alert')).to_be_visible(timeout=120000)
+    assert blocked, 'The test must fail a real WASM load, rather than a form check'
+    expect(rows(page)).to_have_count(0)
+    assert items(page) == original_items
+    page.unroute(wasm, abort_wasm)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(rows(page)).to_have_count(1, timeout=120000)
+    assert stats(page)['volume'] == pytest.approx(24, rel=1e-9)
