@@ -1,3 +1,4 @@
+import {validateMixedEdges} from '../sketch/mixed';
 import {profilePoints,sketchPointToWorld,sketchNormal} from '../sketch/model';
 import {OcctKernel,type ShapeHandle} from 'occt-wasm';
 import {MAX_BREP_LENGTH} from './model';
@@ -25,6 +26,12 @@ export class ExactKernelBackend{
    if(!request||typeof request!=='object')throw Error('Некорректный запрос ядра');
    let shape:ShapeHandle;
    switch(request.op){
+    case 'extrude-mixed':{
+     const origin=vector(request.origin),normal=sketchNormal(request.plane),depth=number(request.depth);if(Math.abs(depth)<1e-5)throw Error('Глубина выдавливания должна быть ненулевой');
+     const edges=validateMixedEdges(request.edges),xyz=(p:[number,number])=>{const w=sketchPointToWorld(request.plane,origin,p);return{x:w[0],y:w[1],z:w[2]}};
+     const native=edges.map(edge=>{if(edge.kind==='line')return k.makeLineEdge(xyz(edge.start),xyz(edge.end));const at=(a:number)=>xyz([edge.center[0]+edge.radius*Math.cos(a),edge.center[1]+edge.radius*Math.sin(a)]);return k.makeArcEdge(at(edge.startAngle),at(edge.startAngle+edge.sweep/2),at(edge.startAngle+edge.sweep));});
+     const face=k.makeFace(k.makeWire(native));shape=k.extrude(face,normal[0]*depth,normal[1]*depth,normal[2]*depth);break;
+    }
     case 'extrude-curve':{
      const origin=vector(request.origin),normal=sketchNormal(request.plane),depth=number(request.depth),p=request.profile;
      if(Math.abs(depth)<1e-5||!p||!['circle','arc'].includes(p.kind)||!Array.isArray(p.center)||p.center.length!==2)throw Error('Нужен корректный круговой профиль и ненулевая глубина');
