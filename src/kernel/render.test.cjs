@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');const ts=require('typescript');const Module=require('module');
+for(const ext of ['.ts','.tsx'])require.extensions[ext]=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,f);
+const original=Module._load;Module._load=function(id,...args){if(id==='./client')return {kernelClient:{execute:()=>Promise.reject(new Error('No worker in unit test'))}};if(id==='@react-three/drei')return {Html:()=>null};return original.call(this,id,...args)};
+const {createBodyGeometry,faceAtTriangle,faceHighlightGeometry,exactClippingPlanes}=require('./ExactModelLayer.tsx');Module._load=original;
+const result={mesh:{positions:new Float32Array([0,0,0,2,0,0,2,2,0,0,2,0]),normals:new Float32Array([0,0,1,0,0,1,0,0,1,0,0,1]),indices:new Uint32Array([0,1,2,0,2,3]),faceGroups:new Int32Array([0,3,47,3,3,91])}};
+assert.equal(faceAtTriangle(result.mesh.faceGroups,0),47);assert.equal(faceAtTriangle(result.mesh.faceGroups,1),91);assert.equal(faceAtTriangle(result.mesh.faceGroups,2),null);
+const geometry=createBodyGeometry(result);assert.deepEqual(Array.from(geometry.index.array),[0,1,2,0,2,3]);assert.deepEqual(geometry.boundingBox.max.toArray(),[2,2,0]);assert.equal(geometry.attributes.normal.count,4);
+const highlight=faceHighlightGeometry(result,91);assert.deepEqual(Array.from(highlight.index.array),[0,2,3]);assert.equal(faceHighlightGeometry(result,999).index.count,0);
+assert.throws(()=>createBodyGeometry({...result,mesh:{...result.mesh,indices:new Uint32Array([0,1,99])}}),/BREP/);
+for(const [section,point] of [['XY',[0,0,3]],['XZ',[0,3,0]],['YZ',[3,0,0]]])assert.equal(exactClippingPlanes(section,2)[0].distanceToPoint(new (require('three').Vector3)(...point)),-1);
+assert.deepEqual(exactClippingPlanes('off'),[]);geometry.dispose();highlight.dispose();
+console.log('PASS actual indexed BREP geometry, index-range face selection/highlight, clipping and malformed mesh rejection');
