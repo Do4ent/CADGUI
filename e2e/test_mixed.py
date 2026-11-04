@@ -164,7 +164,7 @@ def test_angle_and_adjacent_tangent_solve_then_contradictory_angle_blocks_confir
     # Replace an actual capsule tangent with the user-created equivalent.
     dialog.get_by_role('button', name='Удалить ограничение t1', exact=True).click()
     dialog.get_by_label('Тип ограничения', exact=True).select_option('tangent')
-    for label, identifier in [('Первая точка', 'cl'), ('Вторая точка', 'bl'), ('Третья точка', 'br')]:
+    for label, identifier in [('Центр дуги', 'cl'), ('Точка касания', 'bl'), ('Другая точка линии', 'br')]:
         dialog.get_by_label(label, exact=True).select_option(identifier)
     dialog.get_by_role('button', name='Добавить ограничение', exact=True).click()
     expect(dialog.locator('[data-sketch-editor-valid]')).to_have_attribute('data-sketch-editor-valid', 'true')
@@ -212,3 +212,32 @@ def test_mixed_locked_point_rejection_preserves_source_and_owned_body(page, tmp_
     expect(dialog.locator('[data-sketch-point-id="cl"]')).to_have_attribute('data-sketch-point-x', '0')
     dialog.get_by_role('button', name='Отмена', exact=True).click()
     assert save_document(page, tmp_path, 'mixed-locked-after.json') == before
+
+
+def test_staged_broken_segment_chain_keeps_accepted_svg_and_cancel_preserves_native(page, tmp_path):
+    prepare(page)
+    sketch_id = create_mixed(page)
+    extrude(page, 3)
+    before = save_document(page, tmp_path, 'mixed-segments-before.json')
+    select_sketch(page, sketch_id)
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    accepted_path = dialog.locator('[data-sketch-mixed-path]').get_attribute('d')
+    points = dialog.locator('[data-sketch-point-id]')
+    accepted_points = points.evaluate_all('(nodes) => nodes.map(n => [n.dataset.sketchPointId,n.dataset.sketchPointX,n.dataset.sketchPointY])')
+    # bottom ends at br; changing the next edge start to bl breaks ordered connectivity.
+    dialog.get_by_label('Начало сегмента right', exact=True).select_option('bl')
+    expect(dialog.locator('[data-sketch-segment-draft]')).to_be_visible()
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    assert dialog.locator('[data-sketch-mixed-path]').get_attribute('d') == accepted_path
+    dialog.get_by_role('button', name='Применить сегменты', exact=True).click()
+    expect(dialog.get_by_role('alert')).to_contain_text('Изменение не применено')
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    assert dialog.locator('[data-sketch-mixed-path]').get_attribute('d') == accepted_path
+    assert points.evaluate_all('(nodes) => nodes.map(n => [n.dataset.sketchPointId,n.dataset.sketchPointX,n.dataset.sketchPointY])') == accepted_points
+    dialog.get_by_role('button', name='Отменить сегменты', exact=True).click()
+    expect(dialog.get_by_label('Начало сегмента right', exact=True)).to_have_value('br')
+    expect(dialog.locator('[data-sketch-segment-draft]')).to_have_count(0)
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_enabled()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'mixed-segments-after.json') == before
