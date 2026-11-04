@@ -1,0 +1,37 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript'),React=require('react');
+const {renderToStaticMarkup}=require('react-dom/server');
+const cache={};
+function load(file){
+ if(cache[file])return cache[file];const exports={};cache[file]=exports;
+ const js=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
+ vm.runInNewContext(js,{exports,structuredClone,console,require(id){if(id.endsWith('.css'))return {};if(!id.startsWith('.'))return require(id);const target=path.resolve(path.dirname(file),id);return load(fs.existsSync(target+'.tsx')?target+'.tsx':fs.existsSync(target+'.ts')?target+'.ts':path.join(target,'index.ts'));}});
+ return exports;
+}
+const {ModelAnnotationPanel,modelAnnotationDraftIsStale}=load(path.join(__dirname,'ModelAnnotationPanel.tsx'));
+const m=load(path.join(__dirname,'model.ts'));
+const item={id:'part-1',name:'Компонент',kind:'box',pos:[1,2,3],size:[2,2,2],color:'#ffffff',visible:true,group:'Детали'};
+let state=m.createModelAnnotationState();
+const note=m.createModelAnnotation('note-1',item.id);note.text='Проверка\nВторая строка';
+state=m.upsertModelAnnotation(state,note);
+const missing=m.createModelAnnotation('note-missing','removed-part');missing.text='Потерянная ссылка';state=m.upsertModelAnnotation(state,missing);
+const hidden=m.createModelAnnotation('note-hidden');hidden.text='Скрытая заметка';hidden.visible=false;state=m.upsertModelAnnotation(state,hidden);
+const items=[item],baseState=JSON.stringify(state),baseItems=JSON.stringify(items);
+assert.equal(modelAnnotationDraftIsStale(baseState,baseItems,state,items),false);
+assert.equal(modelAnnotationDraftIsStale(baseState,baseItems,structuredClone(state),structuredClone(items)),false,'equal content is not an external edit');
+const changedState=structuredClone(state);changedState.annotations[0].text='Чужая правка';assert.equal(modelAnnotationDraftIsStale(baseState,baseItems,changedState,items),true);
+const changedItems=structuredClone(items);changedItems[0].pos[0]+=1;assert.equal(modelAnnotationDraftIsStale(baseState,baseItems,state,changedItems),true);
+const hiddenItems=structuredClone(items);hiddenItems[0].visible=false;assert.equal(modelAnnotationDraftIsStale(baseState,baseItems,state,hiddenItems),true);
+assert.equal(modelAnnotationDraftIsStale(baseState,baseItems,state,[]),true);
+const applied=m.upsertModelAnnotation(state,{...note,text:'После Apply'});
+assert.equal(modelAnnotationDraftIsStale(JSON.stringify(applied),baseItems,applied,items),false,'an acknowledged Apply refreshes the editor baseline');
+let changes=0,selections=0;
+const markup=renderToStaticMarkup(React.createElement(ModelAnnotationPanel,{state,items,selectedId:note.id,onSelect(){selections++;},onChange(){changes++;},createRequest:0}));
+for(const label of ['Аннотации модели','Добавить 3D-заметку','Редактировать заметку','Дублировать заметку','Удалить заметку','Источник отсутствует','Заметка или компонент скрыты'])assert.ok(markup.includes(label),label);
+assert.match(markup,/data-model-annotation-row="note-1"/);assert.match(markup,/data-model-annotation-status="missing"/);assert.match(markup,/data-model-annotation-status="hidden"/);assert.match(markup,/aria-pressed="true"/);
+assert.doesNotMatch(markup,/data-model-annotation-id=/,'panel selectors must not collide with 3D scene markers');
+assert.doesNotMatch(markup,/<dialog/,'initial zero createRequest does not open a dialog');
+assert.equal(changes,0);assert.equal(selections,0);assert.equal(JSON.stringify(state),baseState);assert.equal(JSON.stringify(items),baseItems);
+const unsafe=m.upsertModelAnnotation(m.createModelAnnotationState(),{...m.createModelAnnotation('plain-text'),text:'<script>alert(1)</script>'});
+const escaped=renderToStaticMarkup(React.createElement(ModelAnnotationPanel,{state:unsafe,items:[],selectedId:null,onSelect(){},onChange(){}}));
+assert.match(escaped,/&lt;script&gt;/);assert.doesNotMatch(escaped,/<script>/);
+console.log('PASS model annotation panel SSR, status diagnostics, source-safe selectors, escaping, immutable render and stale/Apply baselines');

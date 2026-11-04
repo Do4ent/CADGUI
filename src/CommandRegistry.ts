@@ -1,9 +1,10 @@
 /** Shared declarative command metadata for search, context menus, and shortcuts. */
 export type ContextArea='viewport'|'tree'|'component';
-export type CommandId='select'|'box'|'cylinder'|'pipe'|'duplicate'|'hide'|'isolate'|'showall'|'delete'|'fit'|'grid'|'wire'|'clear'|'undo'|'redo';
+export type CommandId='model-note'|'select'|'box'|'cylinder'|'pipe'|'duplicate'|'hide'|'isolate'|'showall'|'delete'|'fit'|'grid'|'wire'|'clear'|'undo'|'redo';
 export type CommandContext={selected:boolean;itemCount:number;historyCount:number;futureCount:number};
 type Definition={id:CommandId;label:string;hint:string;shortcut?:string;requiresSelection?:boolean;requiresItems?:boolean;requiresHistory?:'undo'|'redo'};
 const definitions:Definition[]=[
+{id:'model-note',label:'Добавить 3D-заметку',hint:'Заметка в модели с мировой опорой или привязкой к компоненту'},
 {id:'select',label:'Выбрать',hint:'Режим выбора'},
 {id:'box',label:'Добавить блок',hint:'Демонстрационный примитив'},
 {id:'cylinder',label:'Добавить цилиндр',hint:'Демонстрационный примитив'},
@@ -30,7 +31,7 @@ export function commandEnabled(id:string,ctx:CommandContext){
  return true;
 }
 export function contextCommandIds(area:ContextArea):CommandId[]{
- switch(area){case 'component':return ['duplicate','hide','isolate','showall','delete'];
+ switch(area){case 'component':return ['model-note','duplicate','hide','isolate','showall','delete'];
  case 'tree':return ['showall','clear','duplicate','hide','delete'];
- case 'viewport':return ['fit','grid','wire','showall','clear'];}
+ case 'viewport':return ['model-note','fit','grid','wire','showall','clear'];}
 }
