@@ -1,8 +1,8 @@
 # BendCore CAD Pro — staged implementation roadmap
 
-Status: started 2026-11-02. Scope: a CAD prototype with a bounded Open CASCADE WASM exact-solid backend, separate legacy display components, and an initial linear-constrained polyline sketch/extrusion workflow. This is not a complete parametric CAD system.
+Status: started 2026-11-02. Scope: a CAD prototype with a bounded Open CASCADE WASM exact-solid backend, separate legacy display components, and linear/nonlinear sketch constraints with polyline, circle and sector extrusion. The current mixed line/arc stage extends a single connected contour without holes. This is not a complete parametric CAD system.
 
-The foundational UI, document, drawing, 3D-note and exact-kernel deliveries have progressed beyond the initial prototype. See the delivery records and individual implementation documents for scope and commit-specific verification; older package statuses below are historical acceptance notes. The sketch stage is described in [sketch implementation](SKETCH_IMPLEMENTATION.md); its integration checks must pass before merge.
+The foundational UI, document, drawing, 3D-note and exact-kernel deliveries have progressed beyond the initial prototype. See the delivery records and individual implementation documents for scope and commit-specific verification; older package statuses below are historical acceptance notes. The sketch stage is described in [sketch implementation](SKETCH_IMPLEMENTATION.md); its integration checks must pass before merge. See also [circular sketches](CURVED_SKETCH_IMPLEMENTATION.md) and [mixed line/arc sketches](MIXED_SKETCH_IMPLEMENTATION.md) for bounded capabilities and stage-specific verification gates.
 
 ## Approved UI design contract
 - Sharp square corners throughout: border-radius: 0 for dialogs, controls, dropdowns and buttons.
