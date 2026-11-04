@@ -219,3 +219,19 @@ def test_real_wasm_loading_failure_is_atomic_and_create_can_retry(page):
     dialog.get_by_role('button', name='ОК', exact=True).click()
     expect(rows(page)).to_have_count(1, timeout=120000)
     assert stats(page)['volume'] == pytest.approx(24, rel=1e-9)
+
+
+def test_invalid_step_reader_result_cannot_overwrite_existing_exact_body(page, tmp_path):
+    prepare(page)
+    create_box(page)
+    before = save_document(page, tmp_path, 'before-invalid-step.json')
+    panel(page).get_by_role('button', name='Импорт STEP', exact=True).click()
+    page.get_by_label('Файл STEP', exact=True).set_input_files({
+        'name': 'invalid.step', 'mimeType': 'application/step',
+        'buffer': b'This is not an ISO-10303 STEP document.',
+    })
+    expect(panel(page).get_by_role('alert')).to_be_visible(timeout=120000)
+    expect(rows(page)).to_have_count(1)
+    after = save_document(page, tmp_path, 'after-invalid-step.json')
+    assert after == before
+    assert inspect_first(page)['volume'] == pytest.approx(24, rel=1e-9)
