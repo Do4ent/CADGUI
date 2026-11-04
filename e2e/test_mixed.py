@@ -156,3 +156,59 @@ def test_open_mixed_source_cannot_extrude_and_cancel_preserves_document(page, tm
     expect(exact_rows(page)).to_have_count(0)
     extrusion.get_by_role('button', name='Отмена', exact=True).click()
     assert save_document(page, tmp_path, 'mixed-open-after.json') == before
+
+
+def test_angle_and_adjacent_tangent_solve_then_contradictory_angle_blocks_confirm(page, tmp_path):
+    prepare(page)
+    dialog = open_mixed(page)
+    # Replace an actual capsule tangent with the user-created equivalent.
+    dialog.get_by_role('button', name='Удалить ограничение t1', exact=True).click()
+    dialog.get_by_label('Тип ограничения', exact=True).select_option('tangent')
+    for label, identifier in [('Первая точка', 'cl'), ('Вторая точка', 'bl'), ('Третья точка', 'br')]:
+        dialog.get_by_label(label, exact=True).select_option(identifier)
+    dialog.get_by_role('button', name='Добавить ограничение', exact=True).click()
+    expect(dialog.locator('[data-sketch-editor-valid]')).to_have_attribute('data-sketch-editor-valid', 'true')
+    dialog.get_by_label('Тип ограничения', exact=True).select_option('angle')
+    for label, identifier in [('Первая точка', 'bl'), ('Вторая точка', 'br'), ('Третья точка', 'cl'), ('Четвёртая точка', 'cr')]:
+        dialog.get_by_label(label, exact=True).select_option(identifier)
+    dialog.get_by_label('Значение ограничения', exact=True).fill('0')
+    dialog.get_by_role('button', name='Добавить ограничение', exact=True).click()
+    expect(dialog.locator('[data-sketch-editor-valid]')).to_have_attribute('data-sketch-editor-valid', 'true')
+    points = dialog.locator('[data-sketch-point-id]')
+    snapshot = points.evaluate_all('(nodes) => nodes.map(n => [n.dataset.sketchPointId,n.dataset.sketchPointX,n.dataset.sketchPointY])')
+    count = dialog.locator('[data-sketch-constraint-id]').count()
+    dialog.get_by_label('Значение ограничения', exact=True).fill('90')
+    dialog.get_by_role('button', name='Добавить ограничение', exact=True).click()
+    expect(dialog.locator('[data-sketch-draft-status]')).to_have_attribute('data-sketch-draft-status', 'rejected')
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    expect(dialog.locator('[data-sketch-constraint-id]')).to_have_count(count)
+    assert points.evaluate_all('(nodes) => nodes.map(n => [n.dataset.sketchPointId,n.dataset.sketchPointX,n.dataset.sketchPointY])') == snapshot
+    dialog.get_by_role('button', name='Отменить неудачное изменение', exact=True).click()
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    state = model(save_document(page, tmp_path))
+    sketch = state['sketches'][0]
+    assert any(c['kind'] == 'angle' and c['value'] == 0 for c in sketch['constraints'])
+    assert not any(c['kind'] == 'angle' and c['value'] == 90 for c in sketch['constraints'])
+    assert any(c['kind'] == 'tangent' and (c['center'], c['point'], c['other']) == ('cl', 'bl', 'br') for c in sketch['constraints'])
+    points = {point['id']: point for point in sketch['points']}
+    radius = [points['bl'][axis] - points['cl'][axis] for axis in ('x', 'y')]
+    line = [points['br'][axis] - points['bl'][axis] for axis in ('x', 'y')]
+    assert sum(a * b for a, b in zip(radius, line)) == pytest.approx(0, abs=1e-7)
+
+
+def test_mixed_locked_point_rejection_preserves_source_and_owned_body(page, tmp_path):
+    prepare(page)
+    sketch_id = create_mixed(page)
+    extrude(page, 3)
+    before = save_document(page, tmp_path, 'mixed-locked-before.json')
+    select_sketch(page, sketch_id)
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    field = dialog.get_by_label('X cl', exact=True)
+    field.fill('1')
+    field.press('Enter')
+    expect(dialog.locator('[data-sketch-draft-status]')).to_have_attribute('data-sketch-draft-status', 'rejected')
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    expect(dialog.locator('[data-sketch-point-id="cl"]')).to_have_attribute('data-sketch-point-x', '0')
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'mixed-locked-after.json') == before
