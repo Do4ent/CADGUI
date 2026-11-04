@@ -63,7 +63,7 @@ export function validateModelAnnotationState(value:unknown):ModelAnnotationState
  return {version:MODEL_ANNOTATION_SCHEMA_VERSION,annotations};
 }
 export function createModelAnnotation(annotationId:string,componentId?:string):ModelAnnotation {
- return parseAnnotation({id:annotationId,text:'Примечание',anchor:componentId===undefined?{kind:'world',point:[0,0,0]}:{kind:'component',componentId,point:[0,0,0]},offset:[1,1,0],orientation:'screen',fontSize:0.18,color:'#176b9c',visible:true,leader:true},'modelAnnotation');
+ return parseAnnotation({id:annotationId,text:'Примечание',anchor:componentId===undefined?{kind:'world',point:[0,0,0]}:{kind:'component',componentId,point:[0,0,0]},offset:[1,1,0],orientation:'screen',fontSize:0.4,color:'#176b9c',visible:true,leader:true},'modelAnnotation');
 }
 export function resolveModelAnnotation(annotation:ModelAnnotation,items:readonly ModelAnnotationItem[]):ResolvedModelAnnotation {
  const parsed=parseAnnotation(annotation,'modelAnnotation');

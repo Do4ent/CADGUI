@@ -3,6 +3,7 @@ import json
 
 import pytest
 from playwright.sync_api import expect
+import re
 from test_regression import browser, page, items
 from test_drawing import save_document
 
@@ -126,6 +127,7 @@ def test_note_plane_orientation_and_square_editor_persist_in_both_themes(page, t
     page.evaluate('(theme) => localStorage.setItem("bendcore-theme", theme)', theme)
     page.reload(wait_until='domcontentloaded')
     page.locator('.environment-panel').wait_for()
+    expect(page.locator('.app')).to_have_class(re.compile(r'\b' + theme + r'\b'))
     dialog = open_note(page, 'Плоскость заметки ' + orientation)
     dialog.get_by_label('Ориентация', exact=True).select_option(orientation)
     dialog.get_by_label('Выноска', exact=True).check()
@@ -212,7 +214,7 @@ def test_apply_invalid_draft_and_cancel_preserve_last_applied_note(page, tmp_pat
     dialog.get_by_role('button', name='Отмена', exact=True).click()
     note = annotations(save_document(page, tmp_path))[0]
     assert note['text'] == 'Сохранено через Apply'
-    assert note['fontSize'] == 0.18
+    assert note['fontSize'] == 0.4
     page.evaluate('document.activeElement?.blur()')
     page.keyboard.press('Control+z')
     expect(labels(page)).to_have_count(0)
