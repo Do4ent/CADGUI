@@ -1,9 +1,10 @@
 /** Shared declarative command metadata for search, context menus, and shortcuts. */
 export type ContextArea='viewport'|'tree'|'component';
-export type CommandId='exact-model'|'model-note'|'select'|'box'|'cylinder'|'pipe'|'duplicate'|'hide'|'isolate'|'showall'|'delete'|'fit'|'grid'|'wire'|'clear'|'undo'|'redo';
+export type CommandId='sketch-model'|'exact-model'|'model-note'|'select'|'box'|'cylinder'|'pipe'|'duplicate'|'hide'|'isolate'|'showall'|'delete'|'fit'|'grid'|'wire'|'clear'|'undo'|'redo';
 export type CommandContext={selected:boolean;itemCount:number;historyCount:number;futureCount:number};
 type Definition={id:CommandId;label:string;hint:string;shortcut?:string;requiresSelection?:boolean;requiresItems?:boolean;requiresHistory?:'undo'|'redo'};
 const definitions:Definition[]=[
+{id:'sketch-model',label:'Эскизы с ограничениями',hint:'Полилинии, линейные ограничения и параметрическое выдавливание Open CASCADE'},
 {id:'exact-model',label:'Точная геометрия',hint:'Open CASCADE: точные тела, булевы операции и STEP в миллиметрах'},
 {id:'model-note',label:'Добавить 3D-заметку',hint:'Заметка в модели с мировой опорой или привязкой к компоненту'},
 {id:'select',label:'Выбрать',hint:'Режим выбора'},

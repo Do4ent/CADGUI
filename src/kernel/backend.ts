@@ -1,3 +1,4 @@
+import {profilePoints,sketchPointToWorld,sketchNormal} from '../sketch/model';
 import {OcctKernel,type ShapeHandle} from 'occt-wasm';
 import {MAX_BREP_LENGTH} from './model';
 import type {KernelBodyResult,KernelOutput,KernelRequest,Vec3} from './types';
@@ -24,6 +25,14 @@ export class ExactKernelBackend{
    if(!request||typeof request!=='object')throw Error('Некорректный запрос ядра');
    let shape:ShapeHandle;
    switch(request.op){
+    case 'extrude-sketch':{
+     const origin=vector(request.origin),depth=number(request.depth);if(Math.abs(depth)<1e-5)throw Error('Глубина выдавливания должна быть ненулевой');
+     if(!Array.isArray(request.points)||request.points.length>32)throw Error('Поддерживается один замкнутый профиль до 32 точек');
+     const profile=profilePoints({id:'profile',name:'Профиль',plane:request.plane,origin,closed:true,constraints:[],points:request.points.map((p,i)=>({id:'p'+i,x:p?.[0],y:p?.[1]}))});
+     const world=profile.map(point=>sketchPointToWorld(request.plane,origin,point));
+     const edges=world.map((p,i)=>{const q=world[(i+1)%world.length];return k.makeLineEdge({x:p[0],y:p[1],z:p[2]},{x:q[0],y:q[1],z:q[2]});});
+     const face=k.makeFace(k.makeWire(edges)),normal=sketchNormal(request.plane);shape=k.extrude(face,normal[0]*depth,normal[1]*depth,normal[2]*depth);break;
+    }
     case 'box':{const size=vector(request.size);size.forEach(v=>number(v,true));const origin=vector(request.origin);shape=k.makeBox(...size);if(origin.some(Boolean))shape=k.translate(shape,...origin);break;}
     case 'cylinder':{const radius=number(request.radius,true),height=number(request.height,true),origin=vector(request.origin);shape=k.makeCylinder(radius,height);if(origin.some(Boolean))shape=k.translate(shape,...origin);break;}
     case 'boolean':{const a=this.read(request.a),b=this.read(request.b);if(!k.isValid(a)||!k.isValid(b))throw Error('Некорректный источник булевой операции');this.solidOnly(a);this.solidOnly(b);if(!['fuse','cut','common'].includes(request.kind))throw Error('Неизвестная булева операция');shape=k[request.kind](a,b);break;}

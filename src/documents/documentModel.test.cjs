@@ -17,12 +17,12 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const item = {id:'a', name:'Box', kind:'box', pos:[0,1,-2], size:[1,2,3], color:'#123abc', visible:true, group:'Parts'};
 const document = {...createDocument('doc', 'Example'), items:[item]};
 assert.deepEqual(plain(parseDocument(serializeDocument(document))), plain(document));
-for (const value of [null, [], 42, {}, {...document,schemaVersion:5}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
+for (const value of [null, [], 42, {}, {...document,schemaVersion:6}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
 for (const patch of [{pos:[0,1]}, {pos:[0,NaN,0]}, {pos:[0,Infinity,0]}, {size:[1,0,1]}, {size:[1,-1,1]}, {kind:'unknown'}, {color:'red'}, {visible:'yes'}, {id:' '}, {name:''}, {group:null}]) assert.throws(() => validateDocument({...document,items:[{...item,...patch}]}));
 assert.throws(() => parseDocument('{bad'), /Invalid document JSON/);
 assert.throws(() => parseDocument(JSON.stringify([item])), /Legacy/);
 const migrated = parseDocument(JSON.stringify([item]), {id:'legacy',name:'Imported',modifiedAt:'2026-11-02T00:00:00Z'});
-assert.equal(migrated.schemaVersion,4);
+assert.equal(migrated.schemaVersion,5);
 assert.equal(migrated.id,'legacy');
 assert.deepEqual(plain(migrated.items),[item]);
 assert.deepEqual(plain(parseDocument(serializeDocument(migrated))), plain(migrated));
@@ -39,7 +39,7 @@ console.log('PASS document schema, invalid data, clone isolation and legacy migr
 
 const old = {...document,schemaVersion:1};delete old.drawing;
 const upgrade = parseDocument(JSON.stringify(old));
-assert.equal(upgrade.schemaVersion,4);
+assert.equal(upgrade.schemaVersion,5);
 assert.deepEqual(plain(upgrade.items),[item]);
 assert.ok(upgrade.drawing.sheets.length);
 assert.throws(()=>validateDocument({...document,drawing:undefined}));
@@ -80,7 +80,7 @@ hook.newDocument();hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHist
 hook.activate(first);hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHistoryCount,1);
 hook.markSaved(initialSnapshot);hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,true);
 state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old.id,tabs:[{document:old,saved:JSON.stringify([old.name,old.items])}]}));
-hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,4);
+hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,5);
 state=undefined;storage.set('bendcore-documents-v1','{corrupt');hook=useEditorDocuments(()=>[]);assert.ok(hook.recoveryError);assert.equal(storage.get('bendcore-documents-v1'),'{corrupt');
 console.log('PASS drawing history, dirty guards, per-tab state, snapshot save and workspace migration');
 
@@ -158,7 +158,7 @@ console.log('PASS native dimension roundtrip, strict future schemas, arc persist
 const detachedFrozen=plain(frozen);detachedFrozen.drawing.sheets[0].entities[0].dimension.refs=[];assert.deepEqual(plain(parseDocument(serializeDocument(detachedFrozen))),detachedFrozen);
 
 // Native v3 requires annotation state; old versions migrate without losing drawing/items.
-assert.equal(document.schemaVersion,4);
+assert.equal(document.schemaVersion,5);
 assert.deepEqual(plain(document.modelAnnotations),{version:1,annotations:[]});
 const v2=plain(complex);v2.schemaVersion=2;delete v2.modelAnnotations;
 const fromV2=plain(parseDocument(JSON.stringify(v2)));
@@ -169,7 +169,7 @@ assert.throws(()=>validateDocument({...document,modelAnnotations:{version:2,anno
 assert.throws(()=>validateDocument({...document,modelAnnotations:{version:1,annotations:[{}]}}));
 for(const dirty of [false,true]){
  state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:v2.id,tabs:[{document:v2,saved:JSON.stringify([dirty?'Unsaved name':v2.name,v2.items,v2.drawing])}]}));
- hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,4);
+ hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,5);
 }
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);
 const sceneId=hook.activeId;
@@ -289,3 +289,36 @@ hook.setModelAnnotations({version:1,annotations:[independentNote]});hook=useEdit
 const drawingIndependent=plain(hook.drawing);drawingIndependent.properties.title='Independent drawing';hook.setDrawing(drawingIndependent);hook=useEditorDocuments(()=>[]);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,0);assert.equal(hook.drawing.properties.title,'Independent drawing');assert.equal(hook.exactModel.bodies[0].name,'Exact box');
 const delayedClosedExact=hook.setExactModel;hook.close(exactTab);hook=useEditorDocuments(()=>[]);delayedClosedExact(newerExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,0);
 console.log('PASS exact revision guards after annotation edits/closed source and independent drawing undo');
+
+const sketchCore=load(path.resolve(__dirname,'../sketch/model.ts'));
+const sketchState={version:1,units:'mm',sketches:[{id:'sketch',name:'Rectangle',plane:'XY',origin:[0,0,0],points:[{id:'p1',x:0,y:0},{id:'p2',x:10,y:0},{id:'p3',x:10,y:20},{id:'p4',x:0,y:20}],closed:true,constraints:[{id:'horizontal',kind:'horizontal',a:'p1',b:'p2'},{id:'vertical',kind:'vertical',a:'p2',b:'p3'}]}],extrusions:[{id:'extrusion',sketchId:'sketch',bodyId:'solid',depth:30}]};
+const sourceDocument={...exactDocument,sketchModel:sketchState};
+assert.deepEqual(plain(parseDocument(serializeDocument(sourceDocument))),plain(sourceDocument));
+assert.throws(()=>validateDocument({...sourceDocument,sketchModel:undefined}));
+assert.throws(()=>validateDocument({...sourceDocument,sketchModel:{...sketchState,version:2}}));
+assert.throws(()=>validateDocument({...sourceDocument,exactModel:exactCore.createExactModelState()}));
+const detachedSource=validateDocument(sourceDocument);detachedSource.sketchModel.sketches[0].points[0].x=99;assert.equal(sketchState.sketches[0].points[0].x,0);
+const v4Source=plain(sourceDocument);v4Source.schemaVersion=4;delete v4Source.sketchModel;
+const v4Migrated=parseDocument(JSON.stringify(v4Source));assert.deepEqual(plain(v4Migrated.exactModel),plain(v4Source.exactModel));assert.deepEqual(plain(v4Migrated.sketchModel),plain(sketchCore.createSketchModelState()));
+for(const dirty of [false,true]){
+ state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:v4Source.id,tabs:[{document:v4Source,saved:JSON.stringify([dirty?'Unsaved':v4Source.name,v4Source.items,v4Source.drawing,v4Source.modelAnnotations,v4Source.exactModel])}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);
+}
+state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);
+const sketchTab=hook.activeId;hook.setSketchModel(sketchState,sourceDocument.exactModel,'Extrude');hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.sketchModel.extrusions.length,1);assert.equal(hook.exactModel.bodies.length,1);
+const staleBeforeSketch=hook.setExactModel,staleSketch=hook.setSketchModel,staleSceneBeforeSketch=hook.changeScene;
+const editedSketch=plain(hook.sketchModel);editedSketch.sketches[0].name='Renamed source';hook.setSketchModel(editedSketch,hook.exactModel);hook=useEditorDocuments(()=>[]);
+staleBeforeSketch(exactCore.createExactModelState());staleSketch(sketchState,sourceDocument.exactModel);staleSceneBeforeSketch([]);hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches[0].name,'Renamed source');assert.equal(hook.items.length,1);assert.equal(hook.exactModel.bodies.length,1);
+assert.throws(()=>hook.setSketchModel(editedSketch,exactCore.createExactModelState()));assert.equal(hook.modelHistoryCount,2);
+hook.setExactModel(exactCore.createExactModelState(),'Delete body');hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.extrusions.length,0);assert.equal(hook.sketchModel.sketches.length,1);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.modelHistoryCount,3);
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,1);assert.equal(hook.sketchModel.extrusions.length,1);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches[0].name,'Rectangle');hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches.length,0);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.tabs[0].dirty,false);
+hook.modelRedo();hook=useEditorDocuments(()=>[]);const delayedSketchTab=hook.setSketchModel;hook.newDocument();hook=useEditorDocuments(()=>[]);delayedSketchTab(editedSketch,sourceDocument.exactModel);hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches.length,0);hook.activate(sketchTab);hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches[0].name,'Rectangle');
+console.log('PASS schema5 sketch+real BREP roundtrip, v4 saved migrations, atomic source/body undo, deletion pruning and stale sketch revisions/tabs');
+const changedOwned=plain(hook.exactModel);changedOwned.bodies[0].brep+='\n';assert.throws(()=>hook.setExactModel(changedOwned),/эскиз/);
+const visibleOwned=plain(hook.exactModel);visibleOwned.bodies[0].visible=false;hook.setExactModel(visibleOwned);hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.extrusions.length,1);assert.equal(hook.exactModel.bodies[0].visible,false);
+const independentExact=plain(hook.exactModel);independentExact.bodies.push({...independentExact.bodies[0],id:'boolean-result',name:'Independent result'});hook.setExactModel(independentExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,2);assert.equal(hook.sketchModel.extrusions.length,1);
+const oldSketchWrite=hook.setSketchModel;hook.setModelAnnotations({version:1,annotations:[independentNote]});hook=useEditorDocuments(()=>[]);oldSketchWrite(editedSketch,sourceDocument.exactModel);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,2);assert.equal(hook.modelAnnotations.annotations.length,1);assert.equal(hook.sketchModel.sketches[0].name,'Rectangle');
+const sourceCopy=plain(hook.sketchModel),exactCopy=plain(hook.exactModel);sourceCopy.sketches[0].name='Detached input';hook.setSketchModel(sourceCopy,exactCopy);hook=useEditorDocuments(()=>[]);sourceCopy.sketches[0].points[0].x=999;exactCopy.bodies.length=0;assert.equal(hook.sketchModel.sketches[0].points[0].x,0);assert.equal(hook.exactModel.bodies.length,2);
+console.log('PASS owned BREP protection, independent bodies, note-revision guard and detached atomic sketch/exact inputs');
+const badSource=plain(hook.sketchModel);badSource.sketches[0].constraints.push({id:'broken',kind:'horizontal',a:'missing-point',b:'p1'});
+const beforeBadSource=hook.exportDocument().json,beforeBadSourceHistory=hook.modelHistoryCount;
+assert.throws(()=>validateDocument({...hook.document,sketchModel:badSource}));assert.throws(()=>hook.setSketchModel(badSource,hook.exactModel));hook=useEditorDocuments(()=>[]);assert.equal(hook.exportDocument().json,beforeBadSource);assert.equal(hook.modelHistoryCount,beforeBadSourceHistory);

@@ -5,6 +5,7 @@ import {ChevronDown,ChevronLeft,ChevronRight,Pin,PinOff,Settings2,RotateCcw,X,Ch
 
 type Entry={id:string;label:string;icon:CadIconName;group:string;action:string;demo?:boolean};
 const catalog:Entry[]=[
+{id:'sketch-model',label:'Эскизы с ограничениями',icon:'sketch',group:'Точное моделирование',action:'sketch-model'},
 {id:'exact-model',label:'Точная геометрия',icon:'box',group:'Точное моделирование',action:'exact-model'},
 {id:'model-note',label:'3D-заметка',icon:'dimension',group:'Аннотации',action:'model-note'},
 {id:'select',label:'Выбрать',icon:'select',group:'Общие',action:'select'},
@@ -37,16 +38,16 @@ const catalog:Entry[]=[
 {id:'measure',label:'Измерить',icon:'measure',group:'Анализ',action:'measure',demo:true},
 ];
 const presets:Record<string,string[]>={
-'Модель':['select','exact-model','model-note','box','cylinder','sketch','extrude','revolve','hole','fillet','chamfer','shell','pattern','mirror'],
-'Сборка':['select','exact-model','model-note','box','cylinder','pipe','duplicate','hide','isolate','showall','mate','section','pattern'],
-'Эскиз':['select','sketch','dimension','mirror','pattern'],
+'Модель':['select','sketch-model','exact-model','model-note','box','cylinder','sketch','extrude','revolve','hole','fillet','chamfer','shell','pattern','mirror'],
+'Сборка':['select','sketch-model','exact-model','model-note','box','cylinder','pipe','duplicate','hide','isolate','showall','mate','section','pattern'],
+'Эскиз':['select','sketch-model','sketch','dimension','mirror','pattern'],
 'Чертёж':['select','sheet','draft','dimension','section'],
 'Поверхности':['select','surface','loft','sweep','mirror'],
 'Листовой металл':['select','sketch','extrude','fillet','chamfer','pattern'],
 'Сварка':['select','weld','measure','section'],
 'Трубопроводы':['select','pipe','sweep','measure','duplicate'],
 'Анализ':['select','measure','section','hide','isolate'],
-'Вид':['select','exact-model','model-note','hide','isolate','showall','section']};
+'Вид':['select','sketch-model','exact-model','model-note','hide','isolate','showall','section']};
 type Group={id:string;name:string;commands:string[]};
 type Workspace={name:string;groups:Group[];favorites:string[];compact:boolean;hidden:string[]};
 type Store={active:string;workspaces:Workspace[]};

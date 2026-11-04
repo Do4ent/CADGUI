@@ -1,3 +1,5 @@
+import {createSketchModelState,validateSketchModelState,validateSketchReferences,pruneSketchExtrusions} from '../sketch/model';
+import type {SketchModelState} from '../sketch/types';
 import {createExactModelState,validateExactModelState,type ExactModelState} from '../kernel/model';
 import {useEffect,useState,type Dispatch,type SetStateAction} from 'react';
 import {createDocument,parseDocument,serializeDocument,validateItems,validateSceneAnnotationReferences,type CadDocument,type CadItem} from '../documents/documentModel';
@@ -6,11 +8,11 @@ import {validateDrawingDocument} from '../drawing/model';
 import {type DrawingDocument} from '../drawing/types';
 import {type SelectionState} from '../selection/selectionModel';
 
-type SceneSnapshot={items:CadItem[];modelAnnotations:ModelAnnotationState;exactModel:ExactModelState};
+type SceneSnapshot={items:CadItem[];modelAnnotations:ModelAnnotationState;exactModel:ExactModelState;sketchModel:SketchModelState};
 type EditorTab={document:CadDocument;saved:string|null;history:SceneSnapshot[];future:SceneSnapshot[];selection:SelectionState;drawingHistory:DrawingDocument[];drawingFuture:DrawingDocument[];drawingSelection:string[]};
 type Workspace={tabs:EditorTab[];activeId:string;recoveryError:string|null};
 const KEY='bendcore-documents-v1';
-const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items,doc.drawing,doc.modelAnnotations,doc.exactModel]);
+const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items,doc.drawing,doc.modelAnnotations,doc.exactModel,doc.sketchModel]);
 const makeTab=(document:CadDocument,saved:string|null=null):EditorTab=>({document,saved,history:[],future:[],drawingHistory:[],drawingFuture:[],drawingSelection:[],selection:{selectedIds:[],anchorId:null}});
 
 /** Upgrade old clean fingerprints while leaving old dirty tabs dirty. */
@@ -18,8 +20,8 @@ function restoreTab(raw:unknown,saved:unknown):EditorTab{
  const document=parseDocument(JSON.stringify(raw));
  let migratedSaved=typeof saved==='string'?saved:null;
  const version=(raw as {schemaVersion?:unknown})?.schemaVersion;
- if((version===1||version===2||version===3)&&typeof saved==='string'){
-  try{const old=JSON.parse(saved);if(Array.isArray(old)&&old.length===(version===1?2:version===2?3:4))migratedSaved=JSON.stringify([...old,...(version===1?[document.drawing]:[]),...(version===1||version===2?[document.modelAnnotations]:[]),createExactModelState()]);}catch{/* Corrupt saved marker remains dirty. */}
+ if((version===1||version===2||version===3||version===4)&&typeof saved==='string'){
+  try{const old=JSON.parse(saved);if(Array.isArray(old)&&old.length===(version===1?2:version===2?3:version===3?4:5))migratedSaved=JSON.stringify([...old,...(version===1?[document.drawing]:[]),...(version===1||version===2?[document.modelAnnotations]:[]),...(Number(version)<4?[createExactModelState()]:[]),createSketchModelState()]);}catch{/* Corrupt saved marker remains dirty. */}
  }
  return makeTab(document,migratedSaved);
 }
@@ -50,17 +52,17 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   return value=>updateActive(tab=>({...tab,[key]:typeof value==='function'?(value as (v:EditorTab[K])=>EditorTab[K])(tab[key]):value}));
  }
 
- const sceneSnapshot=(document:CadDocument):SceneSnapshot=>({items:document.items,modelAnnotations:document.modelAnnotations,exactModel:document.exactModel});
+ const sceneSnapshot=(document:CadDocument):SceneSnapshot=>({items:document.items,modelAnnotations:document.modelAnnotations,exactModel:document.exactModel,sketchModel:document.sketchModel});
  const guardScene=(update:(tab:EditorTab)=>EditorTab)=>setWorkspace(workspace=>{
   if(workspace.activeId!==active.document.id)return workspace;
   const source=workspace.tabs.find(tab=>tab.document.id===active.document.id);
-  if(!source||source.document.items!==active.document.items||source.document.modelAnnotations!==active.document.modelAnnotations||source.document.exactModel!==active.document.exactModel)return workspace;
+  if(!source||source.document.items!==active.document.items||source.document.modelAnnotations!==active.document.modelAnnotations||source.document.exactModel!==active.document.exactModel||source.document.sketchModel!==active.document.sketchModel)return workspace;
   const next=update(source);if(next===source)return workspace;
   return {...workspace,tabs:workspace.tabs.map(tab=>tab===source?next:tab)};
  });
- const commitScene=(items:CadItem[],modelAnnotations:ModelAnnotationState,exactModel:ExactModelState=active.document.exactModel)=>guardScene(tab=>{
-  if(JSON.stringify([tab.document.items,tab.document.modelAnnotations,tab.document.exactModel])===JSON.stringify([items,modelAnnotations,exactModel]))return tab;
-  return {...tab,document:{...tab.document,items,modelAnnotations,exactModel,modifiedAt:new Date().toISOString()},history:[...tab.history.slice(-49),sceneSnapshot(tab.document)],future:[]};
+ const commitScene=(items:CadItem[],modelAnnotations:ModelAnnotationState,exactModel:ExactModelState=active.document.exactModel,sketchModel:SketchModelState=active.document.sketchModel)=>guardScene(tab=>{
+  if(JSON.stringify([tab.document.items,tab.document.modelAnnotations,tab.document.exactModel,tab.document.sketchModel])===JSON.stringify([items,modelAnnotations,exactModel,sketchModel]))return tab;
+  return {...tab,document:{...tab.document,items,modelAnnotations,exactModel,sketchModel,modifiedAt:new Date().toISOString()},history:[...tab.history.slice(-49),sceneSnapshot(tab.document)],future:[]};
  });
  const changeScene=(nextItems:CadItem[],_label?:string)=>{
   const items=validateItems(nextItems);validateSceneAnnotationReferences(items,active.document.modelAnnotations);commitScene(items,active.document.modelAnnotations);
@@ -68,7 +70,21 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  const setModelAnnotations=(next:ModelAnnotationState,_label?:string)=>{
   const annotations=validateModelAnnotationState(next);validateSceneAnnotationReferences(active.document.items,annotations);commitScene(active.document.items,annotations);
  };
- const setExactModel=(next:ExactModelState,_label?:string)=>commitScene(active.document.items,active.document.modelAnnotations,validateExactModelState(next));
+ const setSketchModel=(next:SketchModelState,nextExact:ExactModelState,_label?:string)=>{
+  const sketch=validateSketchModelState(next),exact=validateExactModelState(nextExact);
+  validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
+ };
+ const setExactModel=(next:ExactModelState,_label?:string)=>{
+  const exact=validateExactModelState(next),remaining=new Set(exact.bodies.map(body=>body.id));
+  const owned=new Set(active.document.sketchModel.extrusions.map(feature=>feature.bodyId));
+  for(const body of exact.bodies){
+   const previous=active.document.exactModel.bodies.find(old=>old.id===body.id);
+   if(owned.has(body.id)&&previous&&previous.brep!==body.brep)throw Error('Тело связано с эскизом: используйте перестроение эскиза (setSketchModel)');
+  }
+  const removed=active.document.exactModel.bodies.filter(body=>!remaining.has(body.id)).map(body=>body.id);
+  const sketch=pruneSketchExtrusions(active.document.sketchModel,removed);
+  validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
+ };
  // Compatibility for old split-history scene callers. New code uses changeScene/modelUndo/modelRedo.
  const setItems:Dispatch<SetStateAction<CadItem[]>>=value=>{
   const items=validateItems(typeof value==='function'?value(active.document.items):value);
@@ -79,7 +95,7 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   return value=>guardScene(tab=>{
    const old=tab[key].map(snapshot=>snapshot.items);
    const items=typeof value==='function'?value(old):value;
-   const snapshots=items.map(list=>tab[key].find(snapshot=>snapshot.items===list)??{items:validateItems(list),modelAnnotations:tab.document.modelAnnotations,exactModel:tab.document.exactModel});
+   const snapshots=items.map(list=>tab[key].find(snapshot=>snapshot.items===list)??{items:validateItems(list),modelAnnotations:tab.document.modelAnnotations,exactModel:tab.document.exactModel,sketchModel:tab.document.sketchModel});
    return {...tab,[key]:snapshots};
   });
  }
@@ -138,5 +154,5 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  });
  const exportDocument=()=>({id:active.document.id,json:serializeDocument(active.document),fingerprint:fingerprint(active.document)});
  const markSaved=(snapshot:{id:string;fingerprint:string})=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===snapshot.id?{...t,saved:snapshot.fingerprint}:t)}));
- return {exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,activate,open,newDocument,close,exportDocument,markSaved};
+ return {sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,activate,open,newDocument,close,exportDocument,markSaved};
 }
