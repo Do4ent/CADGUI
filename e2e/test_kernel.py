@@ -34,6 +34,12 @@ def stats(page):
     }
 
 
+def inspect_first(page):
+    rows(page).first.get_by_role('button').click()
+    panel(page).get_by_role('button', name='Проверить тело', exact=True).click()
+    return stats(page)
+
+
 def create_box(page, size=(2, 3, 4), origin=(0, 0, 0)):
     count = rows(page).count()
     panel(page).get_by_role('button', name='Создать точный параллелепипед', exact=True).click()
@@ -86,9 +92,7 @@ def test_actual_box_has_independent_analytic_volume_bounds_and_persisted_brep(pa
     page.reload(wait_until='domcontentloaded')
     page.locator('.environment-panel').wait_for()
     prepare(page)
-    rows(page).first.click()
-    expect(panel(page).locator('[data-exact-volume]')).to_be_visible(timeout=120000)
-    assert stats(page)['volume'] == pytest.approx(24, rel=1e-9)
+    assert inspect_first(page)['volume'] == pytest.approx(24, rel=1e-9)
 
 
 def test_actual_cylinder_uses_occt_mass_properties_and_geometric_bounds(page):
@@ -130,7 +134,7 @@ def test_mixed_legacy_and_kernel_history_keeps_exact_transactions_atomic(page):
     page.wait_for_function('(n) => JSON.parse(localStorage.getItem("bendcore-items")).length === n', arg=original_count + 1)
     page.keyboard.press('Control+y')
     expect(rows(page)).to_have_count(1)
-    assert stats(page)['volume'] == pytest.approx(24, rel=1e-9)
+    assert inspect_first(page)['volume'] == pytest.approx(24, rel=1e-9)
 
 
 def test_schema4_native_roundtrip_preserves_legacy_parts_notes_and_exact_brep(page, tmp_path):
@@ -144,8 +148,7 @@ def test_schema4_native_roundtrip_preserves_legacy_parts_notes_and_exact_brep(pa
     })
     expect(page.get_by_role('tablist', name='Документы').get_by_role('tab')).to_have_count(2)
     expect(rows(page)).to_have_count(1)
-    rows(page).first.click()
-    assert stats(page)['volume'] == pytest.approx(24, rel=1e-9)
+    assert inspect_first(page)['volume'] == pytest.approx(24, rel=1e-9)
     after = save_document(page, tmp_path, 'native-v4-after.json')
     assert exact(after) == exact(before)
     assert after['items'] == before['items']
@@ -208,7 +211,7 @@ def test_real_wasm_loading_failure_is_atomic_and_create_can_retry(page):
     for label, value in [('Длина X', '2'), ('Ширина Y', '3'), ('Высота Z', '4')]:
         dialog.get_by_label(label, exact=True).fill(value)
     dialog.get_by_role('button', name='ОК', exact=True).click()
-    expect(page.get_by_role('alert')).to_be_visible(timeout=120000)
+    expect(dialog.get_by_role('alert')).to_be_visible(timeout=120000)
     assert blocked, 'The test must fail a real WASM load, rather than a form check'
     expect(rows(page)).to_have_count(0)
     assert items(page) == original_items
