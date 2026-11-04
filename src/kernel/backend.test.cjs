@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 function load(file,dependencies){const exports={};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname,file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require:name=>{if(name in dependencies)return dependencies[name];throw Error('Unexpected dependency '+name);},Float32Array,Int32Array,Uint32Array});return exports;}
 (async()=>{
  const occt=await import('occt-wasm'),kernel=await occt.OcctKernel.init();
- const model=load('model.ts',{}),{ExactKernelBackend}=load('backend.ts',{'occt-wasm':occt,'./model':model,'../sketch/model':load('../sketch/model.ts',{})}),backend=new ExactKernelBackend(kernel);let checks=0;
+ const model=load('model.ts',{}),{ExactKernelBackend}=load('backend.ts',{'occt-wasm':occt,'./model':model,'../sketch/model':load('../sketch/model.ts',{'./nonlinear':load('../sketch/nonlinear.ts',{})})}),backend=new ExactKernelBackend(kernel);let checks=0;
  const ok=(v)=>{checks++;assert.ok(v);},equal=(a,b)=>{checks++;assert.deepEqual(JSON.parse(JSON.stringify(a)),JSON.parse(JSON.stringify(b)));},near=(a,b)=>{checks++;assert.ok(Math.abs(a-b)<=1e-6*Math.max(1,Math.abs(b)),`${a} != ${b}`);};
  const request=input=>{const count=kernel.shapeCount;try{return backend.execute(input);}finally{equal(kernel.shapeCount,count);}};
  const reject=input=>{checks++;assert.throws(()=>request(input));};
