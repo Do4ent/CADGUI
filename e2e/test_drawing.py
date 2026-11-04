@@ -100,7 +100,7 @@ def test_drawing_text_isolated_between_document_tabs_and_persists(page, tmp_path
     workspace(page)
     create_text(page, 'Текст первого документа')
     saved = save_document(page, tmp_path)
-    assert saved['schemaVersion'] == 6
+    assert saved['schemaVersion'] == 7
     assert 'drawing' in saved
     page.get_by_title('Новый документ', exact=True).click()
     expect(entities(page)).to_have_count(0)

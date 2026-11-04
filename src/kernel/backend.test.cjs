@@ -1,6 +1,6 @@
 /** Integration tests: execute the shipped backend against the actual OCCT WASM. */
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),ts=require('typescript');
-function load(file,dependencies){const exports={};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname,file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require:name=>{if(name in dependencies)return dependencies[name];throw Error('Unexpected dependency '+name);},Float32Array,Int32Array,Uint32Array});return exports;}
+function load(file,dependencies){const exports={};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname,file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,require:name=>{if(name in dependencies)return dependencies[name];if(name.startsWith('.'))return load(path.relative(__dirname,path.resolve(path.dirname(path.join(__dirname,file)),name+'.ts')),{});throw Error('Unexpected dependency '+name);},Float32Array,Int32Array,Uint32Array});return exports;}
 (async()=>{
  const occt=await import('occt-wasm'),kernel=await occt.OcctKernel.init();
  const model=load('model.ts',{}),{ExactKernelBackend}=load('backend.ts',{'occt-wasm':occt,'./model':model,'../sketch/model':load('../sketch/model.ts',{'./nonlinear':load('../sketch/nonlinear.ts',{})})}),backend=new ExactKernelBackend(kernel);let checks=0;
