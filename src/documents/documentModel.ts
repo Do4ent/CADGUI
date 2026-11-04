@@ -1,13 +1,14 @@
+import {createExactModelState,validateExactModelState,type ExactModelState} from '../kernel/model';
 import {createModelAnnotationState,validateModelAnnotationState,resolveModelAnnotation,type ModelAnnotationState} from '../modelAnnotations/model';
 import {createDrawingDocument, validateDrawingDocument} from '../drawing/model';
 import {type DrawingDocument} from '../drawing/types';
-export const DOCUMENT_SCHEMA_VERSION = 3;
+export const DOCUMENT_SCHEMA_VERSION = 4;
 export type CadItem = {
   id: string; name: string; kind: 'box' | 'cylinder' | 'shaft' | 'gear' | 'pipe';
   pos: [number, number, number]; size: [number, number, number];
   color: string; visible: boolean; group: string;
 };
-export type CadDocument = {schemaVersion: 3; modelAnnotations: ModelAnnotationState; drawing: DrawingDocument; id: string; name: string; items: CadItem[]; modifiedAt: string};
+export type CadDocument = {schemaVersion: 4; exactModel: ExactModelState; modelAnnotations: ModelAnnotationState; drawing: DrawingDocument; id: string; name: string; items: CadItem[]; modifiedAt: string};
 export type LegacyDocumentMetadata = {id: string; name?: string; modifiedAt?: string};
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): value is string => typeof value === 'string' && !!value.trim();
@@ -34,12 +35,12 @@ export function validateSceneAnnotationReferences(items:readonly CadItem[],state
 }
 export function validateDocument(value: unknown): CadDocument {
   if (!record(value)) throw new Error('Invalid document');
-  if (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== DOCUMENT_SCHEMA_VERSION) throw new Error('Unsupported document schema version');
+  if (value.schemaVersion !== 1 && value.schemaVersion !== 2 && value.schemaVersion !== 3 && value.schemaVersion !== DOCUMENT_SCHEMA_VERSION) throw new Error('Unsupported document schema version');
   if (!text(value.id) || !text(value.name) || typeof value.modifiedAt !== 'string' || !Number.isFinite(Date.parse(value.modifiedAt))) throw new Error('Malformed document metadata');
-  const modelAnnotations=value.schemaVersion === 3 ? validateModelAnnotationState(value.modelAnnotations) : createModelAnnotationState();
+  const modelAnnotations=(value.schemaVersion === 3 || value.schemaVersion === 4) ? validateModelAnnotationState(value.modelAnnotations) : createModelAnnotationState();
   const items=validateItems(value.items);
   validateSceneAnnotationReferences(items,modelAnnotations);
-  return {schemaVersion: 3, modelAnnotations, drawing: value.schemaVersion === 1 ? createDrawingDocument() : validateDrawingDocument(value.drawing), id: value.id, name: value.name, items, modifiedAt: value.modifiedAt};
+  return {schemaVersion: 4, exactModel: value.schemaVersion === 4 ? validateExactModelState(value.exactModel) : createExactModelState(), modelAnnotations, drawing: value.schemaVersion === 1 ? createDrawingDocument() : validateDrawingDocument(value.drawing), id: value.id, name: value.name, items, modifiedAt: value.modifiedAt};
 }
 /** Legacy bendcore-items arrays require explicit metadata to avoid identity loss. */
 export function parseDocument(json: string, legacy?: LegacyDocumentMetadata): CadDocument {
@@ -53,5 +54,5 @@ export function parseDocument(json: string, legacy?: LegacyDocumentMetadata): Ca
 }
 export function serializeDocument(document: CadDocument): string {return JSON.stringify(validateDocument(document), null, 2);}
 export function createDocument(id: string, name = 'Без имени'): CadDocument {
-  return validateDocument({schemaVersion: 3, modelAnnotations: createModelAnnotationState(), drawing: createDrawingDocument(), id, name, items: [], modifiedAt: new Date().toISOString()});
+  return validateDocument({schemaVersion: 4, exactModel: createExactModelState(), modelAnnotations: createModelAnnotationState(), drawing: createDrawingDocument(), id, name, items: [], modifiedAt: new Date().toISOString()});
 }

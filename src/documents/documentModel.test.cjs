@@ -17,12 +17,12 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const item = {id:'a', name:'Box', kind:'box', pos:[0,1,-2], size:[1,2,3], color:'#123abc', visible:true, group:'Parts'};
 const document = {...createDocument('doc', 'Example'), items:[item]};
 assert.deepEqual(plain(parseDocument(serializeDocument(document))), plain(document));
-for (const value of [null, [], 42, {}, {...document,schemaVersion:4}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
+for (const value of [null, [], 42, {}, {...document,schemaVersion:5}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
 for (const patch of [{pos:[0,1]}, {pos:[0,NaN,0]}, {pos:[0,Infinity,0]}, {size:[1,0,1]}, {size:[1,-1,1]}, {kind:'unknown'}, {color:'red'}, {visible:'yes'}, {id:' '}, {name:''}, {group:null}]) assert.throws(() => validateDocument({...document,items:[{...item,...patch}]}));
 assert.throws(() => parseDocument('{bad'), /Invalid document JSON/);
 assert.throws(() => parseDocument(JSON.stringify([item])), /Legacy/);
 const migrated = parseDocument(JSON.stringify([item]), {id:'legacy',name:'Imported',modifiedAt:'2026-11-02T00:00:00Z'});
-assert.equal(migrated.schemaVersion,3);
+assert.equal(migrated.schemaVersion,4);
 assert.equal(migrated.id,'legacy');
 assert.deepEqual(plain(migrated.items),[item]);
 assert.deepEqual(plain(parseDocument(serializeDocument(migrated))), plain(migrated));
@@ -39,7 +39,7 @@ console.log('PASS document schema, invalid data, clone isolation and legacy migr
 
 const old = {...document,schemaVersion:1};delete old.drawing;
 const upgrade = parseDocument(JSON.stringify(old));
-assert.equal(upgrade.schemaVersion,3);
+assert.equal(upgrade.schemaVersion,4);
 assert.deepEqual(plain(upgrade.items),[item]);
 assert.ok(upgrade.drawing.sheets.length);
 assert.throws(()=>validateDocument({...document,drawing:undefined}));
@@ -80,7 +80,7 @@ hook.newDocument();hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHist
 hook.activate(first);hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHistoryCount,1);
 hook.markSaved(initialSnapshot);hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,true);
 state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old.id,tabs:[{document:old,saved:JSON.stringify([old.name,old.items])}]}));
-hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,3);
+hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,4);
 state=undefined;storage.set('bendcore-documents-v1','{corrupt');hook=useEditorDocuments(()=>[]);assert.ok(hook.recoveryError);assert.equal(storage.get('bendcore-documents-v1'),'{corrupt');
 console.log('PASS drawing history, dirty guards, per-tab state, snapshot save and workspace migration');
 
@@ -158,7 +158,7 @@ console.log('PASS native dimension roundtrip, strict future schemas, arc persist
 const detachedFrozen=plain(frozen);detachedFrozen.drawing.sheets[0].entities[0].dimension.refs=[];assert.deepEqual(plain(parseDocument(serializeDocument(detachedFrozen))),detachedFrozen);
 
 // Native v3 requires annotation state; old versions migrate without losing drawing/items.
-assert.equal(document.schemaVersion,3);
+assert.equal(document.schemaVersion,4);
 assert.deepEqual(plain(document.modelAnnotations),{version:1,annotations:[]});
 const v2=plain(complex);v2.schemaVersion=2;delete v2.modelAnnotations;
 const fromV2=plain(parseDocument(JSON.stringify(v2)));
@@ -169,7 +169,7 @@ assert.throws(()=>validateDocument({...document,modelAnnotations:{version:2,anno
 assert.throws(()=>validateDocument({...document,modelAnnotations:{version:1,annotations:[{}]}}));
 for(const dirty of [false,true]){
  state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:v2.id,tabs:[{document:v2,saved:JSON.stringify([dirty?'Unsaved name':v2.name,v2.items,v2.drawing])}]}));
- hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,3);
+ hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,4);
 }
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);
 const sceneId=hook.activeId;
@@ -252,3 +252,40 @@ const priorCount=hook.modelHistoryCount;const hugePosition=plain(item);hugePosit
 // A missing source is preserved even if its unresolved local values would overflow together.
 const unresolved=plain(extremeScene);unresolved.items=[];assert.deepEqual(plain(parseDocument(serializeDocument(unresolved))).modelAnnotations,plain(extremeScene.modelAnnotations));
 console.log('PASS combined scene annotation overflow rejected before persistence/history while unresolved sources remain repairable');
+
+// Actual OCCT 5.15.0 makeBox(10,20,30), verified fromBREP/isValid/volume=6000.
+const boxBrep="\nCASCADE Topology V3, (c) Open Cascade\nLocations 0\nCurve2ds 24\n1 0 0 1 0 \n1 0 0 1 0 \n1 30 0 0 -1 \n1 0 0 0 1 \n1 0 -20 1 0 \n1 0 0 1 0 \n1 0 0 0 -1 \n1 0 0 0 1 \n1 0 0 1 0 \n1 0 10 1 0 \n1 30 0 0 -1 \n1 10 0 0 1 \n1 0 -20 1 0 \n1 0 10 1 0 \n1 0 0 0 -1 \n1 10 0 0 1 \n1 0 0 0 1 \n1 0 0 1 0 \n1 30 0 0 1 \n1 0 0 1 0 \n1 0 0 0 1 \n1 0 20 1 0 \n1 30 0 0 1 \n1 0 20 1 0 \nCurves 12\n1 0 0 0 0 0 1 \n1 0 0 30 -0 1 0 \n1 0 20 0 0 0 1 \n1 0 0 0 -0 1 0 \n1 10 0 0 0 0 1 \n1 10 0 30 -0 1 0 \n1 10 20 0 0 0 1 \n1 10 0 0 -0 1 0 \n1 0 0 0 1 0 -0 \n1 0 0 30 1 0 -0 \n1 0 20 0 1 0 -0 \n1 0 20 30 1 0 -0 \nPolygon3D 0\nPolygonOnTriangulations 0\nSurfaces 6\n1 0 0 0 1 0 -0 0 0 1 0 -1 0 \n1 0 0 0 -0 1 0 0 0 1 1 0 -0 \n1 0 0 30 0 0 1 1 0 -0 -0 1 0 \n1 0 20 0 -0 1 0 0 0 1 1 0 -0 \n1 0 0 0 0 0 1 1 0 -0 -0 1 0 \n1 10 0 0 1 0 -0 0 0 1 0 -1 0 \nTriangulations 0\n\nTShapes 34\nVe\n1e-07\n0 0 30\n0 0\n\n0101101\n*\nVe\n1e-07\n0 0 0\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  1 0 0 30\n2  1 1 0 0 30\n2  2 2 0 0 30\n0\n\n0101000\n-34 0 +33 0 *\nVe\n1e-07\n0 20 30\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  2 0 0 20\n2  3 1 0 0 20\n2  4 3 0 0 20\n0\n\n0101000\n-31 0 +34 0 *\nVe\n1e-07\n0 20 0\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  3 0 0 30\n2  5 1 0 0 30\n2  6 4 0 0 30\n0\n\n0101000\n-31 0 +29 0 *\nEd\n 1e-07 1 1 0\n1  4 0 0 20\n2  7 1 0 0 20\n2  8 5 0 0 20\n0\n\n0101000\n-29 0 +33 0 *\nWi\n\n0101100\n-32 0 -30 0 +28 0 +27 0 *\nFa\n0  1e-07 1 0\n\n0111000\n+26 0 *\nVe\n1e-07\n10 0 30\n0 0\n\n0101101\n*\nVe\n1e-07\n10 0 0\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  5 0 0 30\n2  9 6 0 0 30\n2  10 2 0 0 30\n0\n\n0101000\n-24 0 +23 0 *\nVe\n1e-07\n10 20 30\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  6 0 0 20\n2  11 6 0 0 20\n2  12 3 0 0 20\n0\n\n0101000\n-21 0 +24 0 *\nVe\n1e-07\n10 20 0\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  7 0 0 30\n2  13 6 0 0 30\n2  14 4 0 0 30\n0\n\n0101000\n-21 0 +19 0 *\nEd\n 1e-07 1 1 0\n1  8 0 0 20\n2  15 6 0 0 20\n2  16 5 0 0 20\n0\n\n0101000\n-19 0 +23 0 *\nWi\n\n0101100\n-22 0 -20 0 +18 0 +17 0 *\nFa\n0  1e-07 6 0\n\n0111000\n+16 0 *\nEd\n 1e-07 1 1 0\n1  9 0 0 10\n2  17 2 0 0 10\n2  18 5 0 0 10\n0\n\n0101000\n-23 0 +33 0 *\nEd\n 1e-07 1 1 0\n1  10 0 0 10\n2  19 2 0 0 10\n2  20 3 0 0 10\n0\n\n0101000\n-24 0 +34 0 *\nWi\n\n0101100\n-14 0 -22 0 +13 0 +32 0 *\nFa\n0  1e-07 2 0\n\n0111000\n+12 0 *\nEd\n 1e-07 1 1 0\n1  11 0 0 10\n2  21 4 0 0 10\n2  22 5 0 0 10\n0\n\n0101000\n-19 0 +29 0 *\nEd\n 1e-07 1 1 0\n1  12 0 0 10\n2  23 4 0 0 10\n2  24 3 0 0 10\n0\n\n0101000\n-21 0 +31 0 *\nWi\n\n0101100\n-10 0 -18 0 +9 0 +28 0 *\nFa\n0  1e-07 4 0\n\n0111000\n+8 0 *\nWi\n\n0101100\n-27 0 -10 0 +17 0 +14 0 *\nFa\n0  1e-07 5 0\n\n0111000\n+6 0 *\nWi\n\n0101100\n-30 0 -9 0 +20 0 +13 0 *\nFa\n0  1e-07 3 0\n\n0111000\n+4 0 *\nSh\n\n0101100\n-25 0 +15 0 -11 0 +7 0 -5 0 +3 0 *\nSo\n\n1100000\n+2 0 *\n\n+1 0 ";
+const exactCore=load(path.resolve(__dirname,'../kernel/model.ts'));
+const exact=plain(exactCore.createExactModelState());exact.bodies=[{id:'solid',name:'Exact box',brep:boxBrep,color:'#ab1234',visible:true}];
+const exactDocument={...document,exactModel:exact};
+assert.deepEqual(plain(parseDocument(serializeDocument(exactDocument))),plain(exactDocument));
+const cloneExact=validateDocument(exactDocument);cloneExact.exactModel.bodies[0].name='Changed';assert.equal(exact.bodies[0].name,'Exact box');
+assert.throws(()=>validateDocument({...document,exactModel:undefined}));
+for(const invalid of [{...exact,units:'inch'},{...exact,version:2},{...exact,bodies:[exact.bodies[0],exact.bodies[0]]},{...exact,bodies:[{...exact.bodies[0],brep:'not BREP'}]}])assert.throws(()=>validateDocument({...document,exactModel:invalid}));
+for(const version of [1,2,3])for(const dirty of [false,true]){
+ const legacyDoc=plain(exactDocument);legacyDoc.schemaVersion=version;delete legacyDoc.exactModel;
+ if(version<3)delete legacyDoc.modelAnnotations;if(version===1)delete legacyDoc.drawing;
+ const migratedDoc=parseDocument(JSON.stringify(legacyDoc));assert.deepEqual(plain(migratedDoc.exactModel),plain(exactCore.createExactModelState()));assert.deepEqual(plain(migratedDoc.items),[item]);
+ const saved=[dirty?'Unsaved title':legacyDoc.name,legacyDoc.items];if(version>=2)saved.push(legacyDoc.drawing);if(version>=3)saved.push(legacyDoc.modelAnnotations);
+ state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:legacyDoc.id,tabs:[{document:legacyDoc,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);
+}
+state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);
+const exactTab=hook.activeId;hook.setExactModel(exact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.tabs[0].dirty,true);
+exact.bodies[0].name='Caller mutation';assert.equal(hook.exactModel.bodies[0].name,'Exact box');
+hook.setExactModel(plain(hook.exactModel));hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);
+assert.throws(()=>hook.setExactModel({...hook.exactModel,units:'inch'}));assert.equal(hook.modelHistoryCount,1);
+const staleExact=hook.setExactModel;const staleItems=hook.changeScene;const staleNotes=hook.setModelAnnotations;
+const newerExact=plain(hook.exactModel);newerExact.bodies[0].name='New exact';hook.setExactModel(newerExact);hook=useEditorDocuments(()=>[]);
+staleExact(exactCore.createExactModelState());staleItems([]);staleNotes({version:1,annotations:[]});hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].name,'New exact');assert.equal(hook.items.length,1);assert.equal(hook.modelHistoryCount,2);
+hook.changeScene([]);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].name,'New exact');
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.items.length,1);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].name,'Exact box');hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.tabs[0].dirty,false);
+hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,1);
+const lateTab=hook.setExactModel;hook.newDocument();hook=useEditorDocuments(()=>[]);lateTab(newerExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,0);hook.activate(exactTab);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].name,'Exact box');
+const beforeScene=hook.setExactModel;hook.changeScene([]);hook=useEditorDocuments(()=>[]);beforeScene(newerExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].name,'Exact box');
+console.log('PASS schema4 real BREP roundtrip, syntactic rejection, legacy clean/dirty migration, unified exact history and stale exact/scene/tab guards');
+const delayedExactAfterNote=hook.setExactModel;
+const independentNote={id:'world-exact-note',text:'Note',anchor:{kind:'world',point:[0,0,0]},offset:[1,1,0],orientation:'screen',fontSize:.18,color:'#176b9c',visible:true,leader:true};
+hook.setModelAnnotations({version:1,annotations:[independentNote]});hook=useEditorDocuments(()=>[]);delayedExactAfterNote(newerExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].name,'Exact box');assert.equal(hook.modelAnnotations.annotations.length,1);
+const drawingIndependent=plain(hook.drawing);drawingIndependent.properties.title='Independent drawing';hook.setDrawing(drawingIndependent);hook=useEditorDocuments(()=>[]);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,0);assert.equal(hook.drawing.properties.title,'Independent drawing');assert.equal(hook.exactModel.bodies[0].name,'Exact box');
+const delayedClosedExact=hook.setExactModel;hook.close(exactTab);hook=useEditorDocuments(()=>[]);delayedClosedExact(newerExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies.length,0);
+console.log('PASS exact revision guards after annotation edits/closed source and independent drawing undo');
