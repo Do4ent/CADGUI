@@ -25,6 +25,20 @@ export class ExactKernelBackend{
    if(!request||typeof request!=='object')throw Error('Некорректный запрос ядра');
    let shape:ShapeHandle;
    switch(request.op){
+    case 'extrude-curve':{
+     const origin=vector(request.origin),normal=sketchNormal(request.plane),depth=number(request.depth),p=request.profile;
+     if(Math.abs(depth)<1e-5||!p||!['circle','arc'].includes(p.kind)||!Array.isArray(p.center)||p.center.length!==2)throw Error('Нужен корректный круговой профиль и ненулевая глубина');
+     const radius=number(p.radius,true),center=p.center.map(v=>number(v)) as [number,number];
+     const xyz=(point:[number,number])=>{const w=sketchPointToWorld(request.plane,origin,point);return{x:w[0],y:w[1],z:w[2]}};
+     const c=xyz(center),n={x:normal[0],y:normal[1],z:normal[2]};let edges:ShapeHandle[];
+     if(p.kind==='circle')edges=[k.makeCircleEdge(c,n,radius)];
+     else{
+      const start=number(p.startAngle),sweep=number(p.sweep);if(Math.abs(sweep)<=1e-7||Math.abs(sweep)>=2*Math.PI-1e-7)throw Error('Угол дуги должен быть больше нуля и меньше полного оборота');
+      const at=(a:number)=>xyz([center[0]+radius*Math.cos(a),center[1]+radius*Math.sin(a)]),a=at(start),b=at(start+sweep),mid=at(start+sweep/2);
+      edges=[k.makeArcEdge(a,mid,b),k.makeLineEdge(b,c),k.makeLineEdge(c,a)];
+     }
+     const face=k.makeFace(k.makeWire(edges));shape=k.extrude(face,normal[0]*depth,normal[1]*depth,normal[2]*depth);break;
+    }
     case 'extrude-sketch':{
      const origin=vector(request.origin),depth=number(request.depth);if(Math.abs(depth)<1e-5)throw Error('Глубина выдавливания должна быть ненулевой');
      if(!Array.isArray(request.points)||request.points.length>32)throw Error('Поддерживается один замкнутый профиль до 32 точек');
