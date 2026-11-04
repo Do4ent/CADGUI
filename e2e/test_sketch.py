@@ -59,7 +59,6 @@ def model(document):
 
 
 def select_sketch(page, sketch_id):
-    sketch_rows(page).filter(has=page.locator(f'[data-sketch-id="{sketch_id}"]'))
     panel(page).locator(f'[data-sketch-id="{sketch_id}"]').get_by_role('button').first.click()
 
 
@@ -181,3 +180,22 @@ def test_delete_sketch_cascades_only_owned_bodies_and_exact_delete_prunes_featur
     assert model(after)['sketches'] == []
     assert model(after)['extrusions'] == []
     assert after['exactModel']['bodies'] == [unrelated]
+
+
+@pytest.mark.parametrize('plane,depth,extents', [
+    ('XY', -4, [2, 3, 4]),
+    ('XZ', 4, [2, 4, 3]),
+    ('YZ', -4, [4, 2, 3]),
+])
+def test_signed_extrusion_uses_the_sketch_plane_and_actual_occt_bounds(page, tmp_path, plane, depth, extents):
+    prepare(page)
+    create_sketch(page, plane=plane)
+    extrude(page, depth)
+    saved = save_document(page, tmp_path)
+    state = model(saved)
+    assert state['sketches'][0]['plane'] == plane
+    assert state['extrusions'][0]['depth'] == depth
+    result = inspect(page, state['extrusions'][0]['bodyId'])
+    assert result['volume'] == pytest.approx(24, rel=1e-9)
+    actual_extents = [high - low for low, high in zip(*result['bounds'])]
+    assert actual_extents == pytest.approx(extents, abs=1e-6)
