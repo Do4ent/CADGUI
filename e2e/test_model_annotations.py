@@ -7,6 +7,11 @@ from test_regression import browser, page, items
 from test_drawing import save_document
 
 
+@pytest.fixture(autouse=True)
+def single_model_view(page):
+    page.locator('.multi-view-tools').get_by_role('button', name='1', exact=True).click()
+
+
 def panel(page):
     return page.get_by_role('region', name='Аннотации модели', exact=True)
 
@@ -191,3 +196,49 @@ def test_delete_selected_note_leaves_components_unchanged_and_undo_restores_note
     page.keyboard.press('Control+z')
     expect(labels(page)).to_contain_text(['Удалить только заметку'])
     assert items(page) == original_items
+
+
+def test_apply_invalid_draft_and_cancel_preserve_last_applied_note(page, tmp_path):
+    dialog = open_note(page, 'Сохранено через Apply')
+    dialog.get_by_role('button', name='Применить', exact=True).click()
+    expect(dialog).to_be_visible()
+    expect(labels(page)).to_contain_text(['Сохранено через Apply'])
+    dialog.get_by_label('Текст заметки', exact=True).fill('  ')
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    expect(dialog.get_by_role('button', name='Применить', exact=True)).to_be_disabled()
+    dialog.get_by_label('Текст заметки', exact=True).fill('Несохранённый черновик')
+    dialog.get_by_label('Размер шрифта', exact=True).fill('0')
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    note = annotations(save_document(page, tmp_path))[0]
+    assert note['text'] == 'Сохранено через Apply'
+    assert note['fontSize'] == 0.18
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(labels(page)).to_have_count(0)
+
+
+def test_component_overflow_is_reported_without_changing_document(page, tmp_path):
+    create_note(page, 'Проверка опоры', 'component', 'gear1')
+    doc = save_document(page, tmp_path, 'source.json')
+    note = annotations(doc)[0]
+    note['visible'] = False
+    note['anchor']['point'] = [1e308, 0, 0]
+    note['offset'] = [0, 0, 0]
+    page.get_by_label('Импорт документа JSON', exact=True).set_input_files({
+        'name': 'finite-anchor.json', 'mimeType': 'application/json',
+        'buffer': json.dumps(doc).encode(),
+    })
+    page.wait_for_function('''() => {
+      const w=JSON.parse(localStorage.getItem('bendcore-documents-v1'));
+      return w.tabs.find(t=>t.document.id===w.activeId)?.document.modelAnnotations.annotations[0]?.anchor.point[0]===1e308;
+    }''')
+    before = save_document(page, tmp_path, 'before-overflow.json')
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    page.locator('[role="treeitem"][data-tree-id="gear1"]').click()
+    page.locator('[data-property-editor] input[type="number"]').first.fill('1e308')
+    expect(page.get_by_role('alert').filter(has_text='Изменение не применено')).to_be_visible()
+    after = save_document(page, tmp_path, 'after-overflow.json')
+    assert after == before
+    assert not errors

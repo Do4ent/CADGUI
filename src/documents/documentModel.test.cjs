@@ -17,12 +17,12 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const item = {id:'a', name:'Box', kind:'box', pos:[0,1,-2], size:[1,2,3], color:'#123abc', visible:true, group:'Parts'};
 const document = {...createDocument('doc', 'Example'), items:[item]};
 assert.deepEqual(plain(parseDocument(serializeDocument(document))), plain(document));
-for (const value of [null, [], 42, {}, {...document,schemaVersion:3}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
+for (const value of [null, [], 42, {}, {...document,schemaVersion:4}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
 for (const patch of [{pos:[0,1]}, {pos:[0,NaN,0]}, {pos:[0,Infinity,0]}, {size:[1,0,1]}, {size:[1,-1,1]}, {kind:'unknown'}, {color:'red'}, {visible:'yes'}, {id:' '}, {name:''}, {group:null}]) assert.throws(() => validateDocument({...document,items:[{...item,...patch}]}));
 assert.throws(() => parseDocument('{bad'), /Invalid document JSON/);
 assert.throws(() => parseDocument(JSON.stringify([item])), /Legacy/);
 const migrated = parseDocument(JSON.stringify([item]), {id:'legacy',name:'Imported',modifiedAt:'2026-11-02T00:00:00Z'});
-assert.equal(migrated.schemaVersion,2);
+assert.equal(migrated.schemaVersion,3);
 assert.equal(migrated.id,'legacy');
 assert.deepEqual(plain(migrated.items),[item]);
 assert.deepEqual(plain(parseDocument(serializeDocument(migrated))), plain(migrated));
@@ -39,7 +39,7 @@ console.log('PASS document schema, invalid data, clone isolation and legacy migr
 
 const old = {...document,schemaVersion:1};delete old.drawing;
 const upgrade = parseDocument(JSON.stringify(old));
-assert.equal(upgrade.schemaVersion,2);
+assert.equal(upgrade.schemaVersion,3);
 assert.deepEqual(plain(upgrade.items),[item]);
 assert.ok(upgrade.drawing.sheets.length);
 assert.throws(()=>validateDocument({...document,drawing:undefined}));
@@ -80,7 +80,7 @@ hook.newDocument();hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHist
 hook.activate(first);hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHistoryCount,1);
 hook.markSaved(initialSnapshot);hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,true);
 state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old.id,tabs:[{document:old,saved:JSON.stringify([old.name,old.items])}]}));
-hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,2);
+hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,3);
 state=undefined;storage.set('bendcore-documents-v1','{corrupt');hook=useEditorDocuments(()=>[]);assert.ok(hook.recoveryError);assert.equal(storage.get('bendcore-documents-v1'),'{corrupt');
 console.log('PASS drawing history, dirty guards, per-tab state, snapshot save and workspace migration');
 
@@ -156,3 +156,99 @@ const issues=diagnoseDrawing(frozen.drawing);assert.ok(issues.some(d=>d.code==='
 console.log('PASS native dimension roundtrip, strict future schemas, arc persistence and source diagnostics');
 
 const detachedFrozen=plain(frozen);detachedFrozen.drawing.sheets[0].entities[0].dimension.refs=[];assert.deepEqual(plain(parseDocument(serializeDocument(detachedFrozen))),detachedFrozen);
+
+// Native v3 requires annotation state; old versions migrate without losing drawing/items.
+assert.equal(document.schemaVersion,3);
+assert.deepEqual(plain(document.modelAnnotations),{version:1,annotations:[]});
+const v2=plain(complex);v2.schemaVersion=2;delete v2.modelAnnotations;
+const fromV2=plain(parseDocument(JSON.stringify(v2)));
+assert.deepEqual(fromV2.items,v2.items);assert.deepEqual(fromV2.drawing,v2.drawing);
+assert.deepEqual(fromV2.modelAnnotations,{version:1,annotations:[]});
+assert.throws(()=>validateDocument({...document,modelAnnotations:undefined}));
+assert.throws(()=>validateDocument({...document,modelAnnotations:{version:2,annotations:[]}}));
+assert.throws(()=>validateDocument({...document,modelAnnotations:{version:1,annotations:[{}]}}));
+for(const dirty of [false,true]){
+ state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:v2.id,tabs:[{document:v2,saved:JSON.stringify([dirty?'Unsaved name':v2.name,v2.items,v2.drawing])}]}));
+ hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,3);
+}
+state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);
+const sceneId=hook.activeId;
+hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);
+const changedItems=plain(hook.items);changedItems[0].name='Scene change';
+hook.changeScene(changedItems,'Rename');hook=useEditorDocuments(()=>[]);
+assert.equal(hook.modelHistoryCount,1);assert.equal(hook.tabs[0].dirty,true);
+hook.changeScene(plain(changedItems));hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);
+assert.throws(()=>hook.changeScene([{...item,size:[0,1,1]}]));hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.items[0].name,item.name);assert.equal(hook.tabs[0].dirty,false);
+hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.items[0].name,'Scene change');
+const staleScene=hook.changeScene;hook.newDocument();hook=useEditorDocuments(()=>[]);
+const destinationId=hook.activeId;staleScene([item]);hook=useEditorDocuments(()=>[]);assert.equal(hook.items.length,0);assert.equal(hook.modelHistoryCount,0);
+hook.activate(sceneId);hook=useEditorDocuments(()=>[]);
+const staleSceneSameTab=hook.changeScene;hook.changeScene([{...item,name:'Newer scene'}]);hook=useEditorDocuments(()=>[]);
+staleSceneSameTab([item]);hook=useEditorDocuments(()=>[]);assert.equal(hook.items[0].name,'Newer scene');
+console.log('PASS schema3 strict native annotation state, v2 fingerprint migration and guarded scene history');
+
+const annotationCore=load(path.resolve(__dirname,'../modelAnnotations/model.ts'));
+const note=annotationCore.createModelAnnotation('note-1',item.id);note.text='Контроль Ø ±\n第二行';note.orientation='XZ';
+const notes={version:1,annotations:[note]};
+const annotated=plain(createDocument('annotations-doc'));annotated.items=[plain(item)];annotated.modelAnnotations=plain(notes);
+assert.deepEqual(plain(parseDocument(serializeDocument(annotated))),annotated);
+const cloneNotes=validateDocument(annotated);cloneNotes.modelAnnotations.annotations[0].anchor.point[0]=42;cloneNotes.modelAnnotations.annotations[0].text='Changed';
+assert.equal(annotated.modelAnnotations.annotations[0].anchor.point[0],0);assert.equal(annotated.modelAnnotations.annotations[0].text,note.text);
+assert.throws(()=>validateDocument({...annotated,modelAnnotations:{...notes,annotations:[note,note]}}));
+const missingReference=plain(annotated);missingReference.items=[];
+assert.deepEqual(plain(parseDocument(serializeDocument(missingReference))).modelAnnotations,plain(notes));
+assert.equal(annotationCore.resolveModelAnnotation(note,[]).status,'missing');
+
+// Unified history interleaves note changes, geometry changes and source deletion.
+state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);
+hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);
+const originalSaved=hook.exportDocument();
+hook.setModelAnnotations(notes);hook=useEditorDocuments(()=>[]);
+assert.equal(hook.modelHistoryCount,1);assert.equal(hook.tabs[0].dirty,true);
+note.text='Mutated caller';assert.notEqual(hook.modelAnnotations.annotations[0].text,note.text);
+const retainedNoteText=hook.modelAnnotations.annotations[0].text;
+const beforeNotesNoop=hook.modelHistoryCount;hook.setModelAnnotations(plain(hook.modelAnnotations));hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,beforeNotesNoop);
+assert.throws(()=>hook.setModelAnnotations({version:1,annotations:[{}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);
+const moved=plain(hook.items);moved[0].pos=[4,5,6];hook.changeScene(moved);hook=useEditorDocuments(()=>[]);
+assert.equal(hook.modelHistoryCount,2);assert.deepEqual(plain(hook.items[0].pos),[4,5,6]);
+hook.changeScene([]);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,1);assert.equal(hook.modelHistoryCount,3);
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.deepEqual(plain(hook.items[0].pos),[4,5,6]);assert.equal(hook.modelAnnotations.annotations[0].text,retainedNoteText);
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.deepEqual(plain(hook.items[0].pos),item.pos);assert.equal(hook.modelAnnotations.annotations.length,1);
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,0);assert.equal(hook.tabs[0].dirty,false);
+hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,1);
+hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.deepEqual(plain(hook.items[0].pos),[4,5,6]);
+hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.items.length,0);assert.equal(hook.modelAnnotations.annotations.length,1);
+// Drawing history does not enter model chronology.
+const modelCount=hook.modelHistoryCount;const drawingUpdate=plain(hook.drawing);drawingUpdate.properties.title='Drawing only';hook.setDrawing(drawingUpdate);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,modelCount);assert.equal(hook.drawingHistoryCount,1);
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.drawing.properties.title,'Drawing only');
+hook.drawingUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,1);assert.deepEqual(plain(hook.items[0].pos),[4,5,6]);
+// Source tab, source note revision AND scene item revision protect asynchronous results.
+const annotationTab=hook.activeId,oldAnnotationSetter=hook.setModelAnnotations;
+const annotationBefore=plain(hook.modelAnnotations);
+hook.newDocument();hook=useEditorDocuments(()=>[]);const emptyAnnotationTab=hook.activeId;
+oldAnnotationSetter({version:1,annotations:[]});hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,0);assert.equal(hook.modelAnnotations.annotations.length,0);
+hook.activate(annotationTab);hook=useEditorDocuments(()=>[]);assert.deepEqual(plain(hook.modelAnnotations),annotationBefore);
+const staleAfterGeometry=hook.setModelAnnotations;hook.changeScene([{...item,name:'More recent scene'}]);hook=useEditorDocuments(()=>[]);
+staleAfterGeometry({version:1,annotations:[]});hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,1);
+const staleAfterNotes=hook.setModelAnnotations;const revisedNotes=plain(hook.modelAnnotations);revisedNotes.annotations[0].text='Newer annotation';hook.setModelAnnotations(revisedNotes);hook=useEditorDocuments(()=>[]);
+staleAfterNotes({version:1,annotations:[]});hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations[0].text,'Newer annotation');
+const staleSceneAfterNotes=hook.changeScene;const revisedAgain=plain(hook.modelAnnotations);revisedAgain.annotations[0].color='#ffffff';hook.setModelAnnotations(revisedAgain);hook=useEditorDocuments(()=>[]);
+staleSceneAfterNotes([]);hook=useEditorDocuments(()=>[]);assert.equal(hook.items.length,1);
+const closedNoteSetter=hook.setModelAnnotations;hook.close(annotationTab);hook=useEditorDocuments(()=>[]);assert.equal(hook.activeId,emptyAnnotationTab);
+closedNoteSetter(revisedAgain);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelAnnotations.annotations.length,0);
+// Saved markers for v3 remain content-sensitive; stale exports cannot clear new note edits.
+state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);const oldNoteSave=hook.exportDocument();hook.setModelAnnotations(notes);hook=useEditorDocuments(()=>[]);hook.markSaved(oldNoteSave);hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,true);
+console.log('PASS schema3 annotation Unicode/source persistence, mixed scene-note undo/redo, clone/no-op/invalid guards, drawing independence and stale-tab/revision protection');
+
+// Finite component and offset values can still overflow after resolving the anchor.
+const extremeNote=annotationCore.createModelAnnotation('extreme',item.id);extremeNote.anchor.point=[Number.MAX_VALUE,0,0];extremeNote.offset=[Number.MAX_VALUE,0,0];
+const extremeScene=plain(annotated);extremeScene.modelAnnotations={version:1,annotations:[extremeNote]};
+assert.throws(()=>serializeDocument(extremeScene),/конечным/);
+state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);const beforeExtreme=hook.exportDocument().json;
+assert.throws(()=>hook.setModelAnnotations(extremeScene.modelAnnotations),/конечным/);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,0);assert.equal(hook.exportDocument().json,beforeExtreme);
+const safeAtOrigin=plain(extremeNote);safeAtOrigin.anchor.point=[Number.MAX_VALUE,0,0];safeAtOrigin.offset=[0,0,0];hook.setModelAnnotations({version:1,annotations:[safeAtOrigin]});hook=useEditorDocuments(()=>[]);
+const priorCount=hook.modelHistoryCount;const hugePosition=plain(item);hugePosition.pos=[Number.MAX_VALUE,1,0];assert.throws(()=>hook.changeScene([hugePosition]),/конечным/);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,priorCount);assert.deepEqual(plain(hook.items[0].pos),item.pos);
+// A missing source is preserved even if its unresolved local values would overflow together.
+const unresolved=plain(extremeScene);unresolved.items=[];assert.deepEqual(plain(parseDocument(serializeDocument(unresolved))).modelAnnotations,plain(extremeScene.modelAnnotations));
+console.log('PASS combined scene annotation overflow rejected before persistence/history while unresolved sources remain repairable');
