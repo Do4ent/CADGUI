@@ -1,5 +1,5 @@
-import {useEffect,useMemo,useState} from 'react';
-import {Html} from '@react-three/drei';
+import {useEffect,useLayoutEffect,useMemo,useState} from 'react';
+import {Html,useBounds} from '@react-three/drei';
 import * as THREE from 'three';
 import {kernelClient} from './client';
 import type {ExactBody,ExactModelState,ExactSelection,KernelBodyResult} from './types';
@@ -29,7 +29,7 @@ export function faceHighlightGeometry(result:KernelBodyResult,faceId:number):THR
 export function exactClippingPlanes(section='off',offset=0):THREE.Plane[]{return section==='off'?[]:[new THREE.Plane(section==='XY'?new THREE.Vector3(0,0,-1):section==='XZ'?new THREE.Vector3(0,-1,0):new THREE.Vector3(-1,0,0),offset)];}
 export type ExactModelLayerProps={state:ExactModelState;selected:ExactSelection|null;onSelect:(selection:ExactSelection)=>void;section?:string;sectionOffset?:number;wire?:boolean;edges?:boolean};
 function BodyMesh({body,result,selected,onSelect,section,sectionOffset,wire,edges}:Omit<ExactModelLayerProps,'state'>&{body:ExactBody;result:KernelBodyResult}){
- const geometry=useMemo(()=>createBodyGeometry(result),[result]);
+ const geometry=useMemo(()=>createBodyGeometry(result),[result]);const bounds=useBounds();useLayoutEffect(()=>{bounds.refresh().clip().fit();},[bounds,geometry]);
  const lines=useMemo(()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(result.lines,3));return g},[result]);
  const highlight=useMemo(()=>selected?.bodyId===body.id&&selected.faceId!==null?faceHighlightGeometry(result,selected.faceId):null,[result,selected,body.id]);
  useEffect(()=>()=>geometry.dispose(),[geometry]);useEffect(()=>()=>lines.dispose(),[lines]);useEffect(()=>()=>highlight?.dispose(),[highlight]);

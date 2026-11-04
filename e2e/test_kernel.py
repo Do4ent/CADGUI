@@ -228,10 +228,27 @@ def test_invalid_step_reader_result_cannot_overwrite_existing_exact_body(page, t
     panel(page).get_by_role('button', name='Импорт STEP', exact=True).click()
     page.get_by_label('Файл STEP', exact=True).set_input_files({
         'name': 'invalid.step', 'mimeType': 'application/step',
-        'buffer': b'This is not an ISO-10303 STEP document.',
+        'buffer': b'ISO-10303-21;HEADER;ENDSEC;DATA;BROKEN;ENDSEC;END-ISO-10303-21;',
     })
     expect(panel(page).get_by_role('alert')).to_be_visible(timeout=120000)
     expect(rows(page)).to_have_count(1)
     after = save_document(page, tmp_path, 'after-invalid-step.json')
     assert after == before
     assert inspect_first(page)['volume'] == pytest.approx(24, rel=1e-9)
+
+
+def test_corrupt_native_brep_is_rejected_before_opening_or_changing_tabs(page, tmp_path):
+    prepare(page)
+    create_box(page)
+    before = save_document(page, tmp_path, 'before-corrupt-brep.json')
+    bad = json.loads(json.dumps(before))
+    bad['exactModel']['bodies'][0]['brep'] = 'CASCADE Topology V3\nThis is not BREP geometry.'
+    tabs_before = page.get_by_role('tablist', name='Документы').get_by_role('tab').count()
+    page.get_by_label('Импорт документа JSON', exact=True).set_input_files({
+        'name': 'corrupt-brep.json', 'mimeType': 'application/json',
+        'buffer': json.dumps(bad).encode(),
+    })
+    expect(page.get_by_role('alert').filter(has_text='Ошибка открытия JSON')).to_be_visible(timeout=120000)
+    assert page.get_by_role('tablist', name='Документы').get_by_role('tab').count() == tabs_before
+    after = save_document(page, tmp_path, 'after-corrupt-brep.json')
+    assert after == before

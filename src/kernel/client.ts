@@ -4,7 +4,7 @@ type Pending={resolve:(result:KernelOutput)=>void;reject:(error:Error)=>void;tim
  * are never delivered to a caller after reset. UI/document revision guards
  * provide the independent protection against committing to another document. */
 export class KernelClient{
- private worker:Worker|null=null;private serial=0;private pending=new Map<number,Pending>();
+ private worker:Worker|null=null;private serial=0;private pending=new Map<number,Pending>();private inspections=new Map<string,Promise<KernelOutput>>();
  constructor(private factory:()=>Worker=()=>new Worker(new URL('./worker.ts',import.meta.url),{type:'module'}),private timeoutMs=45_000){}
  private start(){
   if(this.worker)return this.worker;
@@ -13,13 +13,21 @@ export class KernelClient{
   worker.onerror=event=>{event.preventDefault();this.reset('Не удалось запустить Open CASCADE WebAssembly. Повторите операцию в современном браузере.');};
   worker.onmessageerror=()=>this.reset('Повреждён ответ геометрического ядра');return worker;
  }
- execute(request:KernelRequest):Promise<KernelOutput>{return new Promise((resolve,reject)=>{
+ execute(request:KernelRequest):Promise<KernelOutput>{
+  if(request.op==='inspect'){const cached=this.inspections.get(request.brep);if(cached)return cached;}
+  const pending=this.dispatch(request);
+  if(request.op==='inspect')this.remember(request.brep,pending);
+  void pending.then(result=>{if(typeof result!=='string'&&request.op!=='inspect')this.remember(result.brep,Promise.resolve(result));},()=>{if(request.op==='inspect'&&this.inspections.get(request.brep)===pending)this.inspections.delete(request.brep);});
+  return pending;
+ }
+ private remember(brep:string,result:Promise<KernelOutput>){this.inspections.set(brep,result);while(this.inspections.size>8)this.inspections.delete(this.inspections.keys().next().value!);}
+ private dispatch(request:KernelRequest):Promise<KernelOutput>{return new Promise((resolve,reject)=>{
   let worker:Worker;try{worker=this.start();}catch(error){reject(error instanceof Error?error:new Error(String(error)));return;}
   const id=++this.serial,timer=setTimeout(()=>this.reset('Превышено время вычисления геометрии. Ядро перезапущено; документ не изменён.'),this.timeoutMs);
   this.pending.set(id,{resolve,reject,timer});try{worker.postMessage({id,request});}catch(error){clearTimeout(timer);this.pending.delete(id);reject(error instanceof Error?error:new Error(String(error)));}
  });}
  reset(message='Вычисление отменено; документ не изменён.'){
-  this.worker?.terminate();this.worker=null;
+  this.worker?.terminate();this.worker=null;this.inspections.clear();
   for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error(message));}this.pending.clear();
  }
 }
