@@ -1,5 +1,6 @@
 """Sketch sources, actual OCCT extrusion and transactional dependency rebuilds."""
 import json
+import re
 
 import pytest
 from playwright.sync_api import expect
@@ -199,3 +200,70 @@ def test_signed_extrusion_uses_the_sketch_plane_and_actual_occt_bounds(page, tmp
     assert result['volume'] == pytest.approx(24, rel=1e-9)
     actual_extents = [high - low for low, high in zip(*result['bounds'])]
     assert actual_extents == pytest.approx(extents, abs=1e-6)
+
+
+def test_conflicting_constraint_is_rejected_without_altering_source_or_owned_body(page, tmp_path):
+    prepare(page)
+    sketch_id = create_sketch(page)
+    extrude(page)
+    before = save_document(page, tmp_path, 'before-conflict.json')
+    select_sketch(page, sketch_id)
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    points = dialog.locator('[data-sketch-point-id]')
+    point_ids = points.evaluate_all('(nodes) => nodes.map(node => node.dataset.sketchPointId)')
+    coordinates = points.evaluate_all('(nodes) => nodes.map(node => [node.dataset.sketchPointX, node.dataset.sketchPointY])')
+    count = dialog.locator('[data-sketch-constraint-id]').count()
+    dialog.get_by_label('Тип ограничения', exact=True).select_option('dx')
+    dialog.get_by_label('Первая точка', exact=True).select_option(point_ids[0])
+    dialog.get_by_label('Вторая точка', exact=True).select_option(point_ids[1])
+    dialog.get_by_label('Значение ограничения', exact=True).fill('999')
+    dialog.get_by_role('button', name='Добавить ограничение', exact=True).click()
+    expect(dialog.locator('[data-sketch-draft-status]')).to_have_attribute('data-sketch-draft-status', 'rejected')
+    expect(dialog.get_by_role('alert')).to_contain_text('Изменение не применено')
+    expect(dialog.locator('[data-sketch-constraint-id]')).to_have_count(count)
+    assert points.evaluate_all('(nodes) => nodes.map(node => [node.dataset.sketchPointX, node.dataset.sketchPointY])') == coordinates
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'after-conflict.json') == before
+
+
+def test_free_sketch_point_drag_respects_grid_and_persists_real_coordinates(page, tmp_path):
+    prepare(page)
+    sketch_id = create_sketch(page)
+    select_sketch(page, sketch_id)
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Редактор эскиза', exact=True)
+    removals = dialog.get_by_role('button', name=re.compile(r'^Удалить ограничение '))
+    while removals.count():
+        removals.first.click()
+    expect(dialog.locator('[data-sketch-solver-status]')).to_have_attribute('data-sketch-solver-status', 'under-constrained')
+    point = dialog.locator('[data-sketch-point-id]').first
+    point_id = point.get_attribute('data-sketch-point-id')
+    svg = dialog.get_by_role('img', name='Геометрия эскиза', exact=True)
+    def drag_to(x, y):
+        point.scroll_into_view_if_needed()
+        positions = svg.evaluate('''(svg, target) => {
+          const node = svg.querySelector('[data-sketch-point-id]');
+          const matrix = svg.getScreenCTM();
+          const start = new DOMPoint(Number(node.dataset.sketchPointX), -Number(node.dataset.sketchPointY)).matrixTransform(matrix);
+          const end = new DOMPoint(target[0], -target[1]).matrixTransform(matrix);
+          return {start:{x:start.x,y:start.y},end:{x:end.x,y:end.y}};
+        }''', [x, y])
+        page.mouse.move(**positions['start'])
+        page.mouse.down()
+        page.mouse.move(**positions['end'], steps=10)
+        page.mouse.up()
+    dialog.get_by_label('Сетка 1 мм', exact=True).check()
+    drag_to(1.2, 0.7)
+    expect(point).to_have_attribute('data-sketch-point-x', '1')
+    expect(point).to_have_attribute('data-sketch-point-y', '1')
+    dialog.get_by_label('Сетка 1 мм', exact=True).uncheck()
+    drag_to(1.25, 0.75)
+    assert float(point.get_attribute('data-sketch-point-x')) == pytest.approx(1.25, abs=1e-6)
+    assert float(point.get_attribute('data-sketch-point-y')) == pytest.approx(0.75, abs=1e-6)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible()
+    source = model(save_document(page, tmp_path))['sketches'][0]
+    assert source['constraints'] == []
+    saved_point = next(point for point in source['points'] if point['id'] == point_id)
+    assert [saved_point['x'], saved_point['y']] == pytest.approx([1.25, 0.75], abs=1e-6)
