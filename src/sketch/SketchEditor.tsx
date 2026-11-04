@@ -1,0 +1,73 @@
+import {useEffect,useId,useMemo,useRef,useState} from 'react';
+import type {PointerEvent as ReactPointerEvent} from 'react';
+import type {Sketch,SketchConstraint,SketchPoint} from './types';
+import {createRectangleSketch,moveSketchPoint,profilePoints,solveSketch} from './model';
+
+export type SketchEditorProps={sketch:Sketch;onChange:(sketch:Sketch)=>void;disabled?:boolean};
+export function sketchViewBox(points:readonly SketchPoint[]):[number,number,number,number]{
+ const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+ const minX=Math.min(0,...xs),maxX=Math.max(10,...xs),minY=Math.min(0,...ys),maxY=Math.max(10,...ys);
+ const pad=Math.max(3,Math.max(maxX-minX,maxY-minY)*.15);
+ return [minX-pad,-maxY-pad,maxX-minX+2*pad,maxY-minY+2*pad];
+}
+export function snapSketchCoordinate(value:number,snap:boolean):number{return snap?Math.round(value):value}
+export function nextSketchId(prefix:string,ids:readonly string[]):string{let n=1;while(ids.includes(prefix+n))n++;return prefix+n}
+export function solvedSketchDraft(candidate:Sketch):Sketch{const next=structuredClone(candidate),result=solveSketch(next);if(result.status==='inconsistent')throw new Error(result.message||'Противоречивые ограничения');return {...next,points:result.points}}
+export function removeSketchPointDraft(sketch:Sketch,id:string):Sketch{
+ if(sketch.constraints.some(c=>c.kind==='fixed'?c.pointId===id:c.a===id||c.b===id))throw new Error(`Точка ${id} используется в ограничениях. Сначала удалите эти ограничения.`);
+ return solvedSketchDraft({...sketch,points:sketch.points.filter(p=>p.id!==id)});
+}
+const square={borderRadius:0};
+function TechIcon({kind='constraint'}:{kind?:string}){return <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style={{verticalAlign:'middle',marginRight:4}}><path d={kind==='vertical'?'M8 2V14':kind==='horizontal'?'M2 8H14':kind==='fixed'?'M4 7V4a4 4 0 018 0v3M3 7h10v7H3z':'M2 12L6 4l7 6'} fill="none" stroke="#2480b5" strokeWidth="1.6"/><circle cx="3" cy="12" r="2" fill="#da8b35"/><circle cx="13" cy="4" r="2" fill="#7056af"/></svg>}
+function NumericField({label,value,onCommit,disabled}:{label:string;value:number;onCommit:(n:number)=>void;disabled?:boolean}){
+ const [text,setText]=useState(String(value)),[invalid,setInvalid]=useState(false);
+ useEffect(()=>{setText(String(value));setInvalid(false)},[value]);
+ const commit=()=>{const n=text.trim()===''?NaN:Number(text);if(!Number.isFinite(n)){setInvalid(true);return}setInvalid(false);onCommit(n)};
+ return <label style={{display:'inline-flex',gap:4,alignItems:'center'}}><span><TechIcon kind={label.startsWith('X')?'horizontal':'vertical'}/>{label}</span><input aria-label={label} aria-invalid={invalid} type="number" step="any" value={text} disabled={disabled} style={{...square,width:92}} onChange={e=>{setText(e.target.value);setInvalid(e.target.value.trim()===''||!Number.isFinite(Number(e.target.value)))}} onBlur={commit} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();commit()}if(e.key==='Escape'){e.preventDefault();e.stopPropagation();setText(String(value));setInvalid(false)}}}/>{invalid&&<span role="alert">Введите конечное число</span>}</label>
+}
+const names:Record<SketchConstraint['kind'],string>={horizontal:'Горизонтальность',vertical:'Вертикальность',coincident:'Совпадение',fixed:'Фиксация',dx:'Расстояние X',dy:'Расстояние Y'};
+export function SketchEditor({sketch,onChange,disabled=false}:SketchEditorProps){
+ const [selected,setSelected]=useState<string|null>(sketch.points[0]?.id??null),[snap,setSnap]=useState(true);
+ const [failure,setFailure]=useState<{message:string;candidate?:Sketch}|null>(null),[resetKey,setResetKey]=useState(0);
+ const [kind,setKind]=useState<SketchConstraint['kind']>('horizontal'),[a,setA]=useState(sketch.points[0]?.id??''),[b,setB]=useState(sketch.points[1]?.id??'');
+ const [value,setValue]=useState('10'),[fixedX,setFixedX]=useState('0'),[fixedY,setFixedY]=useState('0');
+ const svgRef=useRef<SVGSVGElement>(null),drag=useRef<{pointerId:number;id:string;view:[number,number,number,number]}|null>(null);
+ const [dragView,setDragView]=useState<[number,number,number,number]|null>(null);const gridId=useId().replace(/:/g,'');
+ useEffect(()=>{if(!sketch.points.some(p=>p.id===selected))setSelected(sketch.points[0]?.id??null);if(!sketch.points.some(p=>p.id===a))setA(sketch.points[0]?.id??'');if(!sketch.points.some(p=>p.id===b))setB(sketch.points[1]?.id??sketch.points[0]?.id??'')},[sketch.points,selected,a,b]);
+ useEffect(()=>{setFailure(null)},[sketch.id]);
+ const summary=useMemo(()=>{try{return {result:solveSketch(sketch),error:''}}catch(error){return {result:null,error:String(error)}}},[sketch]);
+ const profileError=useMemo(()=>{if(!sketch.closed)return 'Открытый профиль: выдавливание недоступно';try{profilePoints(sketch);return ''}catch(error){return error instanceof Error?error.message:String(error)}},[sketch]);
+ const view=dragView??sketchViewBox(sketch.points),r=Math.max(view[2],view[3])*.012;
+ const attempt=(candidate:Sketch)=>{if(disabled)return;try{onChange(solvedSketchDraft(candidate));setFailure(null)}catch(error){setFailure({message:error instanceof Error?error.message:String(error),candidate:structuredClone(candidate)})}};
+ const move=(id:string,x:number,y:number)=>{if(disabled)return;try{onChange(moveSketchPoint(sketch,id,x,y));setFailure(null)}catch(error){setFailure({message:error instanceof Error?error.message:String(error)})}};
+ const position=(event:ReactPointerEvent)=>{const svg=svgRef.current,ctm=svg?.getScreenCTM();if(!svg||!ctm)return null;const p=svg.createSVGPoint();p.x=event.clientX;p.y=event.clientY;const q=p.matrixTransform(ctm.inverse());return [snapSketchCoordinate(q.x,snap),snapSketchCoordinate(-q.y,snap)] as const};
+ const endDrag=(event:ReactPointerEvent)=>{if(drag.current?.pointerId!==event.pointerId)return;drag.current=null;setDragView(null);if(svgRef.current?.hasPointerCapture(event.pointerId))svgRef.current.releasePointerCapture(event.pointerId)};
+ const addConstraint=()=>{try{
+  const id=nextSketchId('c',sketch.constraints.map(c=>c.id));let constraint:SketchConstraint;
+  if(kind==='fixed'){const x=Number(fixedX),y=Number(fixedY);if(!fixedX.trim()||!fixedY.trim()||!Number.isFinite(x)||!Number.isFinite(y))throw Error('Введите конечные координаты фиксации');constraint={id,kind,pointId:a,x,y}}
+  else {if(a===b)throw Error('Выберите две разные точки');if(kind==='dx'||kind==='dy'){const n=Number(value);if(!value.trim()||!Number.isFinite(n))throw Error('Введите конечное знаковое расстояние');constraint={id,kind,a,b,value:n}}else constraint={id,kind,a,b}}
+  attempt({...sketch,constraints:[...sketch.constraints,constraint]});
+ }catch(error){setFailure({message:error instanceof Error?error.message:String(error)})}};
+ return <div className="sketch-editor" data-sketch-draft-status={failure?'rejected':summary.result?.status??'invalid'} style={{display:'grid',gap:8}}>
+  <div role="status" data-sketch-solver-status={summary.result?.status} style={{fontSize:12}}>Статус: {summary.result?.status==='fully-constrained'?'полностью определён':summary.result?.status==='under-constrained'?'недоопределён':'противоречивый'} · DOF: {summary.result?.dof??'—'} · Ранг: {summary.result?.rank??'—'} · Избыточность: {summary.result?.redundant??'—'} · Невязка: {summary.result?.residual.toPrecision(3)??'—'}</div>
+  {summary.error&&<div role="alert">{summary.error}</div>}
+  {failure&&<div role="alert" style={{border:'1px solid #b44535',padding:6}}><strong>Изменение не применено: </strong>{failure.message}{failure.candidate&&<div>Неудачный черновик: {failure.candidate.constraints.map(c=>`${c.id}: ${names[c.kind]}${'value' in c?` = ${c.value}`:''}`).join('; ')}</div>}<button type="button" style={square} onClick={()=>{setFailure(null);setResetKey(k=>k+1)}}>Отменить неудачное изменение</button></div>}
+  <div style={{display:'flex',gap:12,flexWrap:'wrap'}}><label><input type="checkbox" checked={snap} disabled={disabled} onChange={e=>setSnap(e.target.checked)}/><TechIcon/>Сетка 1 мм</label><label><input type="checkbox" checked={sketch.closed} disabled={disabled} onChange={e=>attempt({...sketch,closed:e.target.checked})}/><TechIcon/>Замкнутый профиль</label><span>Плоскость {sketch.plane}, координаты в мм</span></div>
+  <svg ref={svgRef} role="group" aria-label="Геометрия эскиза" viewBox={view.join(' ')} style={{width:'100%',height:260,border:'1px solid #687887',background:'var(--panel,#f4f7fa)',touchAction:'none'}} onPointerMove={event=>{const d=drag.current;if(!d||d.pointerId!==event.pointerId)return;const p=position(event);if(p)move(d.id,p[0],p[1])}} onPointerUp={endDrag} onPointerCancel={endDrag} onLostPointerCapture={event=>{if(drag.current?.pointerId===event.pointerId){drag.current=null;setDragView(null)}}}>
+   <defs><pattern id={gridId} width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#8393a3" strokeWidth={.025}/></pattern></defs>
+   {snap&&<rect x={view[0]} y={view[1]} width={view[2]} height={view[3]} fill={`url(#${gridId})`} pointerEvents="none"/>}
+   <path d={`M${view[0]} 0H${view[0]+view[2]}M0 ${view[1]}V${view[1]+view[3]}`} stroke="#778895" strokeWidth={r*.15} pointerEvents="none"/>
+   {sketch.points.length>1&&<path d={sketch.points.map((p,i)=>`${i?'L':'M'}${p.x} ${-p.y}`).join(' ')+(sketch.closed?'Z':'')} fill={sketch.closed?'#3584ad18':'none'} stroke="#287da7" strokeWidth={r*.3} pointerEvents="none"/>}
+   {sketch.points.map(p=><g key={p.id}><circle role="button" tabIndex={disabled?-1:0} aria-label={`Точка ${p.id}`} aria-pressed={selected===p.id} data-sketch-point-id={p.id} data-sketch-point-x={p.x} data-sketch-point-y={p.y} cx={p.x} cy={-p.y} r={r} fill={selected===p.id?'#e5a345':'#237da8'} stroke="#fff" strokeWidth={r*.2} style={{cursor:disabled?'default':'grab'}} onClick={()=>setSelected(p.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();setSelected(p.id)}}} onPointerDown={event=>{if(disabled||event.button!==0)return;event.preventDefault();setSelected(p.id);drag.current={pointerId:event.pointerId,id:p.id,view};setDragView(view);svgRef.current?.setPointerCapture(event.pointerId)}}/><text x={p.x+r*1.5} y={-p.y-r} fontSize={r*1.7} fill="currentColor" pointerEvents="none">{p.id}</text></g>)}
+  </svg>
+  {profileError&&<div role="status" data-sketch-profile-diagnostic>{profileError}</div>}
+  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}><button type="button" style={square} disabled={disabled||sketch.points.length>=32} onClick={()=>{const last=sketch.points.at(-1);const id=nextSketchId('p',sketch.points.map(p=>p.id));attempt({...sketch,points:[...sketch.points,{id,x:(last?.x??-5)+5,y:(last?.y??-5)+5}]});setSelected(id)}}><TechIcon/>Добавить точку</button><button type="button" style={square} disabled={disabled||!selected} onClick={()=>{try{onChange(removeSketchPointDraft(sketch,selected!));setFailure(null)}catch(error){setFailure({message:error instanceof Error?error.message:String(error)})}}}><TechIcon/>Удалить точку</button><button type="button" style={square} disabled={disabled} onClick={()=>{const rectangle=createRectangleSketch(sketch.id);attempt({...rectangle,name:sketch.name,plane:sketch.plane,origin:[...sketch.origin]})}}><TechIcon/>Прямоугольник</button></div>
+  <table aria-label="Координаты точек" style={{fontSize:12}}><thead><tr><th>Точка</th><th>X, мм</th><th>Y, мм</th></tr></thead><tbody key={resetKey}>{sketch.points.map(p=><tr key={p.id} aria-selected={selected===p.id}><td><button type="button" style={square} disabled={disabled} onClick={()=>setSelected(p.id)}>{p.id}</button></td><td><NumericField label={`X ${p.id}`} value={p.x} disabled={disabled} onCommit={n=>move(p.id,n,p.y)}/></td><td><NumericField label={`Y ${p.id}`} value={p.y} disabled={disabled} onCommit={n=>move(p.id,p.x,n)}/></td></tr>)}</tbody></table>
+  <fieldset disabled={disabled} style={square}><legend><TechIcon/>Ограничения</legend><ul style={{paddingLeft:18}}>{sketch.constraints.map(c=><li key={c.id} data-sketch-constraint-id={c.id} style={{marginBottom:5}}><TechIcon kind={c.kind}/>{names[c.kind]}: {c.kind==='fixed'?c.pointId:`${c.a} → ${c.b}`} {'value' in c&&<NumericField key={`${c.id}-${resetKey}`} label={`Значение ${c.id}`} value={c.value} disabled={disabled} onCommit={value=>attempt({...sketch,constraints:sketch.constraints.map(row=>row.id===c.id?{...c,value}:row)})}/>} {c.kind==='fixed'&&<><NumericField key={`x-${c.id}-${resetKey}`} label={`X фиксации ${c.id}`} value={c.x} onCommit={x=>attempt({...sketch,constraints:sketch.constraints.map(row=>row.id===c.id?{...c,x}:row)})}/><NumericField key={`y-${c.id}-${resetKey}`} label={`Y фиксации ${c.id}`} value={c.y} onCommit={y=>attempt({...sketch,constraints:sketch.constraints.map(row=>row.id===c.id?{...c,y}:row)})}/></>} <button type="button" style={square} aria-label={`Удалить ограничение ${c.id}`} onClick={()=>attempt({...sketch,constraints:sketch.constraints.filter(row=>row.id!==c.id)})}>Удалить</button></li>)}</ul>
+   <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}><label><TechIcon/>Тип ограничения <select aria-label="Тип ограничения" style={square} value={kind} onChange={e=>setKind(e.target.value as SketchConstraint['kind'])}>{Object.entries(names).map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label><label><TechIcon/>Первая точка <select aria-label="Первая точка" style={square} value={a} onChange={e=>setA(e.target.value)}>{sketch.points.map(p=><option key={p.id}>{p.id}</option>)}</select></label>{kind!=='fixed'&&<label><TechIcon/>Вторая точка <select aria-label="Вторая точка" style={square} value={b} onChange={e=>setB(e.target.value)}>{sketch.points.map(p=><option key={p.id}>{p.id}</option>)}</select></label>}
+   {(kind==='dx'||kind==='dy')&&<label><TechIcon/>Знаковое расстояние, мм <input type="number" step="any" aria-label="Значение ограничения" style={{...square,width:90}} value={value} onChange={e=>setValue(e.target.value)}/></label>}
+   {kind==='fixed'&&<><label><TechIcon kind="horizontal"/>X фиксации <input type="number" step="any" aria-label="X фиксации" style={{...square,width:90}} value={fixedX} onChange={e=>setFixedX(e.target.value)}/></label><label><TechIcon kind="vertical"/>Y фиксации <input type="number" step="any" aria-label="Y фиксации" style={{...square,width:90}} value={fixedY} onChange={e=>setFixedY(e.target.value)}/></label></>}
+   <button type="button" style={square} disabled={!a||(kind!=='fixed'&&!b)} onClick={addConstraint}><TechIcon kind={kind}/>Добавить ограничение</button></div>
+  </fieldset>
+ </div>;
+}
