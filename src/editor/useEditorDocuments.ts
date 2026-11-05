@@ -72,6 +72,9 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  };
  const setSketchModel=(next:SketchModelState,nextExact:ExactModelState,_label?:string)=>{
   const sketch=validateSketchModelState(next),exact=validateExactModelState(nextExact);
+  const oldOwned=new Set([...active.document.sketchModel.extrusions,...(active.document.sketchModel.cuts??[])].map(feature=>feature.bodyId));
+  const existing=new Set(active.document.exactModel.bodies.map(body=>body.id));
+  for(const feature of [...sketch.extrusions,...(sketch.cuts??[])])if(existing.has(feature.bodyId)&&!oldOwned.has(feature.bodyId))throw Error('Идентификатор результата занят независимым телом');
   validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
  };
  const setExactModel=(next:ExactModelState,_label?:string)=>{
@@ -87,7 +90,10 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   const removed=active.document.exactModel.bodies.filter(body=>!remaining.has(body.id)).map(body=>body.id);
   const sketch=pruneSketchExtrusions(active.document.sketchModel,removed);
   const retainedOwned=new Set(outputs(sketch));
-  exact={...exact,bodies:exact.bodies.filter(body=>!owned.has(body.id)||retainedOwned.has(body.id))};
+  const retainedCuts=new Set((sketch.cuts??[]).map(feature=>feature.id));
+  const consumedTargets=new Set((sketch.cuts??[]).map(feature=>feature.targetBodyId));
+  const revealTargets=new Set((active.document.sketchModel.cuts??[]).filter(feature=>!retainedCuts.has(feature.id)&&!consumedTargets.has(feature.targetBodyId)).map(feature=>feature.targetBodyId));
+  exact={...exact,bodies:exact.bodies.filter(body=>!owned.has(body.id)||retainedOwned.has(body.id)).map(body=>revealTargets.has(body.id)?{...body,visible:true}:body)};
   validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
  };
  // Compatibility for old split-history scene callers. New code uses changeScene/modelUndo/modelRedo.
