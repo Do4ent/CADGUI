@@ -70,4 +70,6 @@ h=mount(capsule);tree=h.render();control(tree,'Тип ограничения').p
 h=mount({...free,name:'Смешанный',plane:'YZ',origin:[7,8,9]});tree=h.render();button(tree,'Смешанный контур').props.onClick();assert.equal(h.current.geometry.kind,'mixed');assert.deepEqual([h.current.name,h.current.plane,h.current.origin],['Смешанный','YZ',[7,8,9]]);
 // Font units map to at least 12 CSS pixels under SVG preserveAspectRatio, not tiny point-relative labels.
 assert.ok(Math.abs(sketchLabelFontSize([0,0,100,50],600,260)-12*50/260)<1e-12);assert.equal(sketchLabelFontSize([0,0,100,10],200,260),6);
+// Shape presets keep existing source-linked holes; assignments belong to their separate editor.
+for(const preset of ['Прямоугольник','Окружность','Дуга','Смешанный контур']){h=mount({...free,holes:['inner']});tree=h.render();button(tree,preset).props.onClick();assert.deepEqual(h.current.holes,['inner']);}
 console.log('PASS sketch editor actual solver handlers, rejected drafts/cancel, constraint values, millimetre pointer snapping/capture, locked drag and frame-preserving reset');

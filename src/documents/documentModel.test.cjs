@@ -17,12 +17,12 @@ const plain = value => JSON.parse(JSON.stringify(value));
 const item = {id:'a', name:'Box', kind:'box', pos:[0,1,-2], size:[1,2,3], color:'#123abc', visible:true, group:'Parts'};
 const document = {...createDocument('doc', 'Example'), items:[item]};
 assert.deepEqual(plain(parseDocument(serializeDocument(document))), plain(document));
-for (const value of [null, [], 42, {}, {...document,schemaVersion:8}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
+for (const value of [null, [], 42, {}, {...document,schemaVersion:9}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
 for (const patch of [{pos:[0,1]}, {pos:[0,NaN,0]}, {pos:[0,Infinity,0]}, {size:[1,0,1]}, {size:[1,-1,1]}, {kind:'unknown'}, {color:'red'}, {visible:'yes'}, {id:' '}, {name:''}, {group:null}]) assert.throws(() => validateDocument({...document,items:[{...item,...patch}]}));
 assert.throws(() => parseDocument('{bad'), /Invalid document JSON/);
 assert.throws(() => parseDocument(JSON.stringify([item])), /Legacy/);
 const migrated = parseDocument(JSON.stringify([item]), {id:'legacy',name:'Imported',modifiedAt:'2026-11-02T00:00:00Z'});
-assert.equal(migrated.schemaVersion,7);
+assert.equal(migrated.schemaVersion,8);
 assert.equal(migrated.id,'legacy');
 assert.deepEqual(plain(migrated.items),[item]);
 assert.deepEqual(plain(parseDocument(serializeDocument(migrated))), plain(migrated));
@@ -39,7 +39,7 @@ console.log('PASS document schema, invalid data, clone isolation and legacy migr
 
 const old = {...document,schemaVersion:1};delete old.drawing;
 const upgrade = parseDocument(JSON.stringify(old));
-assert.equal(upgrade.schemaVersion,7);
+assert.equal(upgrade.schemaVersion,8);
 assert.deepEqual(plain(upgrade.items),[item]);
 assert.ok(upgrade.drawing.sheets.length);
 assert.throws(()=>validateDocument({...document,drawing:undefined}));
@@ -80,7 +80,7 @@ hook.newDocument();hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHist
 hook.activate(first);hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHistoryCount,1);
 hook.markSaved(initialSnapshot);hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,true);
 state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old.id,tabs:[{document:old,saved:JSON.stringify([old.name,old.items])}]}));
-hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,7);
+hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,8);
 state=undefined;storage.set('bendcore-documents-v1','{corrupt');hook=useEditorDocuments(()=>[]);assert.ok(hook.recoveryError);assert.equal(storage.get('bendcore-documents-v1'),'{corrupt');
 console.log('PASS drawing history, dirty guards, per-tab state, snapshot save and workspace migration');
 
@@ -158,7 +158,7 @@ console.log('PASS native dimension roundtrip, strict future schemas, arc persist
 const detachedFrozen=plain(frozen);detachedFrozen.drawing.sheets[0].entities[0].dimension.refs=[];assert.deepEqual(plain(parseDocument(serializeDocument(detachedFrozen))),detachedFrozen);
 
 // Native v3 requires annotation state; old versions migrate without losing drawing/items.
-assert.equal(document.schemaVersion,7);
+assert.equal(document.schemaVersion,8);
 assert.deepEqual(plain(document.modelAnnotations),{version:1,annotations:[]});
 const v2=plain(complex);v2.schemaVersion=2;delete v2.modelAnnotations;
 const fromV2=plain(parseDocument(JSON.stringify(v2)));
@@ -169,7 +169,7 @@ assert.throws(()=>validateDocument({...document,modelAnnotations:{version:2,anno
 assert.throws(()=>validateDocument({...document,modelAnnotations:{version:1,annotations:[{}]}}));
 for(const dirty of [false,true]){
  state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:v2.id,tabs:[{document:v2,saved:JSON.stringify([dirty?'Unsaved name':v2.name,v2.items,v2.drawing])}]}));
- hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,7);
+ hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,8);
 }
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);
 const sceneId=hook.activeId;
@@ -332,7 +332,7 @@ assert.deepEqual(plain(parseDocument(serializeDocument(curvedDoc))),plain(curved
 const clonedCurves=validateDocument(curvedDoc);clonedCurves.sketchModel.sketches[0].geometry.rim='changed';assert.equal(curvedSources.sketches[0].geometry.rim,'rim');
 for(const patch of [{kind:'circle',center:'center',rim:'missing'},{kind:'circle',center:'center',rim:'rim',extra:true},{kind:'arc',center:'center',start:'rim',end:'rim',ccw:'yes'}]){const bad=plain(curvedDoc);bad.sketchModel.sketches[0].geometry=patch;assert.throws(()=>validateDocument(bad));}
 const old5=plain(validateDocument(sourceDocument));old5.schemaVersion=5;assert.ok(!Object.hasOwn(old5.sketchModel.sketches[0],'geometry'));
-const migrated5=plain(parseDocument(JSON.stringify(old5)));assert.equal(migrated5.schemaVersion,7);assert.deepEqual(migrated5.sketchModel,old5.sketchModel);assert.deepEqual(migrated5.exactModel,old5.exactModel);
+const migrated5=plain(parseDocument(JSON.stringify(old5)));assert.equal(migrated5.schemaVersion,8);assert.deepEqual(migrated5.sketchModel,old5.sketchModel);assert.deepEqual(migrated5.exactModel,old5.exactModel);
 for(const dirty of [false,true]){state=undefined;const marker=[dirty?'Unsaved legacy':old5.name,old5.items,old5.drawing,old5.modelAnnotations,old5.exactModel,old5.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old5.id,tabs:[{document:old5,saved:JSON.stringify(marker)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel.sketches[0],'geometry'));}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(curvedSources,cylinderExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.exactModel.bodies[0].brep,cylinderBrep);assert.equal(hook.sketchModel.sketches[1].geometry.ccw,true);
 hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches.length,0);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.tabs[0].dirty,false);hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches[0].geometry.kind,'circle');assert.equal(hook.exactModel.bodies[0].brep,cylinderBrep);
@@ -348,7 +348,7 @@ const mixedDocument={...document,sketchModel:mixedState,exactModel:mixedExact};
 const nativeMixed=plain(parseDocument(serializeDocument(mixedDocument)));assert.deepEqual(nativeMixed,plain(mixedDocument));assert.deepEqual(nativeMixed.sketchModel.sketches[0].geometry.segments.map(edge=>edge.id),['arc-edge','diameter-edge']);
 const copiedMixed=validateDocument(mixedDocument);copiedMixed.sketchModel.sketches[0].geometry.segments[0].center='changed';assert.equal(mixedSource.geometry.segments[0].center,'center');
 for(const mutation of [s=>s.geometry.segments[0].center='missing',s=>s.geometry.segments[1].id='arc-edge',s=>s.geometry.segments[0].ccw='yes',s=>s.geometry.segments[1].start='start',s=>s.geometry.segments[0].extra=true]){const bad=plain(mixedDocument);mutation(bad.sketchModel.sketches[0]);assert.throws(()=>validateDocument(bad));}
-const old6=plain(validateDocument(curvedDoc));old6.schemaVersion=6;const migrated6=plain(parseDocument(JSON.stringify(old6)));assert.equal(migrated6.schemaVersion,7);assert.deepEqual(migrated6.sketchModel,old6.sketchModel);assert.deepEqual(migrated6.exactModel,old6.exactModel);
+const old6=plain(validateDocument(curvedDoc));old6.schemaVersion=6;const migrated6=plain(parseDocument(JSON.stringify(old6)));assert.equal(migrated6.schemaVersion,8);assert.deepEqual(migrated6.sketchModel,old6.sketchModel);assert.deepEqual(migrated6.exactModel,old6.exactModel);
 for(const dirty of [false,true]){state=undefined;const saved=[dirty?'Unsaved v6':old6.name,old6.items,old6.drawing,old6.modelAnnotations,old6.exactModel,old6.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old6.id,tabs:[{document:old6,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.sketchModel.sketches[0].geometry.kind,'circle');}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(mixedState,mixedExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.sketchModel.sketches.length,0);hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].brep,mixedBrep);assert.equal(hook.sketchModel.sketches[0].geometry.segments[0].id,'arc-edge');
 console.log('PASS schema7 mixed ordered source+real semicylinder BREP, stable IDs, malformed refs and v6 fingerprint migration with atomic Undo');
@@ -356,3 +356,22 @@ const angularSource=plain(sketchCore.createMixedSketch('angular-source',10,5));a
 const angularDocument=plain(mixedDocument);angularDocument.sketchModel.sketches.push(angularSource);const angularNative=plain(parseDocument(serializeDocument(angularDocument)));assert.deepEqual(angularNative.sketchModel.sketches[1].constraints,angularSource.constraints);
 for(const change of [s=>s.constraints.find(c=>c.kind==='angle').d='missing',s=>s.constraints.find(c=>c.kind==='angle').value=NaN,s=>s.constraints.find(c=>c.kind==='tangent').other='missing',s=>s.constraints.find(c=>c.kind==='tangent').extra=true]){const bad=plain(angularDocument);change(bad.sketchModel.sketches[1]);assert.throws(()=>validateDocument(bad));}
 console.log('PASS schema7 angular/tangent source constraints and malformed nonlinear references');
+
+// Actual OCCT r5 cylinder minus r2 cylinder, h12; valid fromBREP volume252π.
+const perforatedBrep="\nCASCADE Topology V3, (c) Open Cascade\nLocations 0\nCurve2ds 14\n1 0 12 1 0 \n2 0 0 1 0 -0 1 5\n1 6.2831853071795862 -0 0 1 \n1 0 -0 0 1 \n1 0 0 1 0 \n2 0 0 1 0 -0 1 5\n1 0 12 1 0 \n2 0 0 1 0 -0 1 2\n2 0 0 1 0 -0 1 2\n1 0 0 1 0 \n2 0 0 1 0 -0 1 2\n2 0 0 1 0 -0 1 2\n1 6.2831853071795862 -0 0 1 \n1 0 -0 0 1 \nCurves 6\n2 0 0 12 0 0 1 1 0 -0 -0 1 0 5\n1 5 -1.2246467991473533e-15 0 0 0 1 \n2 0 0 0 0 0 1 1 0 -0 -0 1 0 5\n2 0 0 12 0 0 1 1 0 -0 -0 1 0 2\n2 0 0 0 0 0 1 1 0 -0 -0 1 0 2\n1 2 -4.8985871965894128e-16 0 0 0 1 \nPolygon3D 0\nPolygonOnTriangulations 0\nSurfaces 6\n2 0 0 0 0 0 1 1 0 0 0 1 0 5\n1 0 0 12 0 0 1 1 0 0 0 1 0 \n1 0 0 0 0 0 1 1 0 0 0 1 0 \n2 0 0 0 0 0 1 1 0 0 0 1 0 2\n1 0 0 12 0 0 1 1 0 0 0 1 0 \n1 0 0 0 0 0 1 1 0 0 0 1 0 \nTriangulations 0\n\nTShapes 23\nVe\n1e-07\n5 -1.22464679914735e-15 12\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  1 0 0 6.28318530717959\n2  1 1 0 0 6.28318530717959\n2  2 2 0 0 6.28318530717959\n0\n\n0101000\n+23 0 -23 0 *\nVe\n1e-07\n5 -1.22464679914735e-15 0\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  2 0 0 12\n3  3 4CN 1 0 0 12\n0\n\n0101000\n-23 0 +21 0 *\nEd\n 1e-07 1 1 0\n1  3 0 0 6.28318530717959\n2  5 1 0 0 6.28318530717959\n2  6 3 0 0 6.28318530717959\n0\n\n0101000\n+21 0 -21 0 *\nWi\n\n0101100\n-22 0 +20 0 +19 0 -20 0 *\nFa\n0  1e-07 1 0\n\n0111000\n+18 0 *\nWi\n\n0101100\n+22 0 *\nVe\n1e-07\n2 -4.89858719658941e-16 12\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  4 0 0 6.28318530717959\n2  7 4 0 0 6.28318530717959\n2  8 5 0 0 6.28318530717959\n2  9 2 0 0 6.28318530717959\n0\n\n0101000\n+15 0 -15 0 *\nWi\n\n0101100\n-14 0 *\nFa\n0  1e-07 2 0\n\n0101000\n+16 0 +13 0 *\nWi\n\n0101100\n+19 0 *\nVe\n1e-07\n2 -4.89858719658941e-16 0\n0 0\n\n0101101\n*\nEd\n 1e-07 1 1 0\n1  5 0 0 6.28318530717959\n2  10 4 0 0 6.28318530717959\n2  11 6 0 0 6.28318530717959\n2  12 3 0 0 6.28318530717959\n0\n\n0101000\n+10 0 -10 0 *\nWi\n\n0101100\n-9 0 *\nFa\n0  1e-07 3 0\n\n0101000\n+11 0 +8 0 *\nEd\n 1e-07 1 1 0\n1  6 0 0 12\n3  13 14CN 4 0 0 12\n0\n\n0101000\n-15 0 +10 0 *\nWi\n\n0101100\n-14 0 +6 0 +9 0 -6 0 *\nFa\n0  1e-07 4 0\n\n0111000\n+5 0 *\nSh\n\n0101100\n+17 0 +12 0 -7 0 -4 0 *\nSo\n\n0100000\n+3 0 *\nCo\n\n1100000\n+2 0 *\n\n+1 0 ";
+const annulusOuter=plain(curvedSources.sketches[0]);annulusOuter.id='outer-circle';annulusOuter.name='Outer';annulusOuter.holes=['inner-circle'];
+const annulusInner=plain(curvedSources.sketches[0]);annulusInner.id='inner-circle';annulusInner.name='Bore';annulusInner.points.find(p=>p.id==='rim').x=2;annulusInner.constraints[0].value=2;
+const annulusState={version:1,units:'mm',sketches:[annulusOuter,annulusInner],extrusions:[{id:'annulus-feature',sketchId:'outer-circle',bodyId:'annulus-body',depth:12}]};
+const annulusExact=plain(exactCore.createExactModelState());annulusExact.bodies=[{id:'annulus-body',name:'Perforated cylinder',brep:perforatedBrep,color:'#12ab45',visible:true}];
+const annulusDocument={...document,sketchModel:annulusState,exactModel:annulusExact};const annulusNative=plain(parseDocument(serializeDocument(annulusDocument)));assert.deepEqual(annulusNative,plain(annulusDocument));assert.deepEqual(annulusNative.sketchModel.sketches[0].holes,['inner-circle']);
+const annulusClone=validateDocument(annulusDocument);annulusClone.sketchModel.sketches[0].holes[0]='mutated';assert.equal(annulusOuter.holes[0],'inner-circle');
+for(const mutation of [s=>s.sketches[0].holes=['missing'],s=>s.sketches[0].holes=['inner-circle','inner-circle'],s=>s.sketches[0].holes=['outer-circle'],s=>s.sketches[1].holes=['outer-circle'],s=>s.sketches[1].plane='XZ',s=>s.sketches[1].closed=false,s=>s.sketches[1].origin=[0,0,1]]){const bad=plain(annulusDocument);mutation(bad.sketchModel);assert.throws(()=>validateDocument(bad));}
+const old7=plain(validateDocument(mixedDocument));old7.schemaVersion=7;assert.ok(!Object.hasOwn(old7.sketchModel.sketches[0],'holes'));const migrated7=plain(parseDocument(JSON.stringify(old7)));assert.equal(migrated7.schemaVersion,8);assert.deepEqual(migrated7.sketchModel,old7.sketchModel);
+for(const dirty of [false,true]){state=undefined;const saved=[dirty?'Unsaved v7':old7.name,old7.items,old7.drawing,old7.modelAnnotations,old7.exactModel,old7.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old7.id,tabs:[{document:old7,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel.sketches[0],'holes'));}
+state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(annulusState,annulusExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.exactModel.bodies[0].brep,perforatedBrep);
+const withoutBore=sketchCore.removeSketch(hook.sketchModel,'inner-circle');assert.equal(withoutBore.sketches.length,1);assert.ok(!withoutBore.sketches[0].holes?.includes('inner-circle'));assert.equal(withoutBore.extrusions[0].bodyId,'annulus-body');
+const rebuiltSolid=plain(hook.exactModel);rebuiltSolid.bodies[0].brep=cylinderBrep;hook.setSketchModel(withoutBore,rebuiltSolid,'Remove bore and rebuild');hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,2);assert.equal(hook.exactModel.bodies[0].brep,cylinderBrep);
+hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].brep,perforatedBrep);assert.deepEqual(plain(hook.sketchModel.sketches[0].holes),['inner-circle']);assert.equal(hook.sketchModel.sketches[1].id,'inner-circle');hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches.length,0);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.tabs[0].dirty,false);hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches[0].holes[0],'inner-circle');assert.equal(hook.exactModel.bodies[0].brep,perforatedBrep);
+console.log('PASS schema8 perforated BREP/source roundtrip, hole IDs/ref validation, v7 absent-hole clean/dirty migration and atomic remove+rebuild Undo');
+for(const offset of [3,10]){const bad=plain(annulusDocument);for(const p of bad.sketchModel.sketches[1].points)p.x+=offset;assert.throws(()=>validateDocument(bad));}
+const nestedHole=plain(annulusDocument);const nestedSource=plain(annulusInner);nestedSource.id='nested-hole';nestedSource.points.find(p=>p.id==='rim').x=1;nestedSource.constraints[0].value=1;nestedHole.sketchModel.sketches.push(nestedSource);nestedHole.sketchModel.sketches[1].holes=['nested-hole'];assert.throws(()=>validateDocument(nestedHole));
