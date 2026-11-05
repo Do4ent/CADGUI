@@ -41,7 +41,8 @@ The foundational UI, document, drawing, 3D-note and exact-kernel deliveries have
 - Preview and confirm/cancel semantics; don't claim exact CAD geometry beyond prototype capability.
 - Exit: no command silently mutates a model before confirmation; undo/redo works.
 
-### P1-06 — Feature history and property editing
+### P1-06 — Feature history and property editing [BOUNDED IMPLEMENTATION; ACCEPTANCE IN PROGRESS]
+- Linked sketch extrusions and finite cuts now provide a bounded dependency graph with atomic source/BRep rebuild and scene undo/redo. See [cut implementation](SKETCH_CUT_IMPLEMENTATION.md) for ownership, cascade deletion, visibility and verification limits. General feature reordering, suppression and arbitrary boolean dependencies remain outside this stage.
 - Operation history, editable properties, dependency awareness, reliable undo/redo.
 - Exit: state persists and remains consistent across reload and editing.
 
