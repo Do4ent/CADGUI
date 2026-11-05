@@ -217,3 +217,35 @@ def test_delete_cascades_outputs_keeps_profiles_and_unrelated_body_and_undo(page
     undone = save_document(page, tmp_path, 'cut-delete-undone.json')
     assert model(undone) == model(before)
     assert undone['exactModel'] == before['exactModel']
+
+
+def test_retarget_cut_rebuilds_same_output_and_transfers_source_visibility(page, tmp_path):
+    prepare(page)
+    original_id = base(page, tmp_path)
+    sketch_id = profile(page, tmp_path)
+    feature = cut(page, tmp_path, original_id)
+    create_box(page, size=(8, 8, 4), origin=(-4, -4, 0))
+    before = save_document(page, tmp_path, 'before-retarget.json')
+    original = {b['id']: b for b in before['exactModel']['bodies']}
+    target_id = next(identifier for identifier in original if identifier not in (original_id, feature['bodyId']))
+    select_sketch(page, sketch_id)
+    panel(page).locator(f'[data-cut-id="{feature["id"]}"]').get_by_role('button').click()
+    panel(page).get_by_role('button', name='Изменить вырезание', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Вырезание по эскизу', exact=True)
+    assert feature['bodyId'] not in dialog.get_by_label('Исходное тело', exact=True).locator('option').evaluate_all('(nodes)=>nodes.map(node=>node.value)')
+    dialog.get_by_label('Исходное тело', exact=True).select_option(target_id)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    after = save_document(page, tmp_path, 'after-retarget.json')
+    assert model(after)['cuts'][0] == {**feature, 'targetBodyId': target_id}
+    bodies = {b['id']: b for b in after['exactModel']['bodies']}
+    assert bodies[original_id]['visible'] is True
+    assert bodies[target_id]['visible'] is False
+    for key in ('name', 'color', 'visible'):
+        assert bodies[feature['bodyId']][key] == original[feature['bodyId']][key]
+    assert inspect(page, feature['bodyId'])['volume'] == pytest.approx(256 - 4 * math.pi, rel=1e-7)
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    restored = save_document(page, tmp_path, 'retarget-undo.json')
+    assert model(restored) == model(before)
+    assert restored['exactModel'] == before['exactModel']
