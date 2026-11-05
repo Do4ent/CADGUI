@@ -28,6 +28,7 @@ export class ExactKernelBackend{
    if(!request||typeof request!=='object')throw Error('Некорректный запрос ядра');
    let shape:ShapeHandle;
    switch(request.op){
+    case 'cut-region':
     case 'extrude-region':{
      const origin=vector(request.origin),normal=sketchNormal(request.plane),depth=number(request.depth);if(Math.abs(depth)<1e-5)throw Error('Глубина выдавливания должна быть ненулевой');
      const region=validateSketchRegion(request.region),xyz=(p:[number,number])=>{const w=sketchPointToWorld(request.plane,origin,p);return{x:w[0],y:w[1],z:w[2]}};
@@ -36,7 +37,14 @@ export class ExactKernelBackend{
       const result=k.makeWire(edges),positive=boundarySignedArea(boundary)>0;return positive===inner?k.reverseShape(result):result;
      };
      const outer=k.makeFace(wire(region.outer)),face=region.holes.length?k.addHolesInFace(outer,region.holes.map(boundary=>wire(boundary,true))):outer;
-     shape=k.extrude(face,normal[0]*depth,normal[1]*depth,normal[2]*depth);break;
+     const tool=k.extrude(face,normal[0]*depth,normal[1]*depth,normal[2]*depth);
+     if(request.op==='cut-region'){
+      const target=this.read(request.target);if(!k.isValid(target)||!this.solidOnly(target))throw Error('Нужно корректное исходное объёмное тело');
+      const common=k.common(target,tool),kind=k.getShapeType(common),hasSolid=kind==='solid'||((kind==='compound'||kind==='compsolid')&&k.subShapeCount(common,'solid')>0);
+      if(!hasSolid||!(k.getVolume(common)>0))throw Error('Профиль вырезания не удаляет материал исходного тела');
+      shape=k.cut(target,tool);if(k.isNull(shape)||!k.isValid(shape)||!this.solidOnly(shape)||!(k.getVolume(shape)>0))throw Error('Вырезание полностью удаляет тело или создаёт некорректный результат');
+     }else shape=tool;
+     break;
     }
     case 'extrude-mixed':{
      const origin=vector(request.origin),normal=sketchNormal(request.plane),depth=number(request.depth);if(Math.abs(depth)<1e-5)throw Error('Глубина выдавливания должна быть ненулевой');

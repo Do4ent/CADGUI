@@ -69,7 +69,7 @@ def create_cylinder(page, radius=2, height=5, origin=(0, 0, 0)):
 
 
 def exact(document):
-    assert document['schemaVersion'] == 8
+    assert document['schemaVersion'] == 9
     state = document['exactModel']
     assert state['version'] == 1
     assert state['kernel'] == 'occt-wasm'

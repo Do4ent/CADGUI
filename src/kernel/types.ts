@@ -5,6 +5,7 @@ export type ExactModelState={version:1;kernel:'occt-wasm';kernelVersion:'5.15.0'
 export type KernelMesh={positions:Float32Array;normals:Float32Array;indices:Uint32Array;faceGroups:Int32Array};
 export type KernelBodyResult={brep:string;mesh:KernelMesh;lines:Float32Array;volume:number;area:number;bounds:[Vec3,Vec3];center:Vec3;topology:{solids:number;faces:number;edges:number;vertices:number}};
 export type KernelRequest=
+ |{op:'cut-region';target:string;region:SketchRegion;plane:SketchPlane;origin:Vec3;depth:number}
  |{op:'extrude-region';region:SketchRegion;plane:SketchPlane;origin:Vec3;depth:number}
  |{op:'extrude-mixed';edges:SketchMixedEdge[];plane:SketchPlane;origin:Vec3;depth:number}
  |{op:'extrude-curve';profile:SketchCurveProfile;plane:SketchPlane;origin:Vec3;depth:number}

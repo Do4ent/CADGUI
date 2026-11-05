@@ -4,7 +4,7 @@ export type CommandId='sketch-model'|'exact-model'|'model-note'|'select'|'box'|'
 export type CommandContext={selected:boolean;itemCount:number;historyCount:number;futureCount:number};
 type Definition={id:CommandId;label:string;hint:string;shortcut?:string;requiresSelection?:boolean;requiresItems?:boolean;requiresHistory?:'undo'|'redo'};
 const definitions:Definition[]=[
-{id:'sketch-model',label:'Эскизы с ограничениями',hint:'Линии, окружности, дуги, касательность, углы и параметрическое выдавливание Open CASCADE'},
+{id:'sketch-model',label:'Эскизы с ограничениями',hint:'Линии, окружности, дуги, отверстия, выдавливание, вырезание и зависимости Open CASCADE'},
 {id:'exact-model',label:'Точная геометрия',hint:'Open CASCADE: точные тела, булевы операции и STEP в миллиметрах'},
 {id:'model-note',label:'Добавить 3D-заметку',hint:'Заметка в модели с мировой опорой или привязкой к компоненту'},
 {id:'select',label:'Выбрать',hint:'Режим выбора'},
