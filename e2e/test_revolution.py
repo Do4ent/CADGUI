@@ -10,6 +10,7 @@ from test_drawing import save_document
 from test_kernel import prepare, create_box, rows as exact_rows, panel as exact_panel
 from test_sketch import panel, create_sketch, inspect, select_sketch, edit_width
 from test_curves import open_curve
+from test_cuts import cut
 
 
 def model(document):
@@ -132,3 +133,50 @@ def test_schema10_wrong_cached_brep_rebuilds_revolution_and_recovers_source(page
     prepare(page)
     assert inspect(page, feature['bodyId'])['volume'] == pytest.approx(12 * math.pi, rel=1e-7)
     assert model(save_document(page, tmp_path, 'revolution-recovered.json')) == model(before)
+
+
+@pytest.mark.parametrize('plane,minimum,maximum', [
+    ('XZ', [-2, -2, 0], [2, 2, 3]),
+    ('YZ', [-2, -2, 0], [2, 2, 3]),
+])
+def test_non_xy_sketch_revolution_uses_world_frame(page, tmp_path, plane, minimum, maximum):
+    prepare(page)
+    create_sketch(page, plane=plane)
+    feature = revolve(page, tmp_path)
+    result = inspect(page, feature['bodyId'])
+    assert result['volume'] == pytest.approx(12 * math.pi, rel=1e-7)
+    assert result['bounds'][0] == pytest.approx(minimum, abs=1e-6)
+    assert result['bounds'][1] == pytest.approx(maximum, abs=1e-6)
+
+
+def test_source_revolution_cut_dependency_rebuild_and_feature_delete_cascade_undo(page, tmp_path):
+    prepare(page)
+    sketch_id = create_sketch(page)
+    revolution = revolve(page, tmp_path)
+    # XZ positive normal is -Y. A circle at y=3 cuts axially through the cylinder.
+    dialog = open_curve(page, radius=.5, plane='XZ')
+    dialog.get_by_label('Начало Y', exact=True).fill('3')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    downstream = cut(page, tmp_path, revolution['bodyId'], 3)
+    before = save_document(page, tmp_path, 'revolve-cut-before.json')
+    assert inspect(page, downstream['bodyId'])['volume'] == pytest.approx(11.25 * math.pi, rel=1e-7)
+    edit_width(page, sketch_id, 3)
+    changed = save_document(page, tmp_path, 'revolve-cut-after.json')
+    assert model(changed)['revolutions'] == model(before)['revolutions']
+    assert model(changed)['cuts'] == model(before)['cuts']
+    assert inspect(page, downstream['bodyId'])['volume'] == pytest.approx(26.25 * math.pi, rel=1e-7)
+    row = panel(page).locator(f'[data-revolution-id="{revolution["id"]}"]')
+    row.get_by_role('button').first.click()
+    panel(page).get_by_role('button', name='Удалить вращение и зависимые тела', exact=True).click()
+    expect(exact_rows(page)).to_have_count(0, timeout=120000)
+    expect(panel(page).locator('[data-cut-id]')).to_have_count(0)
+    expect(panel(page).locator('[data-revolution-id]')).to_have_count(0)
+    deleted = save_document(page, tmp_path, 'revolve-cut-deleted.json')
+    assert model(deleted)['sketches'] == model(changed)['sketches']
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(exact_rows(page)).to_have_count(2, timeout=120000)
+    restored = save_document(page, tmp_path, 'revolve-cut-restored.json')
+    assert model(restored) == model(changed)
+    assert restored['exactModel'] == changed['exactModel']
