@@ -20,6 +20,13 @@ export async function rebuildSketchBodies(source:SketchModelState,base:ExactMode
   const previous=exact.bodies.find(body=>body.id===feature.bodyId);
   exact=upsertExactBody(exact,{id:feature.bodyId,name:previous?.name??derivedBodyName(sketch.name,'выдавливание'),color:previous?.color??'#2378e8',visible:previous?.visible??true,brep:(result as KernelBodyResult).brep});
  }
+ for(const feature of state.revolutions??[]){
+  const sketch=state.sketches.find(s=>s.id===feature.sketchId)!;
+  const result=await execute({op:'revolve-region',region:sketchRegion(state,sketch.id),plane:sketch.plane,origin:sketch.origin,axis:feature.axis,offset:feature.offset,angle:feature.angle});
+  if(typeof result==='string'||!result.brep||result.topology.solids!==1||!Number.isFinite(result.volume)||result.volume<=0)throw Error('Ядро не вернуло корректное тело вращения');
+  const previous=exact.bodies.find(b=>b.id===feature.bodyId);
+  exact=upsertExactBody(exact,{id:feature.bodyId,name:previous?.name??derivedBodyName(sketch.name,'вращение'),color:previous?.color??'#2378e8',visible:previous?.visible??true,brep:result.brep});
+ }
  for(const feature of orderedSketchCuts(state)){
   const sketch=state.sketches.find(s=>s.id===feature.sketchId)!,target=exact.bodies.find(b=>b.id===feature.targetBodyId);
   if(!target)throw Error('Не удалось восстановить исходное тело вырезания');

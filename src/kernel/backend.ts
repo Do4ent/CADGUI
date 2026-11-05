@@ -1,3 +1,4 @@
+import {revolutionAxis} from '../sketch/revolution';
 import {validateSketchRegion,boundarySignedArea} from '../sketch/region';
 import type {SketchRegionBoundary} from '../sketch/types';
 import {validateMixedEdges} from '../sketch/mixed';
@@ -28,15 +29,17 @@ export class ExactKernelBackend{
    if(!request||typeof request!=='object')throw Error('Некорректный запрос ядра');
    let shape:ShapeHandle;
    switch(request.op){
+    case 'revolve-region':
     case 'cut-region':
     case 'extrude-region':{
-     const origin=vector(request.origin),normal=sketchNormal(request.plane),depth=number(request.depth);if(Math.abs(depth)<1e-5)throw Error('Глубина выдавливания должна быть ненулевой');
+     const origin=vector(request.origin),normal=sketchNormal(request.plane),depth=request.op==='revolve-region'?0:number(request.depth);if(request.op!=='revolve-region'&&Math.abs(depth)<1e-5)throw Error('Глубина выдавливания должна быть ненулевой');
      const region=validateSketchRegion(request.region),xyz=(p:[number,number])=>{const w=sketchPointToWorld(request.plane,origin,p);return{x:w[0],y:w[1],z:w[2]}};
      const wire=(boundary:SketchRegionBoundary,inner=false)=>{
       const edges=boundary.kind==='circle'?[k.makeCircleEdge(xyz(boundary.center),{x:normal[0],y:normal[1],z:normal[2]},boundary.radius)]:boundary.edges.map(edge=>{if(edge.kind==='line')return k.makeLineEdge(xyz(edge.start),xyz(edge.end));const at=(a:number)=>xyz([edge.center[0]+edge.radius*Math.cos(a),edge.center[1]+edge.radius*Math.sin(a)]);return k.makeArcEdge(at(edge.startAngle),at(edge.startAngle+edge.sweep/2),at(edge.startAngle+edge.sweep));});
       const result=k.makeWire(edges),positive=boundarySignedArea(boundary)>0;return positive===inner?k.reverseShape(result):result;
      };
      const outer=k.makeFace(wire(region.outer)),face=region.holes.length?k.addHolesInFace(outer,region.holes.map(boundary=>wire(boundary,true))):outer;
+     if(request.op==='revolve-region'){const axis=revolutionAxis(region,request.axis,request.offset,request.angle),point=xyz(axis.point),direction=sketchPointToWorld(request.plane,[0,0,0],axis.direction);shape=k.revolve(face,{point,direction:{x:direction[0],y:direction[1],z:direction[2]}},axis.radians);break;}
      const tool=k.extrude(face,normal[0]*depth,normal[1]*depth,normal[2]*depth);
      if(request.op==='cut-region'){
       const target=this.read(request.target);if(!k.isValid(target)||!this.solidOnly(target))throw Error('Нужно корректное исходное объёмное тело');
