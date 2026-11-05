@@ -6,10 +6,10 @@ const source=fs.readFileSync(path.join(root,'src/CommandRegistry.ts'),'utf8');co
 assert.ok(Object.keys(commandCatalog).length>=12);checks++;
 for(const [id,cmd] of Object.entries(commandCatalog)){assert.equal(cmd.id,id);assert.ok(cmd.label.trim());assert.ok(cmd.hint.trim());checks+=3}
 for(const area of ['viewport','tree','component']){const ids=contextCommandIds(area);assert.ok(ids.length>0);assert.equal(new Set(ids).size,ids.length);for(const id of ids)assert.ok(commandCatalog[id],`${area}: ${id}`);checks+=ids.length+2}
-const empty={selected:false,itemCount:0,historyCount:0,futureCount:0};const ready={selected:true,itemCount:3,historyCount:2,futureCount:1};
+const empty={selected:false,itemCount:0,historyCount:0,futureCount:0};const ready={selected:true,itemCount:3,historyCount:2,futureCount:1,hasClosedSketch:true};
 for(const id of Object.keys(commandCatalog)){assert.equal(commandEnabled(id,ready),true,id);checks++}
 for(const id of ['duplicate','hide','isolate','delete','clear']){assert.equal(commandEnabled(id,empty),false,id);checks++}
-for(const id of ['undo','redo','showall']){assert.equal(commandEnabled(id,empty),false,id);checks++}
+for(const id of ['sketch-revolve','undo','redo','showall']){assert.equal(commandEnabled(id,empty),false,id);checks++}
 assert.equal(commandEnabled('invalid',ready),false);checks++;
 const main=fs.readFileSync(path.join(root,'src/main.tsx'),'utf8');const expected=['Модель','Сборка','Эскиз','Чертёж','Поверхности','Листовой металл','Сварка','Трубопроводы','Анализ','Вид'];for(const name of expected){assert.ok(main.includes(`'${name}':{root:`),`Missing environment: ${name}`);checks++}
 for(const pattern of ['role="tree"','role="treeitem"','role="menu"','aria-label="Строка состояния"','data-property-editor="true"']){assert.ok(main.includes(pattern),`Missing accessibility landmark: ${pattern}`);checks++}

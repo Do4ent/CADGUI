@@ -19,7 +19,7 @@ const catalog:Entry[]=[
 {id:'delete',label:'Удалить',icon:'delete',group:'Правка',action:'delete'},
 {id:'sketch',label:'Эскиз',icon:'sketch',group:'Построение',action:'sketch',demo:true},
 {id:'extrude',label:'Выдавливание',icon:'extrude',group:'Построение',action:'extrude',demo:true},
-{id:'revolve',label:'Вращение',icon:'revolve',group:'Построение',action:'revolve',demo:true},
+{id:'revolve',label:'Вращение эскиза',icon:'revolve',group:'Построение',action:'sketch-revolve'},
 {id:'hole',label:'Отверстие',icon:'hole',group:'Построение',action:'hole',demo:true},
 {id:'fillet',label:'Скругление',icon:'fillet',group:'Построение',action:'fillet',demo:true},
 {id:'chamfer',label:'Фаска',icon:'chamfer',group:'Построение',action:'chamfer',demo:true},
