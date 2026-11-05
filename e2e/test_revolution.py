@@ -1,0 +1,134 @@
+"""Signed local-axis revolutions measured from actual OCCT BREP bodies."""
+import copy
+import json
+import math
+
+import pytest
+from playwright.sync_api import expect
+from test_regression import browser, page
+from test_drawing import save_document
+from test_kernel import prepare, create_box, rows as exact_rows, panel as exact_panel
+from test_sketch import panel, create_sketch, inspect, select_sketch, edit_width
+from test_curves import open_curve
+
+
+def model(document):
+    assert document['schemaVersion'] == 10
+    return document['sketchModel']
+
+
+def open_revolution(page, axis='v', offset=0, angle=360):
+    panel(page).get_by_role('button', name='Вращать эскиз', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Вращение эскиза', exact=True)
+    dialog.get_by_label('Ось вращения', exact=True).select_option(axis)
+    dialog.get_by_label('Смещение оси', exact=True).fill(str(offset))
+    dialog.get_by_label('Угол вращения', exact=True).fill(str(angle))
+    return dialog
+
+
+def revolve(page, tmp_path, **kwargs):
+    count = panel(page).locator('[data-revolution-id]').count()
+    dialog = open_revolution(page, **kwargs)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    expect(panel(page).locator('[data-revolution-id]')).to_have_count(count + 1)
+    return model(save_document(page, tmp_path, 'revolution-created.json'))['revolutions'][-1]
+
+
+@pytest.mark.parametrize('axis,angle,offset,volume,minimum,maximum', [
+    ('v', 360, 0, 12 * math.pi, [-2, 0, -2], [2, 3, 2]),
+    ('v', 90, 0, 3 * math.pi, [0, 0, -2], [2, 3, 0]),
+    ('v', -90, 0, 3 * math.pi, [0, 0, 0], [2, 3, 2]),
+    ('u', 360, 0, 18 * math.pi, [0, -3, -3], [2, 3, 3]),
+    ('v', 360, -1, 24 * math.pi, [-4, 0, -3], [2, 3, 3]),
+])
+def test_actual_revolution_signed_angle_local_axis_and_annular_volume(page, tmp_path, axis, angle, offset, volume, minimum, maximum):
+    prepare(page)
+    sketch_id = create_sketch(page)
+    feature = revolve(page, tmp_path, axis=axis, offset=offset, angle=angle)
+    assert feature['sketchId'] == sketch_id
+    expect(exact_rows(page)).to_have_count(1)
+    result = inspect(page, feature['bodyId'])
+    assert result['volume'] == pytest.approx(volume, rel=1e-7)
+    assert result['bounds'][0] == pytest.approx(minimum, abs=1e-6)
+    assert result['bounds'][1] == pytest.approx(maximum, abs=1e-6)
+
+
+def test_circle_with_local_offset_produces_actual_torus(page, tmp_path):
+    prepare(page)
+    dialog = open_curve(page, radius=1)
+    dialog.get_by_label('Начало X', exact=True).fill('3')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    # Offset is relative to the sketch origin: x=3 plus local -3 means world x=0.
+    feature = revolve(page, tmp_path, offset=-3)
+    result = inspect(page, feature['bodyId'])
+    assert result['volume'] == pytest.approx(6 * math.pi ** 2, rel=1e-7)
+    assert result['bounds'][0] == pytest.approx([-4, -1, -4], abs=1e-6)
+    assert result['bounds'][1] == pytest.approx([4, 1, 4], abs=1e-6)
+
+
+def test_cancel_and_invalid_angle_preserve_native_sources_and_bodies(page, tmp_path):
+    prepare(page)
+    create_sketch(page)
+    before = save_document(page, tmp_path, 'revolution-cancel-before.json')
+    dialog = open_revolution(page)
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'revolution-cancel-after.json') == before
+    for angle in (0, 361, -361):
+        dialog = open_revolution(page, angle=angle)
+        expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+        dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'revolution-invalid-after.json') == before
+
+
+def test_axis_through_profile_interior_rejects_without_commit(page, tmp_path):
+    prepare(page)
+    create_sketch(page)
+    before = save_document(page, tmp_path, 'axis-crossing-before.json')
+    dialog = open_revolution(page, offset=1)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog.get_by_role('alert')).to_be_visible(timeout=120000)
+    expect(exact_rows(page)).to_have_count(0)
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'axis-crossing-after.json') == before
+
+
+def test_width_edit_rebuilds_same_revolution_body_and_one_undo_restores_native(page, tmp_path):
+    prepare(page)
+    sketch_id = create_sketch(page)
+    feature = revolve(page, tmp_path)
+    before = save_document(page, tmp_path, 'revolution-width-before.json')
+    edit_width(page, sketch_id, 3)
+    changed = save_document(page, tmp_path, 'revolution-width-after.json')
+    assert model(changed)['revolutions'] == model(before)['revolutions']
+    assert inspect(page, feature['bodyId'])['volume'] == pytest.approx(27 * math.pi, rel=1e-7)
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    undone = save_document(page, tmp_path, 'revolution-width-undone.json')
+    assert model(undone) == model(before)
+    assert undone['exactModel'] == before['exactModel']
+
+
+def test_schema10_wrong_cached_brep_rebuilds_revolution_and_recovers_source(page, tmp_path):
+    prepare(page)
+    create_sketch(page)
+    feature = revolve(page, tmp_path)
+    create_box(page, size=(1, 1, 1), origin=(20, 0, 0))
+    before = save_document(page, tmp_path, 'revolution-native.json')
+    other = next(b for b in before['exactModel']['bodies'] if b['id'] != feature['bodyId'])
+    tampered = copy.deepcopy(before)
+    next(b for b in tampered['exactModel']['bodies'] if b['id'] == feature['bodyId'])['brep'] = other['brep']
+    page.get_by_label('Импорт документа JSON', exact=True).set_input_files({
+        'name': 'revolution-wrong-cache.json', 'mimeType': 'application/json', 'buffer': json.dumps(tampered).encode(),
+    })
+    expect(page.get_by_role('tablist', name='Документы').get_by_role('tab')).to_have_count(2, timeout=120000)
+    assert inspect(page, feature['bodyId'])['volume'] == pytest.approx(12 * math.pi, rel=1e-7)
+    rebuilt = save_document(page, tmp_path, 'revolution-rebuilt.json')
+    assert model(rebuilt) == model(before)
+    assert next(b for b in rebuilt['exactModel']['bodies'] if b['id'] == other['id']) == other
+    page.reload(wait_until='domcontentloaded')
+    page.locator('.environment-panel').wait_for()
+    prepare(page)
+    assert inspect(page, feature['bodyId'])['volume'] == pytest.approx(12 * math.pi, rel=1e-7)
+    assert model(save_document(page, tmp_path, 'revolution-recovered.json')) == model(before)
