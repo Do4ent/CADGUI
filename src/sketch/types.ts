@@ -12,7 +12,8 @@ export type SketchSegment={id:string;kind:'line';start:string;end:string}|{id:st
 export type SketchGeometry={kind:'mixed';segments:SketchSegment[]}|{kind:'circle';center:string;rim:string}|{kind:'arc';center:string;start:string;end:string;ccw:boolean};
 export type Sketch={id:string;name:string;plane:SketchPlane;origin:[number,number,number];points:SketchPoint[];closed:boolean;constraints:SketchConstraint[];geometry?:SketchGeometry;holes?:string[]};
 export type SketchExtrusion={id:string;sketchId:string;bodyId:string;depth:number};
-export type SketchModelState={version:1;units:'mm';sketches:Sketch[];extrusions:SketchExtrusion[]};
+export type SketchCut={id:string;sketchId:string;bodyId:string;targetBodyId:string;depth:number};
+export type SketchModelState={version:1;units:'mm';sketches:Sketch[];extrusions:SketchExtrusion[];cuts?:SketchCut[]};
 export type SketchSolveResult={status:'fully-constrained'|'under-constrained'|'inconsistent';dof:number;rank:number;points:SketchPoint[];residual:number;redundant:number;message?:string};
 
 export type SketchCurveProfile={kind:'circle';center:[number,number];radius:number}|{kind:'arc';center:[number,number];radius:number;startAngle:number;sweep:number};
