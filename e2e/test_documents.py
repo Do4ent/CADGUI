@@ -96,7 +96,7 @@ def test_legacy_import_export_and_reopen_roundtrip(page, tmp_path):
     download_info.value.save_as(target)
     saved = json.loads(target.read_text())
     # V1 files migrate explicitly; all new exports include drawing schema V2.
-    assert saved['schemaVersion'] == 8
+    assert saved['schemaVersion'] == 9
     assert saved['drawing']['version'] == 1
     assert saved['items'] == legacy_items
     page.get_by_label('Импорт документа JSON', exact=True).set_input_files(str(target))
@@ -122,7 +122,7 @@ def test_schema_v1_document_migrates_without_losing_model_items(page, tmp_path):
     target = tmp_path / 'migrated-v2.json'
     download_info.value.save_as(target)
     migrated = json.loads(target.read_text())
-    assert migrated['schemaVersion'] == 8
+    assert migrated['schemaVersion'] == 9
     assert migrated['id'] == 'schema-v1-example'
     assert migrated['items'] == legacy_items
     assert migrated['drawing']['version'] == 1
