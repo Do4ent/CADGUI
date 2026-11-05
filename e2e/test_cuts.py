@@ -177,3 +177,43 @@ def test_invalid_cut_native_import_is_atomic(page, tmp_path, corruption):
     expect(page.get_by_role('alert')).to_be_visible(timeout=120000)
     expect(page.get_by_role('tablist', name='Документы').get_by_role('tab')).to_have_count(1)
     assert save_document(page, tmp_path, 'cut-invalid-after.json') == before
+
+
+@pytest.mark.parametrize('delete_kind', ['base-body', 'first-cut'])
+def test_delete_cascades_outputs_keeps_profiles_and_unrelated_body_and_undo(page, tmp_path, delete_kind):
+    prepare(page)
+    target = base(page, tmp_path)
+    profile(page, tmp_path)
+    first = cut(page, tmp_path, target)
+    profile(page, tmp_path, radius=.5, x=3)
+    cut(page, tmp_path, first['bodyId'], -2)
+    create_box(page, size=(1, 1, 1), origin=(20, 0, 0))
+    before = save_document(page, tmp_path, 'cut-delete-before.json')
+    output_ids = {feature['bodyId'] for feature in model(before)['cuts']}
+    other = next(body for body in before['exactModel']['bodies'] if body['id'] not in output_ids | {target})
+    if delete_kind == 'base-body':
+        inspect(page, target)
+        exact_panel(page).get_by_role('button', name='Удалить тело', exact=True).click()
+        expect(exact_rows(page)).to_have_count(1, timeout=120000)
+    else:
+        panel(page).locator(f'[data-cut-id="{first["id"]}"]').get_by_role('button').first.click()
+        panel(page).get_by_role('button', name='Удалить вырезание и зависимые тела', exact=True).click()
+        expect(exact_rows(page)).to_have_count(2, timeout=120000)
+    expect(panel(page).locator('[data-cut-id]')).to_have_count(0, timeout=120000)
+    after = save_document(page, tmp_path, 'cut-delete-after.json')
+    assert model(after)['sketches'] == model(before)['sketches']
+    assert not model(after).get('cuts')
+    bodies = {body['id']: body for body in after['exactModel']['bodies']}
+    assert bodies[other['id']] == other
+    assert not output_ids.intersection(bodies)
+    if delete_kind == 'first-cut':
+        assert bodies[target]['visible'] is True
+        assert inspect(page, target)['volume'] == pytest.approx(400, rel=1e-9)
+    else:
+        assert target not in bodies
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(exact_rows(page)).to_have_count(4, timeout=120000)
+    undone = save_document(page, tmp_path, 'cut-delete-undone.json')
+    assert model(undone) == model(before)
+    assert undone['exactModel'] == before['exactModel']
