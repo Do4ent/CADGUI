@@ -180,3 +180,39 @@ def test_source_revolution_cut_dependency_rebuild_and_feature_delete_cascade_und
     restored = save_document(page, tmp_path, 'revolve-cut-restored.json')
     assert model(restored) == model(changed)
     assert restored['exactModel'] == changed['exactModel']
+
+
+def test_global_revolution_ribbon_and_search_requests_are_acknowledged_once(page, tmp_path):
+    prepare(page)
+    ribbon_command = page.locator('.context-ribbon-strip').get_by_role('button', name='Вращение эскиза', exact=True)
+    expect(ribbon_command).to_be_disabled()
+    create_sketch(page)
+    before = save_document(page, tmp_path, 'global-revolve-before.json')
+    expect(ribbon_command).to_be_enabled()
+    ribbon_command.click()
+    dialog = page.get_by_role('dialog', name='Вращение эскиза', exact=True)
+    expect(dialog).to_be_visible()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'global-revolve-ribbon-cancel.json') == before
+    search = page.locator('.command-search input')
+    search.fill('Вращение эскиза')
+    search.press('Enter')
+    expect(dialog).to_be_visible()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert save_document(page, tmp_path, 'global-revolve-search-cancel.json') == before
+    search.blur()
+    page.keyboard.press('Alt+4')
+    expect(page.locator('[data-drawing-sheet="true"]')).to_be_visible()
+    page.keyboard.press('Alt+1')
+    expect(panel(page)).to_be_visible()
+    expect(dialog).not_to_be_visible()
+    # Switching active documents remounts the panel; an acknowledged request must
+    # not open a fresh dialog against either the empty document or the old source.
+    page.get_by_title('Новый документ', exact=True).click()
+    tabs = page.get_by_role('tablist', name='Документы').get_by_role('tab')
+    expect(tabs).to_have_count(2)
+    expect(dialog).not_to_be_visible()
+    tabs.first.click()
+    expect(panel(page)).to_be_visible()
+    expect(dialog).not_to_be_visible()
+    assert save_document(page, tmp_path, 'global-revolve-reactivated.json') == before
