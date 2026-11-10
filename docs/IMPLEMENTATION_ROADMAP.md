@@ -1,6 +1,6 @@
 # BendCore CAD Pro — staged implementation roadmap
 
-Status: started 2026-11-02. Scope: a CAD prototype with a bounded Open CASCADE WASM exact-solid backend, separate legacy display components, and linear/nonlinear sketch constraints with polyline, circle and sector extrusion. The mixed line/arc stage supports connected contours; the inner-contour stage adds up to eight source-linked holes within one outer boundary, without nested islands. This is not a complete parametric CAD system.
+Status: started 2026-11-02. Scope: a CAD prototype with a bounded Open CASCADE WASM exact-solid backend, separate legacy display components, and linear/nonlinear sketch constraints with polyline, circle and sector extrusion. The mixed line/arc stage supports connected contours; the inner-contour stage adds up to eight source-linked holes within one outer boundary, without nested islands. Source-linked revolutions add signed local U/V axes and angles; dependent cuts rebuild from their fresh results. This is not a complete parametric CAD system.
 
 The foundational UI, document, drawing, 3D-note and exact-kernel deliveries have progressed beyond the initial prototype. See the delivery records and individual implementation documents for scope and commit-specific verification; older package statuses below are historical acceptance notes. The sketch stage is described in [sketch implementation](SKETCH_IMPLEMENTATION.md); its integration checks must pass before merge. See also [circular sketches](CURVED_SKETCH_IMPLEMENTATION.md) and [mixed line/arc sketches](MIXED_SKETCH_IMPLEMENTATION.md) for bounded capabilities and stage-specific verification gates. [Sketch holes](SKETCH_HOLES_IMPLEMENTATION.md) describes the inner-contour lifecycle and exact region checks.
 
@@ -42,7 +42,7 @@ The foundational UI, document, drawing, 3D-note and exact-kernel deliveries have
 - Exit: no command silently mutates a model before confirmation; undo/redo works.
 
 ### P1-06 — Feature history and property editing [BOUNDED IMPLEMENTATION; ACCEPTANCE IN PROGRESS]
-- Linked sketch extrusions and finite cuts now provide a bounded dependency graph with atomic source/BRep rebuild and scene undo/redo. See [cut implementation](SKETCH_CUT_IMPLEMENTATION.md) for ownership, cascade deletion, visibility and verification limits. General feature reordering, suppression and arbitrary boolean dependencies remain outside this stage.
+- Linked sketch extrusions and finite cuts now provide a bounded dependency graph with atomic source/BRep rebuild and scene undo/redo. See [revolution implementation](SKETCH_REVOLUTION_IMPLEMENTATION.md) and [cut implementation](SKETCH_CUT_IMPLEMENTATION.md) for ownership, cascade deletion, visibility and verification limits. General feature reordering, suppression and arbitrary boolean dependencies remain outside this stage.
 - Operation history, editable properties, dependency awareness, reliable undo/redo.
 - Exit: state persists and remains consistent across reload and editing.
 
