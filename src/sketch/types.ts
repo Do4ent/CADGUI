@@ -14,7 +14,8 @@ export type Sketch={id:string;name:string;plane:SketchPlane;origin:[number,numbe
 export type SketchExtrusion={id:string;sketchId:string;bodyId:string;depth:number};
 export type SketchCut={id:string;sketchId:string;bodyId:string;targetBodyId:string;depth:number};
 export type SketchRevolution={id:string;sketchId:string;bodyId:string;axis:'u'|'v';offset:number;angle:number};
-export type SketchModelState={version:1;units:'mm';sketches:Sketch[];extrusions:SketchExtrusion[];cuts?:SketchCut[];revolutions?:SketchRevolution[]};
+export type SketchFusion={id:string;bodyId:string;aBodyId:string;bBodyId:string};
+export type SketchModelState={version:1;units:'mm';sketches:Sketch[];extrusions:SketchExtrusion[];cuts?:SketchCut[];revolutions?:SketchRevolution[];fusions?:SketchFusion[]};
 export type SketchSolveResult={status:'fully-constrained'|'under-constrained'|'inconsistent';dof:number;rank:number;points:SketchPoint[];residual:number;redundant:number;message?:string};
 
 export type SketchCurveProfile={kind:'circle';center:[number,number];radius:number}|{kind:'arc';center:[number,number];radius:number;startAngle:number;sweep:number};
