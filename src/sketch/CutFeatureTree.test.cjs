@@ -20,3 +20,5 @@ console.log('PASS real cut graph branch order, source/result identity, selection
 function visibleText(node){if(Array.isArray(node))return node.map(visibleText).join('');if(typeof node==='string'||typeof node==='number')return String(node);return node&&typeof node==='object'?visibleText(node.props?.children):'';}
 const readable=visibleText(CutFeatureTree(props));assert.ok(!readable.includes('ID операции')&&!readable.includes('(tool)'));assert.ok(readable.includes('Инструмент <Ø>')&&readable.includes('Глубина: -3 мм'));
 assert.equal(chosen.props.title,'Результат: b3; операция: child');
+
+const revolving={...state,revolutions:[{id:'revolving',sketchId:'tool',bodyId:'base',axis:'v',offset:-3,angle:360}],cuts:[cuts[1]]};const revolutionTree=CutFeatureTree({...props,state:revolving});assert.equal(all(revolutionTree).find(n=>n.props?.['data-cut-graph-id']).props['data-cut-target-kind'],'revolution');
