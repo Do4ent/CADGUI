@@ -1,9 +1,10 @@
 /** Shared declarative command metadata for search, context menus, and shortcuts. */
 export type ContextArea='viewport'|'tree'|'component';
-export type CommandId='sketch-model'|'exact-model'|'model-note'|'select'|'box'|'cylinder'|'pipe'|'duplicate'|'hide'|'isolate'|'showall'|'delete'|'fit'|'grid'|'wire'|'clear'|'undo'|'redo';
-export type CommandContext={selected:boolean;itemCount:number;historyCount:number;futureCount:number};
-type Definition={id:CommandId;label:string;hint:string;shortcut?:string;requiresSelection?:boolean;requiresItems?:boolean;requiresHistory?:'undo'|'redo'};
+export type CommandId='sketch-revolve'|'sketch-model'|'exact-model'|'model-note'|'select'|'box'|'cylinder'|'pipe'|'duplicate'|'hide'|'isolate'|'showall'|'delete'|'fit'|'grid'|'wire'|'clear'|'undo'|'redo';
+export type CommandContext={selected:boolean;itemCount:number;historyCount:number;futureCount:number;hasClosedSketch?:boolean};
+type Definition={id:CommandId;label:string;hint:string;shortcut?:string;requiresClosedSketch?:boolean;requiresSelection?:boolean;requiresItems?:boolean;requiresHistory?:'undo'|'redo'};
 const definitions:Definition[]=[
+{id:'sketch-revolve',label:'Вращение эскиза',hint:'Параметрическое вращение замкнутого профиля вокруг оси U/V',requiresClosedSketch:true},
 {id:'sketch-model',label:'Эскизы с ограничениями',hint:'Линии, окружности, дуги, отверстия, выдавливание, вырезание и зависимости Open CASCADE'},
 {id:'exact-model',label:'Точная геометрия',hint:'Open CASCADE: точные тела, булевы операции и STEP в миллиметрах'},
 {id:'model-note',label:'Добавить 3D-заметку',hint:'Заметка в модели с мировой опорой или привязкой к компоненту'},
@@ -26,6 +27,7 @@ const definitions:Definition[]=[
 export const commandCatalog=Object.fromEntries(definitions.map(d=>[d.id,d])) as Record<CommandId,Definition>;
 export function commandEnabled(id:string,ctx:CommandContext){
  const c=commandCatalog[id as CommandId];if(!c)return false;
+ if(c.requiresClosedSketch&&!ctx.hasClosedSketch)return false;
  if(c.requiresSelection&&!ctx.selected)return false;
  if(c.requiresItems&&!ctx.itemCount)return false;
  if(c.requiresHistory==='undo'&&!ctx.historyCount)return false;
