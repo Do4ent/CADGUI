@@ -123,10 +123,61 @@ def test_invalid_fusion_import_rolls_back_whole_document(page, tmp_path, invalid
     before = state(page, tmp_path, 'fusion-valid.json')
     invalid = copy.deepcopy(before)
     feature = invalid['sketchModel']['fusions'][0]
-    feature['a'] = 'missing-body' if invalid_kind == 'missing' else feature['bodyId']
+    feature['aBodyId'] = 'missing-body' if invalid_kind == 'missing' else feature['bodyId']
     page.get_by_label('Импорт документа JSON', exact=True).set_input_files({
         'name': 'fusion-invalid.json', 'mimeType': 'application/json', 'buffer': json.dumps(invalid).encode(),
     })
     expect(page.get_by_role('alert')).to_be_visible(timeout=120000)
     expect(page.get_by_role('tablist', name='Документы').get_by_role('tab')).to_have_count(1)
     assert state(page, tmp_path, 'fusion-import-rollback.json') == before
+
+
+def test_edit_fusion_operand_then_delete_cascade_and_undo(page, tmp_path):
+    prepare(page)
+    a = box(page, tmp_path)
+    b = box(page, tmp_path, origin=(1, 0, 0))
+    c = box(page, tmp_path, origin=(4, 0, 0))
+    feature = fuse(page, tmp_path, a, b)
+    row = panel(page).locator(f'[data-fusion-id="{feature["id"]}"]')
+    row.get_by_role('button').first.click()
+    panel(page).get_by_role('button', name='Изменить объединение', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Объединение тел', exact=True)
+    dialog.get_by_label('Тело B', exact=True).select_option(c)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    edited = state(page, tmp_path, 'fusion-edited.json')
+    current = edited['sketchModel']['fusions'][0]
+    assert current['id'] == feature['id'] and current['bodyId'] == feature['bodyId']
+    assert current['bBodyId'] == c
+    assert inspect(page, feature['bodyId'])['volume'] == pytest.approx(48, rel=1e-7)
+    row.get_by_role('button').first.click()
+    panel(page).get_by_role('button', name='Удалить объединение и зависимые тела', exact=True).click()
+    expect(panel(page).locator('[data-fusion-id]')).to_have_count(0, timeout=120000)
+    expect(exact_rows(page)).to_have_count(3, timeout=120000)
+    deleted = state(page, tmp_path, 'fusion-deleted.json')
+    assert {body['id'] for body in deleted['exactModel']['bodies']} == {a, b, c}
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(exact_rows(page)).to_have_count(4, timeout=120000)
+    restored = state(page, tmp_path, 'fusion-delete-undone.json')
+    assert restored['sketchModel'] == edited['sketchModel']
+    assert restored['exactModel'] == edited['exactModel']
+
+
+def test_ribbon_and_search_fusion_open_real_dialog_without_mutation_on_cancel(page, tmp_path):
+    prepare(page)
+    box(page, tmp_path)
+    box(page, tmp_path, origin=(1, 0, 0))
+    before = state(page, tmp_path, 'fusion-global-before.json')
+    command = page.locator('.context-ribbon-strip').get_by_role('button', name='Объединение тел', exact=True)
+    expect(command).to_be_enabled()
+    command.click()
+    dialog = page.get_by_role('dialog', name='Объединение тел', exact=True)
+    expect(dialog).to_be_visible()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    search = page.locator('.command-search input')
+    search.fill('Объединение тел')
+    search.press('Enter')
+    expect(dialog).to_be_visible()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert state(page, tmp_path, 'fusion-global-cancelled.json') == before
