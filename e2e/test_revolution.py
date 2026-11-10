@@ -88,8 +88,8 @@ def test_axis_through_profile_interior_rejects_without_commit(page, tmp_path):
     create_sketch(page)
     before = save_document(page, tmp_path, 'axis-crossing-before.json')
     dialog = open_revolution(page, offset=1)
-    dialog.get_by_role('button', name='ОК', exact=True).click()
-    expect(dialog.get_by_role('alert')).to_be_visible(timeout=120000)
+    expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
+    expect(dialog.locator('[data-revolve-axis-error]')).to_contain_text('пересекает ось')
     expect(exact_rows(page)).to_have_count(0)
     dialog.get_by_role('button', name='Отмена', exact=True).click()
     assert save_document(page, tmp_path, 'axis-crossing-after.json') == before
