@@ -1,4 +1,4 @@
-import {createSketchModelState,validateSketchModelState,validateSketchReferences,pruneSketchExtrusions} from '../sketch/model';
+import {createSketchModelState,validateSketchModelState,validateSketchReferences,pruneSketchExtrusions,ownedSketchBodyIds} from '../sketch/model';
 import type {SketchModelState} from '../sketch/types';
 import {createExactModelState,validateExactModelState,type ExactModelState} from '../kernel/model';
 import {useEffect,useState,type Dispatch,type SetStateAction} from 'react';
@@ -72,16 +72,15 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  };
  const setSketchModel=(next:SketchModelState,nextExact:ExactModelState,_label?:string)=>{
   const sketch=validateSketchModelState(next),exact=validateExactModelState(nextExact);
-  const oldOwned=new Set([...active.document.sketchModel.extrusions,...(active.document.sketchModel.cuts??[])].map(feature=>feature.bodyId));
+  const oldOwned=new Set(ownedSketchBodyIds(active.document.sketchModel));
   const existing=new Set(active.document.exactModel.bodies.map(body=>body.id));
-  for(const feature of [...sketch.extrusions,...(sketch.cuts??[])])if(existing.has(feature.bodyId)&&!oldOwned.has(feature.bodyId))throw Error('Идентификатор результата занят независимым телом');
+  for(const bodyId of ownedSketchBodyIds(sketch))if(existing.has(bodyId)&&!oldOwned.has(bodyId))throw Error('Идентификатор результата занят независимым телом');
   validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
  };
  const setExactModel=(next:ExactModelState,_label?:string)=>{
   let exact=validateExactModelState(next);
   const remaining=new Set(exact.bodies.map(body=>body.id));
-  const outputs=(state:SketchModelState)=>[...state.extrusions,...(state.cuts??[])].map(feature=>feature.bodyId);
-  const owned=new Set(outputs(active.document.sketchModel));
+  const owned=new Set(ownedSketchBodyIds(active.document.sketchModel));
   const targets=new Set((active.document.sketchModel.cuts??[]).map(feature=>feature.targetBodyId));
   for(const body of exact.bodies){
    const previous=active.document.exactModel.bodies.find(old=>old.id===body.id);
@@ -89,7 +88,7 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   }
   const removed=active.document.exactModel.bodies.filter(body=>!remaining.has(body.id)).map(body=>body.id);
   const sketch=pruneSketchExtrusions(active.document.sketchModel,removed);
-  const retainedOwned=new Set(outputs(sketch));
+  const retainedOwned=new Set(ownedSketchBodyIds(sketch));
   const retainedCuts=new Set((sketch.cuts??[]).map(feature=>feature.id));
   const consumedTargets=new Set((sketch.cuts??[]).map(feature=>feature.targetBodyId));
   const revealTargets=new Set((active.document.sketchModel.cuts??[]).filter(feature=>!retainedCuts.has(feature.id)&&!consumedTargets.has(feature.targetBodyId)).map(feature=>feature.targetBodyId));
