@@ -9,6 +9,8 @@ export interface FusionDialogProps {
  bodies:readonly FusionBodyOption[];
  draft:FusionDraft;
  busy:boolean;
+ stale?:boolean;
+ error?:string;
  mode:'create'|'edit';
  onChange:(draft:FusionDraft)=>void;
  onConfirm:(draft:FusionDraft)=>void;
@@ -31,14 +33,14 @@ export function validateFusionDraft(bodies:readonly FusionBodyOption[],draft:Fus
 }
 
 /** Controlled source selection; the caller owns the atomic kernel transaction. */
-export function FusionDialog({bodies,draft,busy,mode,onChange,onConfirm,onCancel}:FusionDialogProps){
+export function FusionDialog({bodies,draft,busy,stale=false,error='',mode,onChange,onConfirm,onCancel}:FusionDialogProps){
  const id=useId(),errorId=`${id}-error`,helpId=`${id}-help`;
  const errors=validateFusionDraft(bodies,draft);
- const confirm=()=>{if(!busy&&!errors.length)onConfirm({...draft});};
- return <Dialog open title="Объединение тел" onCancel={onCancel} onConfirm={confirm} confirmDisabled={busy||errors.length>0}>
+ const confirm=()=>{if(!busy&&!stale&&!errors.length)onConfirm({...draft});};
+ return <Dialog open title="Объединение тел" onCancel={onCancel} onConfirm={confirm} confirmDisabled={busy||stale||errors.length>0}>
   <div className="fusion-dialog" data-fusion-editor="true" aria-busy={busy}>
    <p className="fusion-mode">{mode==='edit'?'Изменение параметрического объединения':'Создание параметрического объединения'}</p>
-   <fieldset disabled={busy} className="fusion-sources">
+   <fieldset disabled={busy||stale} className="fusion-sources">
     {(['a','b'] as const).map((key,index)=>{
      const inputId=`${id}-${key}`,value=draft[key],selected=bodies.find(body=>body.id===value);
      const invalid=!value||!selected||selected.disabled||draft.a===draft.b;
@@ -55,6 +57,8 @@ export function FusionDialog({bodies,draft,busy,mode,onChange,onConfirm,onCancel
    </fieldset>
    <p id={helpId}>Исходные тела сохраняются. Для разнесённых тел результат может быть составным телом (compound), содержащим несколько отдельных объёмов.</p>
    {errors.length>0&&<div id={errorId} className="fusion-errors" role="alert">{errors.map(error=><p key={error}>{error}</p>)}</div>}
+   {stale&&<p role="alert">Документ изменился. Закройте диалог и откройте команду повторно; черновик не сохранён.</p>}
+   {error&&<p role="alert">{error}</p>}
    {busy&&<p role="status">Выполняется объединение… Отмена не сохраняет результат.</p>}
   </div>
  </Dialog>;

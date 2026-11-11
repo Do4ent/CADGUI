@@ -13,7 +13,7 @@ from test_curves import open_curve
 
 
 def model(document):
-    assert document['schemaVersion'] == 10
+    assert document['schemaVersion'] == 11
     return document['sketchModel']
 
 

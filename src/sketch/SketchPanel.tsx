@@ -1,75 +1,1472 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
-import {Dialog} from '../components/dialog/Dialog';
-import {ParameterField} from '../components/dialog/ParameterField';
-import {TechnicalIcon} from '../components/icons/TechnicalIcon';
-import type {ExactModelState} from '../kernel/types';
-import type {Sketch,SketchExtrusion,SketchModelState,SketchCut,SketchRevolution} from './types';
-import {createRectangleSketch,createCircleSketch,createArcSketch,createMixedSketch,solveSketch,upsertSketch,removeSketch,removeSketchCut,removeSketchRevolution,sketchRegion,revolutionAxis,ownedSketchBodyIds,validateSketchModelState} from './model';
-import {rebuildSketchBodies} from './rebuild';
-import {SketchEditor} from './SketchEditor';
-import {HoleContoursEditor} from './HoleContoursEditor';
-import {CutFeatureTree} from './CutFeatureTree';
-import {RevolutionAxisPreview} from './RevolutionAxisPreview';
-import './sketch.css';
-export interface SketchPanelProps{state:SketchModelState;exactModel:ExactModelState;documentId:string;revision:object;onChange:(nextSketch:SketchModelState,nextExact:ExactModelState)=>void;onSelectBody:(bodyId:string)=>void;revolutionCreateRequest?:number;onRevolutionRequestHandled?:()=>void}
-type Baseline={state:SketchModelState;exactModel:ExactModelState;documentId:string;revision:object};
-type Session={kind:'sketch';draft:Sketch;base:Baseline}|{kind:'extrusion';draft:SketchExtrusion;base:Baseline}|{kind:'ring';outer:Sketch;inner:Sketch;base:Baseline}|{kind:'delete';draft:Sketch;base:Baseline}|{kind:'cut'|'deleteCut';draft:SketchCut;base:Baseline}|{kind:'revolution'|'deleteRevolution';draft:SketchRevolution;base:Baseline};
-export function validSketchNumber(raw:string,positive=false){const n=Number(raw);return !!raw.trim()&&Number.isFinite(n)&&Math.abs(n)<=1e6&&(!positive||n>=1e-5);}
-export function sketchBaselineMatches(a:Baseline,b:Baseline){return a.state===b.state&&a.exactModel===b.exactModel&&a.documentId===b.documentId&&a.revision===b.revision;}
-export function updateSketchDimension(draft:Sketch,id:string,value:number):Sketch{let next={...draft,constraints:draft.constraints.map(c=>c.id===id&&('value'in c)?{...c,value}:c)};try{const solved=solveSketch(next);if(solved.status!=='inconsistent')next={...next,points:solved.points};}catch{/* Keep rejected draft visible for validation. */}return next;}
-export function stageOwnedFeatureRemoval(before:SketchModelState,next:SketchModelState,exactModel:ExactModelState){const retained=new Set(ownedSketchBodyIds(next)),removed=new Set(ownedSketchBodyIds(before).filter(id=>!retained.has(id))),remainingCuts=new Set((next.cuts??[]).map(c=>c.id)),consumed=new Set((next.cuts??[]).map(c=>c.targetBodyId)),reveal=new Set((before.cuts??[]).filter(c=>!remainingCuts.has(c.id)).map(c=>c.targetBodyId));return {state:next,exactModel:{...exactModel,bodies:exactModel.bodies.filter(b=>!removed.has(b.id)).map(b=>reveal.has(b.id)&&!consumed.has(b.id)?{...b,visible:true}:b)}};}
-export function stageSketchDeletion(state:SketchModelState,exactModel:ExactModelState,id:string){return stageOwnedFeatureRemoval(state,removeSketch(state,id),exactModel);}
-export function stageCutDeletion(state:SketchModelState,exactModel:ExactModelState,id:string){return stageOwnedFeatureRemoval(state,removeSketchCut(state,id),exactModel);}
-export function stageCutVisibility(before:SketchModelState,next:SketchModelState,exactModel:ExactModelState,id:string):ExactModelState{const previous=before.cuts?.find(c=>c.id===id),currentCut=next.cuts?.find(c=>c.id===id);if(!currentCut||previous?.targetBodyId===currentCut.targetBodyId)return exactModel;const revealPrevious=previous&&!next.cuts?.some(c=>c.targetBodyId===previous.targetBodyId);return {...exactModel,bodies:exactModel.bodies.map(body=>body.id===currentCut.targetBodyId?{...body,visible:false}:revealPrevious&&body.id===previous.targetBodyId?{...body,visible:true}:body)};}
-export function availableCutTargets(state:SketchModelState,exactModel:ExactModelState,cut?:SketchCut){const blocked=new Set<string>(cut?[cut.bodyId]:[]);let changed=true;while(changed){changed=false;for(const c of state.cuts??[])if(blocked.has(c.targetBodyId)&&!blocked.has(c.bodyId)){blocked.add(c.bodyId);changed=true;}}return exactModel.bodies.filter(b=>!blocked.has(b.id));}
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Dialog } from "../components/dialog/Dialog";
+import { ParameterField } from "../components/dialog/ParameterField";
+import { TechnicalIcon } from "../components/icons/TechnicalIcon";
+import type { ExactModelState } from "../kernel/types";
+import type {
+  Sketch,
+  SketchExtrusion,
+  SketchModelState,
+  SketchCut,
+  SketchRevolution,
+  SketchFusion,
+} from "./types";
+import {
+  createRectangleSketch,
+  createCircleSketch,
+  createArcSketch,
+  createMixedSketch,
+  solveSketch,
+  upsertSketch,
+  removeSketch,
+  removeSketchCut,
+  removeSketchRevolution,
+  removeSketchFusion,
+  sketchRegion,
+  revolutionAxis,
+  ownedSketchBodyIds,
+  validateSketchModelState,
+} from "./model";
+import { rebuildSketchBodies } from "./rebuild";
+import { SketchEditor } from "./SketchEditor";
+import { HoleContoursEditor } from "./HoleContoursEditor";
+import { CutFeatureTree } from "./CutFeatureTree";
+import { RevolutionAxisPreview } from "./RevolutionAxisPreview";
+import { FusionDialog, type FusionDraft } from "./FusionDialog";
+import "./sketch.css";
+export interface SketchPanelProps {
+  state: SketchModelState;
+  exactModel: ExactModelState;
+  documentId: string;
+  revision: object;
+  onChange: (nextSketch: SketchModelState, nextExact: ExactModelState) => void;
+  onSelectBody: (bodyId: string) => void;
+  revolutionCreateRequest?: number;
+  onRevolutionRequestHandled?: () => void;
+  fusionCreateRequest?: number;
+  onFusionRequestHandled?: () => void;
+}
+type Baseline = {
+  state: SketchModelState;
+  exactModel: ExactModelState;
+  documentId: string;
+  revision: object;
+};
+type Session =
+  | { kind: "sketch"; draft: Sketch; base: Baseline }
+  | { kind: "extrusion"; draft: SketchExtrusion; base: Baseline }
+  | { kind: "ring"; outer: Sketch; inner: Sketch; base: Baseline }
+  | { kind: "delete"; draft: Sketch; base: Baseline }
+  | { kind: "cut" | "deleteCut"; draft: SketchCut; base: Baseline }
+  | {
+      kind: "revolution" | "deleteRevolution";
+      draft: SketchRevolution;
+      base: Baseline;
+    }
+  | { kind: "fusion" | "deleteFusion"; draft: SketchFusion; base: Baseline };
+export function validSketchNumber(raw: string, positive = false) {
+  const n = Number(raw);
+  return (
+    !!raw.trim() &&
+    Number.isFinite(n) &&
+    Math.abs(n) <= 1e6 &&
+    (!positive || n >= 1e-5)
+  );
+}
+export function sketchBaselineMatches(a: Baseline, b: Baseline) {
+  return (
+    a.state === b.state &&
+    a.exactModel === b.exactModel &&
+    a.documentId === b.documentId &&
+    a.revision === b.revision
+  );
+}
+export function updateSketchDimension(
+  draft: Sketch,
+  id: string,
+  value: number,
+): Sketch {
+  let next = {
+    ...draft,
+    constraints: draft.constraints.map((c) =>
+      c.id === id && "value" in c ? { ...c, value } : c,
+    ),
+  };
+  try {
+    const solved = solveSketch(next);
+    if (solved.status !== "inconsistent")
+      next = { ...next, points: solved.points };
+  } catch {
+    /* Keep rejected draft visible for validation. */
+  }
+  return next;
+}
+function featureInputs(state: SketchModelState) {
+  return [
+    ...(state.cuts ?? []).map((c) => ({
+      id: c.id,
+      bodyId: c.bodyId,
+      inputs: [c.targetBodyId],
+    })),
+    ...(state.fusions ?? []).map((f) => ({
+      id: f.id,
+      bodyId: f.bodyId,
+      inputs: [f.aBodyId, f.bBodyId],
+    })),
+  ];
+}
+export function stageOwnedFeatureRemoval(
+  before: SketchModelState,
+  next: SketchModelState,
+  exactModel: ExactModelState,
+) {
+  const retained = new Set(ownedSketchBodyIds(next)),
+    removed = new Set(
+      ownedSketchBodyIds(before).filter((id) => !retained.has(id)),
+    ),
+    remaining = new Set(featureInputs(next).map((f) => f.id)),
+    consumed = new Set(featureInputs(next).flatMap((f) => f.inputs)),
+    reveal = new Set(
+      featureInputs(before)
+        .filter((f) => !remaining.has(f.id))
+        .flatMap((f) => f.inputs),
+    );
+  return {
+    state: next,
+    exactModel: {
+      ...exactModel,
+      bodies: exactModel.bodies
+        .filter((b) => !removed.has(b.id))
+        .map((b) =>
+          reveal.has(b.id) && !consumed.has(b.id) ? { ...b, visible: true } : b,
+        ),
+    },
+  };
+}
+export function stageSketchDeletion(
+  state: SketchModelState,
+  exactModel: ExactModelState,
+  id: string,
+) {
+  return stageOwnedFeatureRemoval(state, removeSketch(state, id), exactModel);
+}
+export function stageCutDeletion(
+  state: SketchModelState,
+  exactModel: ExactModelState,
+  id: string,
+) {
+  return stageOwnedFeatureRemoval(
+    state,
+    removeSketchCut(state, id),
+    exactModel,
+  );
+}
+function stageInputVisibility(
+  before: SketchModelState,
+  next: SketchModelState,
+  exactModel: ExactModelState,
+  id: string,
+): ExactModelState {
+  const prior = featureInputs(before).find((f) => f.id === id)?.inputs ?? [],
+    current = featureInputs(next).find((f) => f.id === id)?.inputs ?? [],
+    consumed = new Set(featureInputs(next).flatMap((f) => f.inputs));
+  if (
+    prior.length === current.length &&
+    prior.every((value, index) => value === current[index])
+  )
+    return exactModel;
+  return {
+    ...exactModel,
+    bodies: exactModel.bodies.map((body) =>
+      current.includes(body.id)
+        ? { ...body, visible: false }
+        : prior.includes(body.id) && !consumed.has(body.id)
+          ? { ...body, visible: true }
+          : body,
+    ),
+  };
+}
+export function stageCutVisibility(
+  before: SketchModelState,
+  next: SketchModelState,
+  exactModel: ExactModelState,
+  id: string,
+) {
+  return stageInputVisibility(before, next, exactModel, id);
+}
+export function stageFusionVisibility(
+  before: SketchModelState,
+  next: SketchModelState,
+  exactModel: ExactModelState,
+  id: string,
+) {
+  return stageInputVisibility(before, next, exactModel, id);
+}
+export function availableCutTargets(
+  state: SketchModelState,
+  exactModel: ExactModelState,
+  cut?: SketchCut,
+) {
+  const blocked = new Set<string>(cut ? [cut.bodyId] : []);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const c of state.cuts ?? [])
+      if (blocked.has(c.targetBodyId) && !blocked.has(c.bodyId)) {
+        blocked.add(c.bodyId);
+        changed = true;
+      }
+  }
+  return exactModel.bodies.filter((b) => !blocked.has(b.id));
+}
 
-export function validRevolutionAngle(raw:string){const n=Number(raw);return !!raw.trim()&&Number.isFinite(n)&&Math.abs(n)>=0.0001&&Math.abs(n)<=360;}
-export function stageRevolutionDraft(state:SketchModelState,draft:SketchRevolution){const next=structuredClone(state);next.revolutions??=[];const index=next.revolutions.findIndex(r=>r.id===draft.id);if(index<0)next.revolutions.push(structuredClone(draft));else next.revolutions[index]=structuredClone(draft);const validated=validateSketchModelState(next);revolutionAxis(sketchRegion(validated,draft.sketchId),draft.axis,draft.offset,draft.angle);return validated;}
-export function stageRevolutionDeletion(state:SketchModelState,exactModel:ExactModelState,id:string){return stageOwnedFeatureRemoval(state,removeSketchRevolution(state,id),exactModel);}
-export function SketchPanel({state,exactModel,documentId,revision,onChange,onSelectBody,revolutionCreateRequest=0,onRevolutionRequestHandled}:SketchPanelProps){
- const [selected,setSelected]=useState<string|null>(null),[featureId,setFeatureId]=useState<string|null>(null),[cutId,setCutId]=useState<string|null>(null),[revolutionId,setRevolutionId]=useState<string|null>(null),[session,setSession]=useState<Session|null>(null),[raw,setRaw]=useState<Record<string,string>>({}),[busy,setBusy]=useState(false),[error,setError]=useState(''),[editorValid,setEditorValid]=useState(true),[holesValid,setHolesValid]=useState(true);
- const live=useRef(true),generation=useRef(0),seenRevolutionRequest=useRef(0),current=useRef<Baseline>({state,exactModel,documentId,revision});current.current={state,exactModel,documentId,revision};
- useEffect(()=>{live.current=true;return()=>{live.current=false;generation.current++;};},[]);
- useEffect(()=>{generation.current++;setSession(null);setBusy(false);setError('');setSelected(null);setFeatureId(null);setCutId(null);setRevolutionId(null);},[documentId]);
- const sketch=state.sketches.find(s=>s.id===selected)||state.sketches[0];const feature=state.extrusions.find(f=>f.id===featureId&&f.sketchId===sketch?.id)||state.extrusions.find(f=>f.sketchId===sketch?.id);
- const cut=(state.cuts??[]).find(c=>c.id===cutId&&c.sketchId===sketch?.id)||(state.cuts??[]).find(c=>c.sketchId===sketch?.id);
- const revolution=(state.revolutions??[]).find(r=>r.id===revolutionId&&r.sketchId===sketch?.id)||(state.revolutions??[]).find(r=>r.sketchId===sketch?.id);
- const close=()=>{generation.current++;setSession(null);setBusy(false);setError('');setRaw({});};
- const edit=(draft:Sketch)=>{generation.current++;setRaw({});setError('');setEditorValid(true);setHolesValid(true);setSession({kind:'sketch',draft:structuredClone(draft),base:current.current});};
- const extrude=(existing?:SketchExtrusion)=>{if(!sketch)return;generation.current++;setRaw({depth:String(existing?.depth??20)});setError('');setEditorValid(true);setHolesValid(true);setSession({kind:'extrusion',draft:existing?structuredClone(existing):{id:crypto.randomUUID(),sketchId:sketch.id,bodyId:crypto.randomUUID(),depth:20},base:current.current});};
- const editCut=(existing?:SketchCut)=>{if(!sketch)return;generation.current++;setRaw({cutDepth:String(existing?.depth??20)});setError('');const target=exactModel.bodies.find(b=>b.visible)??exactModel.bodies[0];if(!existing&&!target)return;setSession({kind:'cut',draft:existing?structuredClone(existing):{id:crypto.randomUUID(),sketchId:sketch.id,bodyId:crypto.randomUUID(),targetBodyId:target?.id??'',depth:20},base:current.current});};
- const revolve=(existing?:SketchRevolution,source=sketch)=>{if(!source?.closed){setError('Создайте и выберите замкнутый эскиз');return;}generation.current++;setBusy(false);setRaw({});setError('');setSession({kind:'revolution',draft:existing?structuredClone(existing):{id:crypto.randomUUID(),sketchId:source.id,bodyId:crypto.randomUUID(),axis:'v',offset:0,angle:360},base:current.current});};
- useEffect(()=>{if(revolutionCreateRequest===seenRevolutionRequest.current)return;seenRevolutionRequest.current=revolutionCreateRequest;if(revolutionCreateRequest>0){const source=sketch?.closed?sketch:state.sketches.find(s=>s.closed);if(source){setSelected(source.id);revolve(undefined,source);}else setError('Создайте и выберите замкнутый эскиз');onRevolutionRequestHandled?.();}},[revolutionCreateRequest]);
- const ring=()=>{generation.current++;setRaw({});setError('');setEditorValid(true);setHolesValid(true);const inner=createCircleSketch(crypto.randomUUID(),2),outer=createCircleSketch(crypto.randomUUID(),5);outer.name='Кольцевой профиль';inner.name='Отверстие кольца';outer.holes=[inner.id];setSession({kind:'ring',outer,inner,base:current.current});};
- const pendingRing=useMemo(()=>session?.kind==='ring'?{...session.base.state,sketches:[...session.base.state.sketches,session.outer,session.inner]}:null,[session]);
- const stale=!!session&&!sketchBaselineMatches(session.base,current.current);const errors:string[]=[];
- const changeSketch=(draft:Sketch)=>{if(session?.kind==='sketch'){setSession({...session,draft});setError('');}};
- const number=(key:string,label:string,value:number,change:(n:number)=>void,positive=false,unit='мм')=>{const valueRaw=raw[key]??String(value),valid=unit==='°'?validRevolutionAngle(valueRaw):validSketchNumber(valueRaw,positive);if(!valid)errors.push(label+': недопустимое число');return <div className="sketch-number"><ParameterField label={label} icon={unit==='°'?'angle':'length'} value={valueRaw} unit={unit} error={valid?undefined:unit==='°'?'Модуль угла от 0,0001 до 360°':positive?'От 0,00001 до 1000000 мм':'Конечное число от −1000000 до 1000000 мм'} onChange={v=>{setRaw(old=>({...old,[key]:v}));setError('');if(unit==='°'?validRevolutionAngle(v):validSketchNumber(v,positive))change(Number(v));}}/></div>;};
- let content=null;
- if(session?.kind==='sketch'){const draft=session.draft,dx=draft.constraints.find(c=>c.kind==='dx'&&c.id==='width'),dy=draft.constraints.find(c=>c.kind==='dy'&&c.id==='height'),radius=draft.geometry&&draft.constraints.find(c=>c.kind==='distance'&&c.id==='radius');if(!draft.name.trim()||draft.name.length>200)errors.push('Введите название эскиза длиной до 200 символов');try{const solved=solveSketch(draft);if(solved.status==='inconsistent')errors.push(solved.message||'Противоречивые ограничения');upsertSketch(session.base.state,draft);}catch(e){errors.push(e instanceof Error?e.message:String(e));}
-  const dimension=(id:string,value:number)=>changeSketch(updateSketchDimension(draft,id,value));
-  content=<><label className="sketch-field"><span><i aria-hidden="true"><TechnicalIcon kind="material"/></i>Название эскиза</span><input value={draft.name} maxLength={200} onChange={e=>changeSketch({...draft,name:e.target.value})}/></label><label className="sketch-field"><span><i aria-hidden="true"><TechnicalIcon kind="direction"/></i>Плоскость</span><select aria-label="Плоскость" value={draft.plane} onChange={e=>changeSketch({...draft,plane:e.target.value as Sketch['plane']})}><option>XY</option><option>XZ</option><option>YZ</option></select></label><div className="sketch-fields">{(['X','Y','Z'] as const).map((axis,index)=> <div key={axis}>{number('origin'+axis,'Начало '+axis,draft.origin[index],v=>{const origin=[...draft.origin] as Sketch['origin'];origin[index]=v;changeSketch({...draft,origin});})}</div>)}{dx&&'value'in dx&&number('width',draft.geometry?.kind==='mixed'?'Длина прямой части':'Ширина эскиза',dx.value,v=>dimension(dx.id,v),true)}{dy&&'value'in dy&&number('height','Высота эскиза',dy.value,v=>dimension(dy.id,v),true)}{radius&&'value'in radius&&number('radius','Радиус эскиза',radius.value,v=>dimension(radius.id,v),true)}</div><p className="sketch-scope">Нормали: XY → +Z; XZ → −Y; YZ → +X. Окружность образует диск; замкнутая дуга — сектор. Открытая дуга не выдавливается. Смешанный контур — один замкнутый профиль из прямых и дуг; отверстия задаются отдельными исходными профилями; прямые и дуги передаются в Open CASCADE без замены полилинией.</p><SketchEditor onValidityChange={setEditorValid} sketch={draft} onChange={next=>{setRaw({});changeSketch(next);}} disabled={busy||stale}/><HoleContoursEditor sketch={draft} state={session.base.state} onChange={changeSketch} onValidityChange={setHolesValid} disabled={busy||stale}/></>;
- }else if(session?.kind==='extrusion'){content=<>{number('depth','Глубина выдавливания',session.draft.depth,n=>setSession({...session,draft:{...session.draft,depth:n}}))}<p>Положительная и отрицательная глубина задают направление по нормали плоскости. Исходный эскиз сохраняется.</p></>;if(Math.abs(Number(raw.depth))<1e-5)errors.push('Глубина должна быть ненулевой, модуль от 0,00001 мм');}
- if(session?.kind==='ring'){const outerRadius=session.outer.constraints.find(c=>c.id==='radius'),innerRadius=session.inner.constraints.find(c=>c.id==='radius');const ro=outerRadius&&'value'in outerRadius?outerRadius.value:5,ri=innerRadius&&'value'in innerRadius?innerRadius.value:2;
-  content=<><label className="sketch-field"><span><i aria-hidden="true"><TechnicalIcon kind="material"/></i>Название эскиза</span><input maxLength={200} value={session.outer.name} onChange={e=>setSession({...session,outer:{...session.outer,name:e.target.value}})}/></label><label className="sketch-field"><span><i aria-hidden="true"><TechnicalIcon kind="direction"/></i>Плоскость</span><select aria-label="Плоскость" value={session.outer.plane} onChange={e=>{const plane=e.target.value as Sketch['plane'];setSession({...session,outer:{...session.outer,plane},inner:{...session.inner,plane}});}}><option>XY</option><option>XZ</option><option>YZ</option></select></label><div className="sketch-fields">{number('outerRadius','Радиус эскиза',ro,n=>setSession({...session,outer:updateSketchDimension(session.outer,'radius',n)}),true)}{number('innerRadius','Радиус отверстия',ri,n=>setSession({...session,inner:updateSketchDimension(session.inner,'radius',n)}),true)}</div><p>Внешний и внутренний исходные профили находятся в общей плоскости. Выдавливание создаётся отдельно.</p><SketchEditor sketch={session.outer} onChange={outer=>{setRaw({});setSession({...session,outer});}} onValidityChange={setEditorValid} disabled={busy||stale}/><HoleContoursEditor sketch={session.outer} state={pendingRing!} onChange={outer=>setSession({...session,outer})} onValidityChange={setHolesValid} disabled={busy||stale}/></>;
-  if(!session.outer.name.trim()||session.outer.name.length>200)errors.push('Введите название профиля');if(ri>=ro)errors.push('Радиус отверстия должен быть меньше внешнего радиуса');try{validateSketchModelState({...session.base.state,sketches:[...session.base.state.sketches,session.outer,session.inner]});}catch(e){errors.push(e instanceof Error?e.message:String(e));}
- }else if(session?.kind==='delete'){content=<p>Удалить эскиз «{session.draft.name}» и результаты зависимых операций? Ссылки на него как на отверстие будут удалены, оставшиеся тела будут пересчитаны до сохранения.</p>;}
- if(session?.kind==='cut'){const targets=availableCutTargets(session.base.state,session.base.exactModel,session.base.state.cuts?.find(c=>c.id===session.draft.id));content=<><label className="sketch-field"><span><i aria-hidden="true"><TechnicalIcon kind="material"/></i>Исходное тело</span><select aria-label="Исходное тело" value={session.draft.targetBodyId} onChange={e=>{setError('');setSession({...session,draft:{...session.draft,targetBodyId:e.target.value}});}}>{targets.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>{number('cutDepth','Глубина вырезания',session.draft.depth,depth=>setSession({...session,draft:{...session.draft,depth}}))}<p>Конечное вырезание на заданную глубину по нормали плоскости эскиза. Отрицательное значение меняет направление; сквозное вырезание автоматически не определяется. Исходное тело сохраняется, отдельное тело инструмента не создаётся.</p></>;if(!targets.some(b=>b.id===session.draft.targetBodyId))errors.push('Выберите существующее исходное тело без циклической зависимости');if(Math.abs(Number(raw.cutDepth))<1e-5)errors.push('Глубина вырезания должна быть ненулевой, модуль от 0,00001 мм');}
- if(session?.kind==='revolution'){const source=session.base.state.sketches.find(s=>s.id===session.draft.sketchId);content=<><label className="sketch-field"><span><i aria-hidden="true"><TechnicalIcon kind="direction"/></i>Ось вращения</span><select aria-label="Ось вращения" value={session.draft.axis} onChange={e=>{setError('');setSession({...session,draft:{...session.draft,axis:e.target.value as 'u'|'v'}});}}><option value="u">U — горизонтальная ось профиля</option><option value="v">V — вертикальная ось профиля</option></select></label>{number('axisOffset','Смещение оси',session.draft.offset,offset=>setSession({...session,draft:{...session.draft,offset}}))}{number('revolutionAngle','Угол вращения',session.draft.angle,angle=>setSession({...session,draft:{...session.draft,angle}}),false,'°')}<p>Знаковый угол задаёт направление вращения вокруг положительной оси U или V. Профиль должен находиться с одной стороны оси. Допускается контакт отрезка или конца дуги с осью; внутреннее касание кривой не поддерживается.</p>{source&&<RevolutionAxisPreview sketch={source} state={session.base.state} axis={session.draft.axis} offset={session.draft.offset} angle={session.draft.angle} disabled={busy||stale}/>}</>;try{stageRevolutionDraft(session.base.state,session.draft);}catch(e){errors.push(e instanceof Error?e.message:String(e));}}
- const commit=async(override?:Session)=>{const active=override??session;if(!active||busy||!sketchBaselineMatches(active.base,current.current)||(!override&&errors.length)||((active.kind==='sketch'||active.kind==='ring')&&(!editorValid||!holesValid)))return;const captured=active,token=++generation.current,change=onChange;setBusy(true);setError('');try{let next:SketchModelState;const deletion=captured.kind==='delete'?stageSketchDeletion(captured.base.state,captured.base.exactModel,captured.draft.id):captured.kind==='deleteCut'?stageCutDeletion(captured.base.state,captured.base.exactModel,captured.draft.id):captured.kind==='deleteRevolution'?stageRevolutionDeletion(captured.base.state,captured.base.exactModel,captured.draft.id):null;
-  if(captured.kind==='sketch'){const solved=solveSketch(captured.draft);if(solved.status==='inconsistent')throw Error(solved.message||'Противоречивые ограничения');next=upsertSketch(captured.base.state,{...captured.draft,points:solved.points});}
-  else if(captured.kind==='ring'){next=validateSketchModelState({...captured.base.state,sketches:[...captured.base.state.sketches,captured.outer,{...captured.inner,name:captured.outer.name+' · отверстие'}]});}
-  else if(captured.kind==='delete'||captured.kind==='deleteCut'||captured.kind==='deleteRevolution'){next=deletion!.state;}
-  else if(captured.kind==='revolution'){next=stageRevolutionDraft(captured.base.state,captured.draft);}
-  else if(captured.kind==='cut'){next=structuredClone(captured.base.state);next.cuts??=[];const index=next.cuts.findIndex(c=>c.id===captured.draft.id);if(index<0)next.cuts.push(captured.draft);else next.cuts[index]=captured.draft;next=validateSketchModelState(next);}
-  else if(captured.kind==='extrusion'){next=structuredClone(captured.base.state);const index=next.extrusions.findIndex(f=>f.id===captured.draft.id);if(index<0)next.extrusions.push(captured.draft);else next.extrusions[index]=captured.draft;}else throw Error('Неизвестная операция эскиза');
-  let baseExact=deletion?.exactModel??captured.base.exactModel;if(captured.kind==='cut')baseExact=stageCutVisibility(captured.base.state,next,baseExact,captured.draft.id);const exact=await rebuildSketchBodies(next,baseExact);if(!live.current||generation.current!==token||!sketchBaselineMatches(captured.base,current.current))return;change(next,exact);if(captured.kind==='sketch')setSelected(captured.draft.id);else if(captured.kind==='ring')setSelected(captured.outer.id);else if(captured.kind==='delete'||captured.kind==='deleteCut'||captured.kind==='deleteRevolution'){setRevolutionId(null);if(captured.kind==='delete')setSelected(null);setFeatureId(null);setCutId(null);}else if(captured.kind==='revolution'){setRevolutionId(captured.draft.id);setCutId(null);setFeatureId(null);onSelectBody(captured.draft.bodyId);}else if(captured.kind==='cut'){setCutId(captured.draft.id);setFeatureId(null);onSelectBody(captured.draft.bodyId);}else{setFeatureId(captured.draft.id);onSelectBody(captured.draft.bodyId);}setSession(null);setRaw({});
- }catch(e){if(live.current&&generation.current===token)setError(e instanceof Error?e.message:String(e));}finally{if(live.current&&generation.current===token)setBusy(false);}};
- const remove=()=>{if(!sketch)return;generation.current++;setError('');const deletion:Session={kind:'delete',draft:structuredClone(sketch),base:current.current};if(state.sketches.some(s=>s.holes?.includes(sketch.id)))setSession(deletion);else void commit(deletion);};
- const removeCut=()=>{if(!cut)return;generation.current++;setError('');void commit({kind:'deleteCut',draft:structuredClone(cut),base:current.current});};
- const removeRevolution=()=>{if(!revolution)return;generation.current++;setError('');void commit({kind:'deleteRevolution',draft:structuredClone(revolution),base:current.current});};
- const button=(text:string,action:()=>void,disabled=false,curve?:'circle'|'arc'|'mixed')=><button type="button" disabled={disabled||busy} onClick={action}><i aria-hidden="true">{curve?<svg width="18" height="18" viewBox="0 0 20 20" fill="none" strokeWidth="1.6">{curve==='mixed'?<path d="M7 4h6a6 6 0 0 1 0 12H7a6 6 0 0 1 0-12Z" stroke="#2378e8"/>:curve==='circle'?<circle cx="10" cy="10" r="7" stroke="#2378e8"/>:<path d="M3 10a7 7 0 0 1 14 0L10 10Z" stroke="#2378e8"/>}<path d="M10 10h7" stroke="#e54b4b"/><circle cx="10" cy="10" r="1.4" fill="#18a66a"/></svg>:<TechnicalIcon kind="profile" size={16}/>}</i>{text}</button>;
- return <section className="sketch-panel" aria-label="Эскизы и выдавливания"><h3>Эскизы и выдавливания</h3><p>Параметрические профили · мм · выдавливание Open CASCADE</p><p className="sketch-scope">Линейные ограничения, расстояния, равные длины, углы и касательность прямой к дуге; ограниченный численный решатель. Общий набор ограничений CAD пока не поддерживается.</p><div className="sketch-actions">{button('Создать эскиз',()=>edit(createRectangleSketch(crypto.randomUUID(),20,20)))}{button('Создать окружность',()=>edit(createCircleSketch(crypto.randomUUID(),5)),false,'circle')}{button('Создать дугу',()=>edit(createArcSketch(crypto.randomUUID(),5)),false,'arc')}{button('Создать смешанный контур',()=>edit(createMixedSketch(crypto.randomUUID(),10,5)),false,'mixed')}{button('Создать кольцевой профиль',ring,false,'circle')}{button('Редактировать эскиз',()=>sketch&&edit(sketch),!sketch)}{button('Выдавить эскиз',()=>extrude(),!sketch)}{button('Изменить выдавливание',()=>feature&&extrude(feature),!feature)}{button('Вращать эскиз',()=>revolve(),!sketch?.closed)}{button('Изменить вращение',()=>revolution&&revolve(revolution),!revolution)}{button('Удалить вращение и зависимые тела',removeRevolution,!revolution)}{button('Вырезать по эскизу',()=>editCut(),!sketch?.closed||exactModel.bodies.length===0)}{button('Изменить вырезание',()=>cut&&editCut(cut),!cut)}{button('Удалить вырезание и зависимые тела',removeCut,!cut)}{button('Удалить эскиз и тела',remove,!sketch)}</div><ul aria-label="Эскизы">{state.sketches.map(s=><li key={s.id} data-sketch-id={s.id} onClick={()=>setSelected(s.id)}><button type="button" aria-pressed={sketch?.id===s.id} onClick={()=>{setSelected(s.id);setFeatureId(null);setCutId(null);setRevolutionId(null);}} onDoubleClick={()=>edit(s)}>{s.name} · {s.plane}</button><ul>{state.extrusions.filter(f=>f.sketchId===s.id).map(f=><li key={f.id} data-extrusion-id={f.id}><button type="button" aria-pressed={feature?.id===f.id} onClick={()=>{setSelected(s.id);setFeatureId(f.id);onSelectBody(f.bodyId);}}>Выдавливание · {f.depth} мм</button></li>)}{(state.revolutions??[]).filter(r=>r.sketchId===s.id).map(r=><li key={r.id} data-revolution-id={r.id}><button type="button" aria-pressed={revolution?.id===r.id} onClick={()=>{setSelected(s.id);setRevolutionId(r.id);setFeatureId(null);setCutId(null);onSelectBody(r.bodyId);}}>Вращение · {r.angle}° · {r.axis.toUpperCase()}</button><small>Смещение: {r.offset} мм; результат: {exactModel.bodies.find(b=>b.id===r.bodyId)?.name??r.bodyId}</small></li>)}{(state.cuts??[]).filter(c=>c.sketchId===s.id).map(c=><li key={c.id} data-cut-id={c.id}><button type="button" aria-pressed={cut?.id===c.id} onClick={()=>{setSelected(s.id);setCutId(c.id);setFeatureId(null);onSelectBody(c.bodyId);}}>Вырезание · {c.depth} мм</button><small>Эскиз: {s.name}; исходное тело: {exactModel.bodies.find(b=>b.id===c.targetBodyId)?.name??c.targetBodyId}; результат: {exactModel.bodies.find(b=>b.id===c.bodyId)?.name??c.bodyId}</small></li>)}</ul></li>)}</ul><CutFeatureTree state={state} exactModel={exactModel} selectedId={cut?.id} disabled={busy} onSelect={(id,bodyId)=>{const source=state.cuts?.find(c=>c.id===id);if(source){setSelected(source.sketchId);setCutId(id);setFeatureId(null);}onSelectBody(bodyId);}}/>{busy&&!session&&<p role="status">Пересчёт оставшихся тел… <button type="button" onClick={close}>Отменить пересчёт</button></p>}{error&&!session&&<p role="alert">{error}</p>}
- {session&&<Dialog open title={session.kind==='sketch'?'Редактор эскиза':session.kind==='ring'?'Редактор эскиза':session.kind==='delete'?'Удаление эскиза':session.kind==='cut'?'Вырезание по эскизу':session.kind==='revolution'?'Вращение эскиза':'Выдавливание эскиза'} onCancel={close} onConfirm={()=>void commit()} confirmDisabled={busy||stale||errors.length>0||((session.kind==='sketch'||session.kind==='ring')&&(!editorValid||!holesValid))}><div className="sketch-dialog">{stale&&<p role="alert">Документ изменился. Закройте редактор и откройте его повторно; черновик не сохранён.</p>}<fieldset className="sketch-lock" disabled={busy||stale}>{content}</fieldset>{errors.length>0&&<div role="alert">{[...new Set(errors)].join('. ')}</div>}{busy&&<p role="status">Пересчёт точных тел… Отмена не сохраняет результат.</p>}{error&&<p role="alert">{error}</p>}</div></Dialog>}
- </section>;
+export function validRevolutionAngle(raw: string) {
+  const n = Number(raw);
+  return (
+    !!raw.trim() &&
+    Number.isFinite(n) &&
+    Math.abs(n) >= 0.0001 &&
+    Math.abs(n) <= 360
+  );
+}
+export function stageRevolutionDraft(
+  state: SketchModelState,
+  draft: SketchRevolution,
+) {
+  const next = structuredClone(state);
+  next.revolutions ??= [];
+  const index = next.revolutions.findIndex((r) => r.id === draft.id);
+  if (index < 0) next.revolutions.push(structuredClone(draft));
+  else next.revolutions[index] = structuredClone(draft);
+  const validated = validateSketchModelState(next);
+  revolutionAxis(
+    sketchRegion(validated, draft.sketchId),
+    draft.axis,
+    draft.offset,
+    draft.angle,
+  );
+  return validated;
+}
+export function stageRevolutionDeletion(
+  state: SketchModelState,
+  exactModel: ExactModelState,
+  id: string,
+) {
+  return stageOwnedFeatureRemoval(
+    state,
+    removeSketchRevolution(state, id),
+    exactModel,
+  );
+}
+export function stageFusionDeletion(
+  state: SketchModelState,
+  exactModel: ExactModelState,
+  id: string,
+) {
+  return stageOwnedFeatureRemoval(
+    state,
+    removeSketchFusion(state, id),
+    exactModel,
+  );
+}
+export function stageFusionDraft(state: SketchModelState, draft: SketchFusion) {
+  const next = structuredClone(state);
+  next.fusions ??= [];
+  const index = next.fusions.findIndex((f) => f.id === draft.id);
+  if (index < 0) next.fusions.push(structuredClone(draft));
+  else next.fusions[index] = structuredClone(draft);
+  return validateSketchModelState(next);
+}
+export function availableFusionBodies(
+  state: SketchModelState,
+  exactModel: ExactModelState,
+  feature?: SketchFusion,
+) {
+  const blocked = new Set<string>(feature ? [feature.bodyId] : []);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const cut of state.cuts ?? [])
+      if (blocked.has(cut.targetBodyId) && !blocked.has(cut.bodyId)) {
+        blocked.add(cut.bodyId);
+        changed = true;
+      }
+    for (const fusion of state.fusions ?? [])
+      if (
+        (blocked.has(fusion.aBodyId) || blocked.has(fusion.bBodyId)) &&
+        !blocked.has(fusion.bodyId)
+      ) {
+        blocked.add(fusion.bodyId);
+        changed = true;
+      }
+  }
+  return exactModel.bodies.filter((body) => !blocked.has(body.id));
+}
+export function SketchPanel({
+  state,
+  exactModel,
+  documentId,
+  revision,
+  onChange,
+  onSelectBody,
+  revolutionCreateRequest = 0,
+  onRevolutionRequestHandled,
+  fusionCreateRequest = 0,
+  onFusionRequestHandled,
+}: SketchPanelProps) {
+  const [selected, setSelected] = useState<string | null>(null),
+    [featureId, setFeatureId] = useState<string | null>(null),
+    [cutId, setCutId] = useState<string | null>(null),
+    [revolutionId, setRevolutionId] = useState<string | null>(null),
+    [fusionId, setFusionId] = useState<string | null>(null),
+    [session, setSession] = useState<Session | null>(null),
+    [raw, setRaw] = useState<Record<string, string>>({}),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [editorValid, setEditorValid] = useState(true),
+    [holesValid, setHolesValid] = useState(true);
+  const live = useRef(true),
+    generation = useRef(0),
+    seenRevolutionRequest = useRef(0),
+    seenFusionRequest = useRef(0),
+    current = useRef<Baseline>({ state, exactModel, documentId, revision });
+  current.current = { state, exactModel, documentId, revision };
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+      generation.current++;
+    };
+  }, []);
+  useEffect(() => {
+    generation.current++;
+    setSession(null);
+    setBusy(false);
+    setError("");
+    setSelected(null);
+    setFeatureId(null);
+    setCutId(null);
+    setRevolutionId(null);
+    setFusionId(null);
+  }, [documentId]);
+  const sketch =
+    state.sketches.find((s) => s.id === selected) || state.sketches[0];
+  const feature =
+    state.extrusions.find(
+      (f) => f.id === featureId && f.sketchId === sketch?.id,
+    ) || state.extrusions.find((f) => f.sketchId === sketch?.id);
+  const cut =
+    (state.cuts ?? []).find(
+      (c) => c.id === cutId && c.sketchId === sketch?.id,
+    ) || (state.cuts ?? []).find((c) => c.sketchId === sketch?.id);
+  const revolution =
+    (state.revolutions ?? []).find(
+      (r) => r.id === revolutionId && r.sketchId === sketch?.id,
+    ) || (state.revolutions ?? []).find((r) => r.sketchId === sketch?.id);
+  const fusion = (state.fusions ?? []).find((f) => f.id === fusionId);
+  const close = () => {
+    generation.current++;
+    setSession(null);
+    setBusy(false);
+    setError("");
+    setRaw({});
+  };
+  const edit = (draft: Sketch) => {
+    generation.current++;
+    setRaw({});
+    setError("");
+    setEditorValid(true);
+    setHolesValid(true);
+    setSession({
+      kind: "sketch",
+      draft: structuredClone(draft),
+      base: current.current,
+    });
+  };
+  const extrude = (existing?: SketchExtrusion) => {
+    if (!sketch) return;
+    generation.current++;
+    setRaw({ depth: String(existing?.depth ?? 20) });
+    setError("");
+    setEditorValid(true);
+    setHolesValid(true);
+    setSession({
+      kind: "extrusion",
+      draft: existing
+        ? structuredClone(existing)
+        : {
+            id: crypto.randomUUID(),
+            sketchId: sketch.id,
+            bodyId: crypto.randomUUID(),
+            depth: 20,
+          },
+      base: current.current,
+    });
+  };
+  const editCut = (existing?: SketchCut) => {
+    if (!sketch) return;
+    generation.current++;
+    setRaw({ cutDepth: String(existing?.depth ?? 20) });
+    setError("");
+    const target =
+      exactModel.bodies.find((b) => b.visible) ?? exactModel.bodies[0];
+    if (!existing && !target) return;
+    setSession({
+      kind: "cut",
+      draft: existing
+        ? structuredClone(existing)
+        : {
+            id: crypto.randomUUID(),
+            sketchId: sketch.id,
+            bodyId: crypto.randomUUID(),
+            targetBodyId: target?.id ?? "",
+            depth: 20,
+          },
+      base: current.current,
+    });
+  };
+  const revolve = (existing?: SketchRevolution, source = sketch) => {
+    if (!source?.closed) {
+      setError("Создайте и выберите замкнутый эскиз");
+      return;
+    }
+    generation.current++;
+    setBusy(false);
+    setRaw({});
+    setError("");
+    setSession({
+      kind: "revolution",
+      draft: existing
+        ? structuredClone(existing)
+        : {
+            id: crypto.randomUUID(),
+            sketchId: source.id,
+            bodyId: crypto.randomUUID(),
+            axis: "v",
+            offset: 0,
+            angle: 360,
+          },
+      base: current.current,
+    });
+  };
+  const editFusion = (existing?: SketchFusion) => {
+    const bodies = availableFusionBodies(state, exactModel, existing);
+    if (!existing && bodies.length < 2) {
+      setError("Для объединения нужны два доступных точных тела");
+      return;
+    }
+    generation.current++;
+    setBusy(false);
+    setError("");
+    setSession({
+      kind: "fusion",
+      draft: existing
+        ? structuredClone(existing)
+        : {
+            id: crypto.randomUUID(),
+            bodyId: crypto.randomUUID(),
+            aBodyId: bodies[0]?.id ?? "",
+            bBodyId: bodies[1]?.id ?? "",
+          },
+      base: current.current,
+    });
+  };
+  useEffect(() => {
+    if (revolutionCreateRequest === seenRevolutionRequest.current) return;
+    seenRevolutionRequest.current = revolutionCreateRequest;
+    if (revolutionCreateRequest > 0) {
+      const source = sketch?.closed
+        ? sketch
+        : state.sketches.find((s) => s.closed);
+      if (source) {
+        setSelected(source.id);
+        revolve(undefined, source);
+      } else setError("Создайте и выберите замкнутый эскиз");
+      onRevolutionRequestHandled?.();
+    }
+  }, [revolutionCreateRequest]);
+  useEffect(() => {
+    if (fusionCreateRequest === seenFusionRequest.current) return;
+    seenFusionRequest.current = fusionCreateRequest;
+    if (fusionCreateRequest > 0) {
+      editFusion();
+      onFusionRequestHandled?.();
+    }
+  }, [fusionCreateRequest]);
+  const ring = () => {
+    generation.current++;
+    setRaw({});
+    setError("");
+    setEditorValid(true);
+    setHolesValid(true);
+    const inner = createCircleSketch(crypto.randomUUID(), 2),
+      outer = createCircleSketch(crypto.randomUUID(), 5);
+    outer.name = "Кольцевой профиль";
+    inner.name = "Отверстие кольца";
+    outer.holes = [inner.id];
+    setSession({ kind: "ring", outer, inner, base: current.current });
+  };
+  const pendingRing = useMemo(
+    () =>
+      session?.kind === "ring"
+        ? {
+            ...session.base.state,
+            sketches: [
+              ...session.base.state.sketches,
+              session.outer,
+              session.inner,
+            ],
+          }
+        : null,
+    [session],
+  );
+  const stale =
+    !!session && !sketchBaselineMatches(session.base, current.current);
+  const errors: string[] = [];
+  const changeSketch = (draft: Sketch) => {
+    if (session?.kind === "sketch") {
+      setSession({ ...session, draft });
+      setError("");
+    }
+  };
+  const number = (
+    key: string,
+    label: string,
+    value: number,
+    change: (n: number) => void,
+    positive = false,
+    unit = "мм",
+  ) => {
+    const valueRaw = raw[key] ?? String(value),
+      valid =
+        unit === "°"
+          ? validRevolutionAngle(valueRaw)
+          : validSketchNumber(valueRaw, positive);
+    if (!valid) errors.push(label + ": недопустимое число");
+    return (
+      <div className="sketch-number">
+        <ParameterField
+          label={label}
+          icon={unit === "°" ? "angle" : "length"}
+          value={valueRaw}
+          unit={unit}
+          error={
+            valid
+              ? undefined
+              : unit === "°"
+                ? "Модуль угла от 0,0001 до 360°"
+                : positive
+                  ? "От 0,00001 до 1000000 мм"
+                  : "Конечное число от −1000000 до 1000000 мм"
+          }
+          onChange={(v) => {
+            setRaw((old) => ({ ...old, [key]: v }));
+            setError("");
+            if (
+              unit === "°"
+                ? validRevolutionAngle(v)
+                : validSketchNumber(v, positive)
+            )
+              change(Number(v));
+          }}
+        />
+      </div>
+    );
+  };
+  let content = null;
+  if (session?.kind === "sketch") {
+    const draft = session.draft,
+      dx = draft.constraints.find((c) => c.kind === "dx" && c.id === "width"),
+      dy = draft.constraints.find((c) => c.kind === "dy" && c.id === "height"),
+      radius =
+        draft.geometry &&
+        draft.constraints.find(
+          (c) => c.kind === "distance" && c.id === "radius",
+        );
+    if (!draft.name.trim() || draft.name.length > 200)
+      errors.push("Введите название эскиза длиной до 200 символов");
+    try {
+      const solved = solveSketch(draft);
+      if (solved.status === "inconsistent")
+        errors.push(solved.message || "Противоречивые ограничения");
+      upsertSketch(session.base.state, draft);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+    const dimension = (id: string, value: number) =>
+      changeSketch(updateSketchDimension(draft, id, value));
+    content = (
+      <>
+        <label className="sketch-field">
+          <span>
+            <i aria-hidden="true">
+              <TechnicalIcon kind="material" />
+            </i>
+            Название эскиза
+          </span>
+          <input
+            value={draft.name}
+            maxLength={200}
+            onChange={(e) => changeSketch({ ...draft, name: e.target.value })}
+          />
+        </label>
+        <label className="sketch-field">
+          <span>
+            <i aria-hidden="true">
+              <TechnicalIcon kind="direction" />
+            </i>
+            Плоскость
+          </span>
+          <select
+            aria-label="Плоскость"
+            value={draft.plane}
+            onChange={(e) =>
+              changeSketch({
+                ...draft,
+                plane: e.target.value as Sketch["plane"],
+              })
+            }
+          >
+            <option>XY</option>
+            <option>XZ</option>
+            <option>YZ</option>
+          </select>
+        </label>
+        <div className="sketch-fields">
+          {(["X", "Y", "Z"] as const).map((axis, index) => (
+            <div key={axis}>
+              {number(
+                "origin" + axis,
+                "Начало " + axis,
+                draft.origin[index],
+                (v) => {
+                  const origin = [...draft.origin] as Sketch["origin"];
+                  origin[index] = v;
+                  changeSketch({ ...draft, origin });
+                },
+              )}
+            </div>
+          ))}
+          {dx &&
+            "value" in dx &&
+            number(
+              "width",
+              draft.geometry?.kind === "mixed"
+                ? "Длина прямой части"
+                : "Ширина эскиза",
+              dx.value,
+              (v) => dimension(dx.id, v),
+              true,
+            )}
+          {dy &&
+            "value" in dy &&
+            number(
+              "height",
+              "Высота эскиза",
+              dy.value,
+              (v) => dimension(dy.id, v),
+              true,
+            )}
+          {radius &&
+            "value" in radius &&
+            number(
+              "radius",
+              "Радиус эскиза",
+              radius.value,
+              (v) => dimension(radius.id, v),
+              true,
+            )}
+        </div>
+        <p className="sketch-scope">
+          Нормали: XY → +Z; XZ → −Y; YZ → +X. Окружность образует диск;
+          замкнутая дуга — сектор. Открытая дуга не выдавливается. Смешанный
+          контур — один замкнутый профиль из прямых и дуг; отверстия задаются
+          отдельными исходными профилями; прямые и дуги передаются в Open
+          CASCADE без замены полилинией.
+        </p>
+        <SketchEditor
+          onValidityChange={setEditorValid}
+          sketch={draft}
+          onChange={(next) => {
+            setRaw({});
+            changeSketch(next);
+          }}
+          disabled={busy || stale}
+        />
+        <HoleContoursEditor
+          sketch={draft}
+          state={session.base.state}
+          onChange={changeSketch}
+          onValidityChange={setHolesValid}
+          disabled={busy || stale}
+        />
+      </>
+    );
+  } else if (session?.kind === "extrusion") {
+    content = (
+      <>
+        {number("depth", "Глубина выдавливания", session.draft.depth, (n) =>
+          setSession({ ...session, draft: { ...session.draft, depth: n } }),
+        )}
+        <p>
+          Положительная и отрицательная глубина задают направление по нормали
+          плоскости. Исходный эскиз сохраняется.
+        </p>
+      </>
+    );
+    if (Math.abs(Number(raw.depth)) < 1e-5)
+      errors.push("Глубина должна быть ненулевой, модуль от 0,00001 мм");
+  }
+  if (session?.kind === "ring") {
+    const outerRadius = session.outer.constraints.find(
+        (c) => c.id === "radius",
+      ),
+      innerRadius = session.inner.constraints.find((c) => c.id === "radius");
+    const ro = outerRadius && "value" in outerRadius ? outerRadius.value : 5,
+      ri = innerRadius && "value" in innerRadius ? innerRadius.value : 2;
+    content = (
+      <>
+        <label className="sketch-field">
+          <span>
+            <i aria-hidden="true">
+              <TechnicalIcon kind="material" />
+            </i>
+            Название эскиза
+          </span>
+          <input
+            maxLength={200}
+            value={session.outer.name}
+            onChange={(e) =>
+              setSession({
+                ...session,
+                outer: { ...session.outer, name: e.target.value },
+              })
+            }
+          />
+        </label>
+        <label className="sketch-field">
+          <span>
+            <i aria-hidden="true">
+              <TechnicalIcon kind="direction" />
+            </i>
+            Плоскость
+          </span>
+          <select
+            aria-label="Плоскость"
+            value={session.outer.plane}
+            onChange={(e) => {
+              const plane = e.target.value as Sketch["plane"];
+              setSession({
+                ...session,
+                outer: { ...session.outer, plane },
+                inner: { ...session.inner, plane },
+              });
+            }}
+          >
+            <option>XY</option>
+            <option>XZ</option>
+            <option>YZ</option>
+          </select>
+        </label>
+        <div className="sketch-fields">
+          {number(
+            "outerRadius",
+            "Радиус эскиза",
+            ro,
+            (n) =>
+              setSession({
+                ...session,
+                outer: updateSketchDimension(session.outer, "radius", n),
+              }),
+            true,
+          )}
+          {number(
+            "innerRadius",
+            "Радиус отверстия",
+            ri,
+            (n) =>
+              setSession({
+                ...session,
+                inner: updateSketchDimension(session.inner, "radius", n),
+              }),
+            true,
+          )}
+        </div>
+        <p>
+          Внешний и внутренний исходные профили находятся в общей плоскости.
+          Выдавливание создаётся отдельно.
+        </p>
+        <SketchEditor
+          sketch={session.outer}
+          onChange={(outer) => {
+            setRaw({});
+            setSession({ ...session, outer });
+          }}
+          onValidityChange={setEditorValid}
+          disabled={busy || stale}
+        />
+        <HoleContoursEditor
+          sketch={session.outer}
+          state={pendingRing!}
+          onChange={(outer) => setSession({ ...session, outer })}
+          onValidityChange={setHolesValid}
+          disabled={busy || stale}
+        />
+      </>
+    );
+    if (!session.outer.name.trim() || session.outer.name.length > 200)
+      errors.push("Введите название профиля");
+    if (ri >= ro)
+      errors.push("Радиус отверстия должен быть меньше внешнего радиуса");
+    try {
+      validateSketchModelState({
+        ...session.base.state,
+        sketches: [
+          ...session.base.state.sketches,
+          session.outer,
+          session.inner,
+        ],
+      });
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  } else if (session?.kind === "delete") {
+    content = (
+      <p>
+        Удалить эскиз «{session.draft.name}» и результаты зависимых операций?
+        Ссылки на него как на отверстие будут удалены, оставшиеся тела будут
+        пересчитаны до сохранения.
+      </p>
+    );
+  }
+  if (session?.kind === "cut") {
+    const targets = availableCutTargets(
+      session.base.state,
+      session.base.exactModel,
+      session.base.state.cuts?.find((c) => c.id === session.draft.id),
+    );
+    content = (
+      <>
+        <label className="sketch-field">
+          <span>
+            <i aria-hidden="true">
+              <TechnicalIcon kind="material" />
+            </i>
+            Исходное тело
+          </span>
+          <select
+            aria-label="Исходное тело"
+            value={session.draft.targetBodyId}
+            onChange={(e) => {
+              setError("");
+              setSession({
+                ...session,
+                draft: { ...session.draft, targetBodyId: e.target.value },
+              });
+            }}
+          >
+            {targets.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {number("cutDepth", "Глубина вырезания", session.draft.depth, (depth) =>
+          setSession({ ...session, draft: { ...session.draft, depth } }),
+        )}
+        <p>
+          Конечное вырезание на заданную глубину по нормали плоскости эскиза.
+          Отрицательное значение меняет направление; сквозное вырезание
+          автоматически не определяется. Исходное тело сохраняется, отдельное
+          тело инструмента не создаётся.
+        </p>
+      </>
+    );
+    if (!targets.some((b) => b.id === session.draft.targetBodyId))
+      errors.push(
+        "Выберите существующее исходное тело без циклической зависимости",
+      );
+    if (Math.abs(Number(raw.cutDepth)) < 1e-5)
+      errors.push(
+        "Глубина вырезания должна быть ненулевой, модуль от 0,00001 мм",
+      );
+  }
+  if (session?.kind === "revolution") {
+    const source = session.base.state.sketches.find(
+      (s) => s.id === session.draft.sketchId,
+    );
+    content = (
+      <>
+        <label className="sketch-field">
+          <span>
+            <i aria-hidden="true">
+              <TechnicalIcon kind="direction" />
+            </i>
+            Ось вращения
+          </span>
+          <select
+            aria-label="Ось вращения"
+            value={session.draft.axis}
+            onChange={(e) => {
+              setError("");
+              setSession({
+                ...session,
+                draft: { ...session.draft, axis: e.target.value as "u" | "v" },
+              });
+            }}
+          >
+            <option value="u">U — горизонтальная ось профиля</option>
+            <option value="v">V — вертикальная ось профиля</option>
+          </select>
+        </label>
+        {number("axisOffset", "Смещение оси", session.draft.offset, (offset) =>
+          setSession({ ...session, draft: { ...session.draft, offset } }),
+        )}
+        {number(
+          "revolutionAngle",
+          "Угол вращения",
+          session.draft.angle,
+          (angle) =>
+            setSession({ ...session, draft: { ...session.draft, angle } }),
+          false,
+          "°",
+        )}
+        <p>
+          Знаковый угол задаёт направление вращения вокруг положительной оси U
+          или V. Профиль должен находиться с одной стороны оси. Допускается
+          контакт отрезка или конца дуги с осью; внутреннее касание кривой не
+          поддерживается.
+        </p>
+        {source && (
+          <RevolutionAxisPreview
+            sketch={source}
+            state={session.base.state}
+            axis={session.draft.axis}
+            offset={session.draft.offset}
+            angle={session.draft.angle}
+            disabled={busy || stale}
+          />
+        )}
+      </>
+    );
+    try {
+      stageRevolutionDraft(session.base.state, session.draft);
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+  const commit = async (override?: Session) => {
+    const active = override ?? session;
+    if (
+      !active ||
+      busy ||
+      !sketchBaselineMatches(active.base, current.current) ||
+      (!override && errors.length) ||
+      ((active.kind === "sketch" || active.kind === "ring") &&
+        (!editorValid || !holesValid))
+    )
+      return;
+    const captured = active,
+      token = ++generation.current,
+      change = onChange;
+    setBusy(true);
+    setError("");
+    try {
+      let next: SketchModelState;
+      const deletion =
+        captured.kind === "delete"
+          ? stageSketchDeletion(
+              captured.base.state,
+              captured.base.exactModel,
+              captured.draft.id,
+            )
+          : captured.kind === "deleteCut"
+            ? stageCutDeletion(
+                captured.base.state,
+                captured.base.exactModel,
+                captured.draft.id,
+              )
+            : captured.kind === "deleteRevolution"
+              ? stageRevolutionDeletion(
+                  captured.base.state,
+                  captured.base.exactModel,
+                  captured.draft.id,
+                )
+              : captured.kind === "deleteFusion"
+                ? stageFusionDeletion(
+                    captured.base.state,
+                    captured.base.exactModel,
+                    captured.draft.id,
+                  )
+                : null;
+      if (captured.kind === "sketch") {
+        const solved = solveSketch(captured.draft);
+        if (solved.status === "inconsistent")
+          throw Error(solved.message || "Противоречивые ограничения");
+        next = upsertSketch(captured.base.state, {
+          ...captured.draft,
+          points: solved.points,
+        });
+      } else if (captured.kind === "ring") {
+        next = validateSketchModelState({
+          ...captured.base.state,
+          sketches: [
+            ...captured.base.state.sketches,
+            captured.outer,
+            { ...captured.inner, name: captured.outer.name + " · отверстие" },
+          ],
+        });
+      } else if (
+        captured.kind === "delete" ||
+        captured.kind === "deleteCut" ||
+        captured.kind === "deleteRevolution" ||
+        captured.kind === "deleteFusion"
+      ) {
+        next = deletion!.state;
+      } else if (captured.kind === "revolution") {
+        next = stageRevolutionDraft(captured.base.state, captured.draft);
+      } else if (captured.kind === "fusion") {
+        next = stageFusionDraft(captured.base.state, captured.draft);
+      } else if (captured.kind === "cut") {
+        next = structuredClone(captured.base.state);
+        next.cuts ??= [];
+        const index = next.cuts.findIndex((c) => c.id === captured.draft.id);
+        if (index < 0) next.cuts.push(captured.draft);
+        else next.cuts[index] = captured.draft;
+        next = validateSketchModelState(next);
+      } else if (captured.kind === "extrusion") {
+        next = structuredClone(captured.base.state);
+        const index = next.extrusions.findIndex(
+          (f) => f.id === captured.draft.id,
+        );
+        if (index < 0) next.extrusions.push(captured.draft);
+        else next.extrusions[index] = captured.draft;
+      } else throw Error("Неизвестная операция эскиза");
+      let baseExact = deletion?.exactModel ?? captured.base.exactModel;
+      if (captured.kind === "cut")
+        baseExact = stageCutVisibility(
+          captured.base.state,
+          next,
+          baseExact,
+          captured.draft.id,
+        );
+      if (captured.kind === "fusion")
+        baseExact = stageFusionVisibility(
+          captured.base.state,
+          next,
+          baseExact,
+          captured.draft.id,
+        );
+      const exact = await rebuildSketchBodies(next, baseExact);
+      if (
+        !live.current ||
+        generation.current !== token ||
+        !sketchBaselineMatches(captured.base, current.current)
+      )
+        return;
+      change(next, exact);
+      if (captured.kind === "sketch") setSelected(captured.draft.id);
+      else if (captured.kind === "ring") setSelected(captured.outer.id);
+      else if (
+        captured.kind === "delete" ||
+        captured.kind === "deleteCut" ||
+        captured.kind === "deleteRevolution" ||
+        captured.kind === "deleteFusion"
+      ) {
+        setRevolutionId(null);
+        setFusionId(null);
+        if (captured.kind === "delete") setSelected(null);
+        setFeatureId(null);
+        setCutId(null);
+      } else if (captured.kind === "revolution") {
+        setRevolutionId(captured.draft.id);
+        setCutId(null);
+        setFusionId(null);
+        setFeatureId(null);
+        onSelectBody(captured.draft.bodyId);
+      } else if (captured.kind === "fusion") {
+        setFusionId(captured.draft.id);
+        setCutId(null);
+        setRevolutionId(null);
+        setFeatureId(null);
+        onSelectBody(captured.draft.bodyId);
+      } else if (captured.kind === "cut") {
+        setCutId(captured.draft.id);
+        setFusionId(null);
+        setFeatureId(null);
+        onSelectBody(captured.draft.bodyId);
+      } else {
+        setFeatureId(captured.draft.id);
+        onSelectBody(captured.draft.bodyId);
+      }
+      setSession(null);
+      setRaw({});
+    } catch (e) {
+      if (live.current && generation.current === token)
+        setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      if (live.current && generation.current === token) setBusy(false);
+    }
+  };
+  const remove = () => {
+    if (!sketch) return;
+    generation.current++;
+    setError("");
+    const deletion: Session = {
+      kind: "delete",
+      draft: structuredClone(sketch),
+      base: current.current,
+    };
+    if (state.sketches.some((s) => s.holes?.includes(sketch.id)))
+      setSession(deletion);
+    else void commit(deletion);
+  };
+  const removeCut = () => {
+    if (!cut) return;
+    generation.current++;
+    setError("");
+    void commit({
+      kind: "deleteCut",
+      draft: structuredClone(cut),
+      base: current.current,
+    });
+  };
+  const removeRevolution = () => {
+    if (!revolution) return;
+    generation.current++;
+    setError("");
+    void commit({
+      kind: "deleteRevolution",
+      draft: structuredClone(revolution),
+      base: current.current,
+    });
+  };
+  const removeFusion = () => {
+    if (!fusion) return;
+    generation.current++;
+    setError("");
+    void commit({
+      kind: "deleteFusion",
+      draft: structuredClone(fusion),
+      base: current.current,
+    });
+  };
+  const button = (
+    text: string,
+    action: () => void,
+    disabled = false,
+    curve?: "circle" | "arc" | "mixed",
+  ) => (
+    <button type="button" disabled={disabled || busy} onClick={action}>
+      <i aria-hidden="true">
+        {curve ? (
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 20 20"
+            fill="none"
+            strokeWidth="1.6"
+          >
+            {curve === "mixed" ? (
+              <path
+                d="M7 4h6a6 6 0 0 1 0 12H7a6 6 0 0 1 0-12Z"
+                stroke="#2378e8"
+              />
+            ) : curve === "circle" ? (
+              <circle cx="10" cy="10" r="7" stroke="#2378e8" />
+            ) : (
+              <path d="M3 10a7 7 0 0 1 14 0L10 10Z" stroke="#2378e8" />
+            )}
+            <path d="M10 10h7" stroke="#e54b4b" />
+            <circle cx="10" cy="10" r="1.4" fill="#18a66a" />
+          </svg>
+        ) : (
+          <TechnicalIcon kind="profile" size={16} />
+        )}
+      </i>
+      {text}
+    </button>
+  );
+  return (
+    <section className="sketch-panel" aria-label="Эскизы и выдавливания">
+      <h3>Эскизы и выдавливания</h3>
+      <p>Параметрические профили · мм · выдавливание Open CASCADE</p>
+      <p className="sketch-scope">
+        Линейные ограничения, расстояния, равные длины, углы и касательность
+        прямой к дуге; ограниченный численный решатель. Общий набор ограничений
+        CAD пока не поддерживается.
+      </p>
+      <div className="sketch-actions">
+        {button("Создать эскиз", () =>
+          edit(createRectangleSketch(crypto.randomUUID(), 20, 20)),
+        )}
+        {button(
+          "Создать окружность",
+          () => edit(createCircleSketch(crypto.randomUUID(), 5)),
+          false,
+          "circle",
+        )}
+        {button(
+          "Создать дугу",
+          () => edit(createArcSketch(crypto.randomUUID(), 5)),
+          false,
+          "arc",
+        )}
+        {button(
+          "Создать смешанный контур",
+          () => edit(createMixedSketch(crypto.randomUUID(), 10, 5)),
+          false,
+          "mixed",
+        )}
+        {button("Создать кольцевой профиль", ring, false, "circle")}
+        {button("Редактировать эскиз", () => sketch && edit(sketch), !sketch)}
+        {button("Выдавить эскиз", () => extrude(), !sketch)}
+        {button(
+          "Изменить выдавливание",
+          () => feature && extrude(feature),
+          !feature,
+        )}
+        {button("Вращать эскиз", () => revolve(), !sketch?.closed)}
+        {button(
+          "Изменить вращение",
+          () => revolution && revolve(revolution),
+          !revolution,
+        )}
+        {button(
+          "Удалить вращение и зависимые тела",
+          removeRevolution,
+          !revolution,
+        )}
+        {button(
+          "Объединить тела",
+          () => editFusion(),
+          availableFusionBodies(state, exactModel).length < 2,
+        )}
+        {button(
+          "Изменить объединение",
+          () => fusion && editFusion(fusion),
+          !fusion,
+        )}
+        {button(
+          "Удалить объединение и зависимые тела",
+          removeFusion,
+          !fusion,
+        )}
+        {button(
+          "Вырезать по эскизу",
+          () => editCut(),
+          !sketch?.closed || exactModel.bodies.length === 0,
+        )}
+        {button("Изменить вырезание", () => cut && editCut(cut), !cut)}
+        {button("Удалить вырезание и зависимые тела", removeCut, !cut)}
+        {button("Удалить эскиз и тела", remove, !sketch)}
+      </div>
+      <ul aria-label="Эскизы">
+        {state.sketches.map((s) => (
+          <li
+            key={s.id}
+            data-sketch-id={s.id}
+            onClick={() => setSelected(s.id)}
+          >
+            <button
+              type="button"
+              aria-pressed={sketch?.id === s.id}
+              onClick={() => {
+                setSelected(s.id);
+                setFeatureId(null);
+                setCutId(null);
+                setRevolutionId(null);
+                setFusionId(null);
+              }}
+              onDoubleClick={() => edit(s)}
+            >
+              {s.name} · {s.plane}
+            </button>
+            <ul>
+              {state.extrusions
+                .filter((f) => f.sketchId === s.id)
+                .map((f) => (
+                  <li key={f.id} data-extrusion-id={f.id}>
+                    <button
+                      type="button"
+                      aria-pressed={feature?.id === f.id}
+                      onClick={() => {
+                        setSelected(s.id);
+                        setFeatureId(f.id);
+                        onSelectBody(f.bodyId);
+                      }}
+                    >
+                      Выдавливание · {f.depth} мм
+                    </button>
+                  </li>
+                ))}
+              {(state.revolutions ?? [])
+                .filter((r) => r.sketchId === s.id)
+                .map((r) => (
+                  <li key={r.id} data-revolution-id={r.id}>
+                    <button
+                      type="button"
+                      aria-pressed={revolution?.id === r.id}
+                      onClick={() => {
+                        setSelected(s.id);
+                        setRevolutionId(r.id);
+                        setFeatureId(null);
+                        setCutId(null);
+                        setFusionId(null);
+                        onSelectBody(r.bodyId);
+                      }}
+                    >
+                      Вращение · {r.angle}° · {r.axis.toUpperCase()}
+                    </button>
+                    <small>
+                      Смещение: {r.offset} мм; результат:{" "}
+                      {exactModel.bodies.find((b) => b.id === r.bodyId)?.name ??
+                        r.bodyId}
+                    </small>
+                  </li>
+                ))}
+              {(state.cuts ?? [])
+                .filter((c) => c.sketchId === s.id)
+                .map((c) => (
+                  <li key={c.id} data-cut-id={c.id}>
+                    <button
+                      type="button"
+                      aria-pressed={cut?.id === c.id}
+                      onClick={() => {
+                        setSelected(s.id);
+                        setCutId(c.id);
+                        setFeatureId(null);
+                        setFusionId(null);
+                        onSelectBody(c.bodyId);
+                      }}
+                    >
+                      Вырезание · {c.depth} мм
+                    </button>
+                    <small>
+                      Эскиз: {s.name}; исходное тело:{" "}
+                      {exactModel.bodies.find((b) => b.id === c.targetBodyId)
+                        ?.name ?? c.targetBodyId}
+                      ; результат:{" "}
+                      {exactModel.bodies.find((b) => b.id === c.bodyId)?.name ??
+                        c.bodyId}
+                    </small>
+                  </li>
+                ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+      <ul aria-label="Объединения тел">
+        {(state.fusions ?? []).map((f) => (
+          <li key={f.id} data-fusion-id={f.id}>
+            <button
+              type="button"
+              aria-pressed={fusion?.id === f.id}
+              onClick={() => {
+                setFusionId(f.id);
+                setFeatureId(null);
+                setCutId(null);
+                setRevolutionId(null);
+                onSelectBody(f.bodyId);
+              }}
+            >
+              Объединение · {exactModel.bodies.find((b) => b.id === f.aBodyId)?.name ?? f.aBodyId} + {exactModel.bodies.find((b) => b.id === f.bBodyId)?.name ?? f.bBodyId}
+            </button>
+            <small>Результат: {exactModel.bodies.find((b) => b.id === f.bodyId)?.name ?? f.bodyId}</small>
+          </li>
+        ))}
+      </ul>
+      <CutFeatureTree
+        state={state}
+        exactModel={exactModel}
+        selectedId={fusion?.id ?? cut?.id}
+        disabled={busy}
+        onSelect={(id, bodyId) => {
+          const source = state.cuts?.find((c) => c.id === id);
+          if (source) {
+            setSelected(source.sketchId);
+            setCutId(id);
+            setFusionId(null);
+            setFeatureId(null);
+          } else if (state.fusions?.some((f) => f.id === id)) {
+            setFusionId(id);
+            setCutId(null);
+            setFeatureId(null);
+          }
+          onSelectBody(bodyId);
+        }}
+      />
+      {busy && !session && (
+        <p role="status">
+          Пересчёт оставшихся тел…{" "}
+          <button type="button" onClick={close}>
+            Отменить пересчёт
+          </button>
+        </p>
+      )}
+      {error && !session && <p role="alert">{error}</p>}
+      {session?.kind === "fusion" && (
+        <FusionDialog
+          bodies={availableFusionBodies(session.base.state, session.base.exactModel, session.draft).map((body) => ({ id: body.id, name: body.name }))}
+          draft={{ a: session.draft.aBodyId, b: session.draft.bBodyId }}
+          busy={busy}
+          stale={stale}
+          error={error}
+          mode={(session.base.state.fusions ?? []).some((f) => f.id === session.draft.id) ? "edit" : "create"}
+          onChange={(draft: FusionDraft) => setSession({ ...session, draft: { ...session.draft, aBodyId: draft.a, bBodyId: draft.b } })}
+          onConfirm={(draft: FusionDraft) => void commit({ ...session, draft: { ...session.draft, aBodyId: draft.a, bBodyId: draft.b } })}
+          onCancel={close}
+        />
+      )}
+      {session && session.kind !== "fusion" && session.kind !== "deleteFusion" && (
+        <Dialog
+          open
+          title={
+            session.kind === "sketch"
+              ? "Редактор эскиза"
+              : session.kind === "ring"
+                ? "Редактор эскиза"
+                : session.kind === "delete"
+                  ? "Удаление эскиза"
+                  : session.kind === "cut"
+                    ? "Вырезание по эскизу"
+                    : session.kind === "revolution"
+                      ? "Вращение эскиза"
+                      : "Выдавливание эскиза"
+          }
+          onCancel={close}
+          onConfirm={() => void commit()}
+          confirmDisabled={
+            busy ||
+            stale ||
+            errors.length > 0 ||
+            ((session.kind === "sketch" || session.kind === "ring") &&
+              (!editorValid || !holesValid))
+          }
+        >
+          <div className="sketch-dialog">
+            {stale && (
+              <p role="alert">
+                Документ изменился. Закройте редактор и откройте его повторно;
+                черновик не сохранён.
+              </p>
+            )}
+            <fieldset className="sketch-lock" disabled={busy || stale}>
+              {content}
+            </fieldset>
+            {errors.length > 0 && (
+              <div role="alert">{[...new Set(errors)].join(". ")}</div>
+            )}
+            {busy && (
+              <p role="status">
+                Пересчёт точных тел… Отмена не сохраняет результат.
+              </p>
+            )}
+            {error && <p role="alert">{error}</p>}
+          </div>
+        </Dialog>
+      )}
+    </section>
+  );
 }
