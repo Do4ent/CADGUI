@@ -42,7 +42,7 @@ The foundational UI, document, drawing, 3D-note and exact-kernel deliveries have
 - Exit: no command silently mutates a model before confirmation; undo/redo works.
 
 ### P1-06 — Feature history and property editing [BOUNDED IMPLEMENTATION; ACCEPTANCE IN PROGRESS]
-- Next bounded package: [parametric fusion](PARAMETRIC_FUSION_IMPLEMENTATION.md) connects two retained exact operands through a generalized cut/fusion dependency graph. Implementation and acceptance are pending; standalone intersection/subtraction snapshots, general reordering/suppression and persistent topological naming remain outside this package.
+- [Parametric fusion](PARAMETRIC_FUSION_IMPLEMENTATION.md) connects two retained exact operands through a generalized cut/fusion dependency graph. The bounded implementation is complete and final acceptance is in progress; standalone intersection/subtraction snapshots, general reordering/suppression and persistent topological naming remain outside this package.
 - Linked sketch extrusions and finite cuts now provide a bounded dependency graph with atomic source/BRep rebuild and scene undo/redo. See [revolution implementation](SKETCH_REVOLUTION_IMPLEMENTATION.md) and [cut implementation](SKETCH_CUT_IMPLEMENTATION.md) for ownership, cascade deletion, visibility and verification limits. General feature reordering, suppression and arbitrary boolean dependencies remain outside this stage.
 - Operation history, editable properties, dependency awareness, reliable undo/redo.
 - Exit: state persists and remains consistent across reload and editing.

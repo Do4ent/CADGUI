@@ -28,8 +28,8 @@ Native import rebuilds source-linked geometry before accepting stored BRep as cu
 
 The existing standalone boolean intersection and subtraction commands remain independent snapshots; this package does not silently convert them into dependent features. It does not add general feature reordering, suppression, persistent topological naming, arbitrary boolean expressions, automatic healing or assembly relationships. A limited cut/fusion DAG is not a complete parametric CAD history system.
 
-## Acceptance checklist — pending
+## Acceptance checklist — implementation complete, final acceptance in progress
 
-Implementation and integrated verification are pending at this documentation commit. Acceptance requires real OCCT overlapping-box union volume, disjoint compound solids and coincident geometry; edits to either operand; mixed extrusion/revolution/cut/fusion chains and reversed serialized ordering; cycles through either input and missing references rejected before execution; ownership and cascade behavior on both branches; metadata and branch-aware visibility preservation; atomic rollback on an upstream/downstream failure; cancellation and stale document/tab guards; one-step undo/redo; v10/v11 clean/dirty migration and native roundtrip; and production-worker browser tests, build and CI on the final delivery head.
+The bounded implementation covers real OCCT overlapping-box union volume, disjoint compound solids, edits to either operand, mixed extrusion/cut/fusion chains, cycles and missing references, ownership/cascade behavior on both branches, metadata and branch-aware visibility, atomic rollback, cancellation/stale guards, one-step Undo, v10/v11 clean/dirty migration and native roundtrip. Module, build and focused production-browser gates pass on the delivery branch; the complete browser regression and same-head CI remain mandatory before merge.
 
-Documentation and catalog presence do not establish completion. Record commit-specific module, native-kernel, browser and CI evidence before merge.
+Documentation and catalog presence do not establish acceptance. Record commit-specific module, native-kernel, browser and CI evidence before merge.
