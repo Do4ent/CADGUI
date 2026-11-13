@@ -52,7 +52,7 @@ def inspect(page, body_id):
 
 
 def model(document):
-    assert document['schemaVersion'] == 10
+    assert document['schemaVersion'] == 11
     state = document['sketchModel']
     assert state['version'] == 1
     assert state['units'] == 'mm'

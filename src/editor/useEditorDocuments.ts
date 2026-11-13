@@ -77,11 +77,15 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   for(const bodyId of ownedSketchBodyIds(sketch))if(existing.has(bodyId)&&!oldOwned.has(bodyId))throw Error('Идентификатор результата занят независимым телом');
   validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
  };
+ const bodyDependencies=(state:SketchModelState)=>[
+  ...(state.cuts??[]).map(feature=>({id:feature.id,inputs:[feature.targetBodyId]})),
+  ...(state.fusions??[]).map(feature=>({id:feature.id,inputs:[feature.aBodyId,feature.bBodyId]}))
+ ];
  const setExactModel=(next:ExactModelState,_label?:string)=>{
   let exact=validateExactModelState(next);
   const remaining=new Set(exact.bodies.map(body=>body.id));
   const owned=new Set(ownedSketchBodyIds(active.document.sketchModel));
-  const targets=new Set((active.document.sketchModel.cuts??[]).map(feature=>feature.targetBodyId));
+  const targets=new Set(bodyDependencies(active.document.sketchModel).flatMap(feature=>feature.inputs));
   for(const body of exact.bodies){
    const previous=active.document.exactModel.bodies.find(old=>old.id===body.id);
    if((owned.has(body.id)||targets.has(body.id))&&previous&&previous.brep!==body.brep)throw Error('Тело связано с эскизом: используйте перестроение эскиза (setSketchModel)');
@@ -89,9 +93,9 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   const removed=active.document.exactModel.bodies.filter(body=>!remaining.has(body.id)).map(body=>body.id);
   const sketch=pruneSketchExtrusions(active.document.sketchModel,removed);
   const retainedOwned=new Set(ownedSketchBodyIds(sketch));
-  const retainedCuts=new Set((sketch.cuts??[]).map(feature=>feature.id));
-  const consumedTargets=new Set((sketch.cuts??[]).map(feature=>feature.targetBodyId));
-  const revealTargets=new Set((active.document.sketchModel.cuts??[]).filter(feature=>!retainedCuts.has(feature.id)&&!consumedTargets.has(feature.targetBodyId)).map(feature=>feature.targetBodyId));
+  const retainedFeatures=new Set(bodyDependencies(sketch).map(feature=>feature.id));
+  const consumedTargets=new Set(bodyDependencies(sketch).flatMap(feature=>feature.inputs));
+  const revealTargets=new Set(bodyDependencies(active.document.sketchModel).filter(feature=>!retainedFeatures.has(feature.id)).flatMap(feature=>feature.inputs).filter(id=>!consumedTargets.has(id)));
   exact={...exact,bodies:exact.bodies.filter(body=>!owned.has(body.id)||retainedOwned.has(body.id)).map(body=>revealTargets.has(body.id)?{...body,visible:true}:body)};
   validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
  };
