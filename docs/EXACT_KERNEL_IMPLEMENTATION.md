@@ -12,6 +12,8 @@ STEP imports retain geometric placement and disconnected solids as one compound 
 
 Face picking/highlighting uses OCCT face groups within the current serialized body. Those identifiers are revision/session-local; persistent references across editing/rebuilding and sketch/feature history are future work. Legacy model notes keep their current world/component anchors and do not acquire face references automatically.
 
+Exact face selection is therefore transient and revision-bound. The UI accepts a face only for the originating document, body BREP and exact inspection result; it also verifies that the face group exists in that mesh. A body rebuild or a new inspection generation removes the face selection rather than transferring a coincident numeric hash to different geometry. A surviving rebuilt body may remain selected without a face. This prevents false identity but is not persistent topological naming and is not serialized in the native document.
+
 ## Documents and transactions
 
 Schema v4 adds `exactModel` with kernel/version, explicit mm units and native text BREP bodies. Versions 1–3 migrate to an empty exact collection. Legacy components retain their original conditional scene coordinates; they are not silently converted into exact geometry or reinterpreted as mm.
