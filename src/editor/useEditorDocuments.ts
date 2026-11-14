@@ -1,3 +1,4 @@
+import {readWorkspaceRecovery,saveWorkspaceRecovery} from './workspaceRecovery';
 import {createSketchModelState,validateSketchModelState,validateSketchReferences,pruneSketchExtrusions,ownedSketchBodyIds} from '../sketch/model';
 import type {SketchModelState} from '../sketch/types';
 import {createExactModelState,validateExactModelState,type ExactModelState} from '../kernel/model';
@@ -11,7 +12,6 @@ import {type SelectionState} from '../selection/selectionModel';
 type SceneSnapshot={items:CadItem[];modelAnnotations:ModelAnnotationState;exactModel:ExactModelState;sketchModel:SketchModelState};
 type EditorTab={document:CadDocument;saved:string|null;history:SceneSnapshot[];future:SceneSnapshot[];selection:SelectionState;drawingHistory:DrawingDocument[];drawingFuture:DrawingDocument[];drawingSelection:string[]};
 type Workspace={tabs:EditorTab[];activeId:string;recoveryError:string|null};
-const KEY='bendcore-documents-v1';
 const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items,doc.drawing,doc.modelAnnotations,doc.exactModel,doc.sketchModel]);
 const makeTab=(document:CadDocument,saved:string|null=null):EditorTab=>({document,saved,history:[],future:[],drawingHistory:[],drawingFuture:[],drawingSelection:[],selection:{selectedIds:[],anchorId:null}});
 
@@ -25,17 +25,18 @@ function restoreTab(raw:unknown,saved:unknown):EditorTab{
  }
  return makeTab(document,migratedSaved);
 }
+function decodeWorkspace(raw:string):Workspace{
+ const data=JSON.parse(raw);
+ if(data.version!==1||!Array.isArray(data.tabs)||!data.tabs.length)throw Error('Unsupported workspace');
+ const tabs:EditorTab[]=data.tabs.map((tab:{document:unknown;saved:unknown})=>restoreTab(tab.document,tab.saved));
+ if(new Set(tabs.map(t=>t.document.id)).size!==tabs.length)throw Error('Duplicate document identifiers');
+ return {tabs,activeId:tabs.some(t=>t.document.id===data.activeId)?data.activeId:tabs[0].document.id,recoveryError:null};
+}
 function loadWorkspace(initial:()=>CadItem[]):Workspace{
- try{
-  const raw=localStorage.getItem(KEY);
-  if(raw){
-   const data=JSON.parse(raw);
-   if(data.version!==1||!Array.isArray(data.tabs)||!data.tabs.length)throw Error('Unsupported workspace');
-   const tabs:EditorTab[]=data.tabs.map((tab:{document:unknown;saved:unknown})=>restoreTab(tab.document,tab.saved));
-   if(new Set(tabs.map(t=>t.document.id)).size!==tabs.length)throw Error('Duplicate document identifiers');
-   return {tabs,activeId:tabs.some(t=>t.document.id===data.activeId)?data.activeId:tabs[0].document.id,recoveryError:null};
-  }
- }catch{
+ const recovered=(()=>{try{return readWorkspaceRecovery(localStorage,decodeWorkspace)}catch{return {status:'unrecoverable' as const,value:null}}})();
+ if(recovered.status==='primary')return recovered.value;
+ if(recovered.status==='backup')return {...recovered.value,recoveryError:'Вкладки восстановлены из резервной записи. Автоматическое сохранение отключено, чтобы не перезаписать исходные данные. Экспортируйте восстановленные документы в JSON.'};
+ if(recovered.status==='unrecoverable'){
   const document={...createDocument(crypto.randomUUID(),'Восстановленный документ'),items:initial()};
   return {tabs:[makeTab(document)],activeId:document.id,recoveryError:'Не удалось открыть сохранённые вкладки. Исходные данные сохранены в хранилище; автоматическое сохранение вкладок отключено.'};
  }
@@ -150,7 +151,7 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  const dirty=workspace.tabs.some(isDirty);
  useEffect(()=>{
   if(workspace.recoveryError)return;
-  try{localStorage.setItem(KEY,JSON.stringify({version:1,activeId:workspace.activeId,tabs:workspace.tabs.map(t=>({document:t.document,saved:t.saved}))}));}catch{setWorkspace(w=>({...w,recoveryError:'Автоматическое сохранение недоступно. Экспортируйте документы в JSON.'}))}
+  try{saveWorkspaceRecovery(localStorage,JSON.stringify({version:1,activeId:workspace.activeId,tabs:workspace.tabs.map(t=>({document:t.document,saved:t.saved}))}),decodeWorkspace);}catch{setWorkspace(w=>({...w,recoveryError:'Автоматическое сохранение недоступно. Экспортируйте документы в JSON.'}))}
  },[workspace]);
  useEffect(()=>{if(!dirty)return;const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue=''};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn)},[dirty]);
  const activate=(id:string)=>setWorkspace(w=>w.tabs.some(t=>t.document.id===id)?{...w,activeId:id}:w);
