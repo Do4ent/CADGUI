@@ -8,14 +8,14 @@ export function exactBodySelection(documentId:string,body:ExactBody,faceId:numbe
 export function validateExactSelection(documentId:string,state:ExactModelState,selection:ExactSelection|null):ExactSelection|null {
  if(!selection||selection.documentId!==documentId)return null;
  const body=state.bodies.find(candidate=>candidate.id===selection.bodyId);
- return body?.visible&&body.brep===selection.brepSource?selection:null;
+ return body&&body.brep===selection.brepSource&&(body.visible||selection.faceId===null)?selection:null;
 }
 
 /** Keeps a body selected across a rebuild, but never transfers a revision-local face ID. */
 export function reconcileExactSelection(documentId:string,state:ExactModelState,selection:ExactSelection|null):ExactSelection|null {
  if(!selection||selection.documentId!==documentId)return null;
  const body=state.bodies.find(candidate=>candidate.id===selection.bodyId);
- if(!body?.visible)return null;
- if(body.brep===selection.brepSource)return selection;
+ if(!body)return null;
+ if(body.brep===selection.brepSource&&(body.visible||selection.faceId===null))return selection;
  return exactBodySelection(documentId,body);
 }
