@@ -152,3 +152,43 @@ def test_cancel_and_document_switch_cannot_commit_old_body_boolean_draft(page, t
     tabs.first.click()
     expect(dialog).not_to_be_visible()
     assert document(page, tmp_path, 'body-reactivated-original.json') == before
+
+
+def test_edit_operation_rebuilds_same_output_then_delete_cascades_and_undo_restores(page, tmp_path):
+    prepare(page)
+    a, b = cube(page, tmp_path), cube(page, tmp_path, x=1)
+    feature = boolean(page, tmp_path, 'common', a, b)
+    row = panel(page).locator(f'[data-body-boolean-id="{feature["id"]}"]')
+    row.get_by_role('button').first.click()
+    panel(page).get_by_role('button', name='Изменить булеву операцию', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Пересечение тел', exact=True)
+    dialog.get_by_label('Операция', exact=True).select_option('cut')
+    dialog = page.get_by_role('dialog', name='Вычитание тел', exact=True)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    changed = document(page, tmp_path, 'body-edited-operation.json')
+    current = changed['sketchModel']['bodyBooleans'][0]
+    assert current['id'] == feature['id'] and current['bodyId'] == feature['bodyId']
+    assert current['operation'] == 'cut'
+    result = inspect(page, feature['bodyId'])
+    assert result['volume'] == pytest.approx(4, rel=1e-7)
+    assert result['bounds'][1] == pytest.approx([1, 2, 2], abs=1e-6)
+    # A downstream sketch cut must disappear with its source result; both retained
+    # primitive operands and all source sketches must survive the cascade.
+    sketch_cut(page, tmp_path, feature['bodyId'], .1, .5)
+    before_delete = document(page, tmp_path, 'body-delete-before.json')
+    row.get_by_role('button').first.click()
+    panel(page).get_by_role('button', name='Удалить булеву операцию и зависимые тела', exact=True).click()
+    expect(panel(page).locator('[data-body-boolean-id]')).to_have_count(0, timeout=120000)
+    expect(panel(page).locator('[data-cut-id]')).to_have_count(0)
+    expect(exact_rows(page)).to_have_count(2)
+    deleted = document(page, tmp_path, 'body-deleted.json')
+    assert deleted['sketchModel']['sketches'] == before_delete['sketchModel']['sketches']
+    assert {body['id'] for body in deleted['exactModel']['bodies']} == {a, b}
+    assert all(body['visible'] for body in deleted['exactModel']['bodies'])
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(exact_rows(page)).to_have_count(4, timeout=120000)
+    restored = document(page, tmp_path, 'body-delete-undone.json')
+    assert restored['sketchModel'] == before_delete['sketchModel']
+    assert restored['exactModel'] == before_delete['exactModel']
