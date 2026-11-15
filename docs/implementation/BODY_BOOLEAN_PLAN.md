@@ -24,6 +24,8 @@ The adapter reuses `orderedSketchBodyFeatures` by representing the new nodes' tw
 
 This foundation does not extend `SketchModelState`, the native document schema, runtime rebuild, backend, UI or storage. Its `features` collection is an external draft; it is not currently persisted. Tests cover validators, the real existing graph adapter and removal plans, without claiming native geometry execution.
 
+The adapter imports and validates the current `SketchModelState`. A future extended model validator must not call this adapter recursively on itself: the current validator rejects new persisted fields, and a reverse import would create a validation cycle. Integrate the dependency logic in the central graph layer once, or explicitly project a validated legacy-shaped state for a detached draft.
+
 The available-body list identifies existence, not ownership. A future document integration must separately prevent a newly created feature from claiming an unrelated independent body's output ID, while allowing valid previously owned cached results. Existing native-document/source revision guards remain required.
 
 ## Next integration package
