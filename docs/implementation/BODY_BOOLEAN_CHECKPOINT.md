@@ -48,3 +48,9 @@ Final implementation head before this documentation update: `a152b2a30477c429556
 Final rebased-head gates completed: `npm test` PASS63 suites; `npm run build` PASS. The native body runtime suite passed55 checks including STEP. Independent QA's production suite passed8/8 cases; final rebuilt-dist analytic smoke passed2/2 (35.54 seconds), confirming actual4mm³ common/cut, bounds and retained operands after rebase. Independent Documents review found no blockers. CI review and merge remain the root Orchestrator's responsibility; this agent does not merge.
 
 Next bounded work after approval: optional Ribbon/search entry points, broader body-boolean native compound/large-scale acceptance expansion, and separately planned feature-history operations. Current CAD workflow is available through SketchPanel and is fully source/native linked.
+
+## Independent UI review follow-up
+
+Concrete findings fixed in `7a865ed`: changing to another source/extrusion/revolution/cut/fusion clears the previous body-boolean selection, and the dependency tree uses ∩/− instead of +. Active body booleans no longer leave a fallback extrusion selected. All existing E2E save/migration expectations now assert schema12. QA added two regression variants in `a728d81` covering selection transitions and correct operation symbols.
+
+The new head is being rebuilt/retested before the targeted two-case browser review regression. Earlier63-suite/8-case results remain valid historical checkpoints; final results below supersede them when completed. PR39 remains unmerged.
