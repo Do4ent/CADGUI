@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typ
 require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,f);
 const {buildFeatureHistory,getFeatureHistoryRelations}=require('./featureHistory.ts');
 const state={version:1,units:'mm',sketches:[{id:'s',name:'Outer',holes:['hole']},{id:'hole',name:'Hole'}],extrusions:[{id:'s',sketchId:'s',bodyId:'root',depth:2}],revolutions:[{id:'rev',sketchId:'hole',bodyId:'rotated',axis:'u',offset:0,angle:360}],cuts:[{id:'last',bodyId:'final',targetBodyId:'joined',sketchId:'hole',depth:1},{id:'first',bodyId:'cut',targetBodyId:'root',sketchId:'s',depth:1}],fusions:[{id:'f',bodyId:'joined',aBodyId:'common',bBodyId:'rotated'}],bodyBooleans:[{id:'common',bodyId:'common',aBodyId:'cut',bBodyId:'static',operation:'common'}]};
-const exact={bodies:[{id:'static',name:'Stock'},{id:'root',name:'Cache'}]},snapshot=JSON.stringify([state,exact]);
+const exact={bodies:['static','root','rotated','final','cut','joined','common'].map(id=>({id,name:id==='static'?'Stock':id}))},snapshot=JSON.stringify([state,exact]);
 const h=buildFeatureHistory(state,exact),node=id=>h.nodes.find(n=>n.id===id);
 assert.deepEqual(h.diagnostics,[]);assert.equal(h.nodes.length,9);
 assert.deepEqual(node('sketch:s').upstream,['sketch:hole']);assert.deepEqual(node('extrusion:s').upstream,['sketch:s']);
@@ -12,6 +12,8 @@ assert.equal(h.nodes.filter(n=>n.bodyId==='root').length,1);assert.ok(h.nodes.ev
 const relations=getFeatureHistoryRelations(h,'cut:last');assert.equal(new Set(relations.upstream).size,relations.upstream.length);for(const id of ['sketch:hole','sketch:s','extrusion:s','cut:first','body:static','fusion:f'])assert.ok(relations.upstream.includes(id));assert.deepEqual(getFeatureHistoryRelations(h,'absent'),{upstream:[],downstream:[]});
 assert.ok(getFeatureHistoryRelations(h,'sketch:hole').downstream.includes('cut:last'));
 const missing=buildFeatureHistory(state);assert.ok(missing.diagnostics.some(d=>d.code==='missing-source'&&d.sourceId==='static'));assert.equal(missing.nodes.find(n=>n.id==='cut:last').status,'broken');
+const missingResult=buildFeatureHistory(state,{bodies:exact.bodies.filter(b=>b.id!=='common')});assert.ok(missingResult.diagnostics.some(d=>d.code==='missing-result'&&d.nodeId==='body-boolean:common'));for(const id of ['body-boolean:common','fusion:f','cut:last'])assert.equal(missingResult.nodes.find(n=>n.id===id).status,'broken');assert.equal(missingResult.nodes.find(n=>n.id==='extrusion:s').status,'ready');
+const sourceOnly={...state,bodyBooleans:[{...state.bodyBooleans[0],bBodyId:'rotated'}]};assert.deepEqual(buildFeatureHistory(sourceOnly).diagnostics,[],'without explicit exact model source graph does not require cached outputs');
 const cycle=structuredClone(state);cycle.bodyBooleans[0].aBodyId='final';const cyclic=buildFeatureHistory(cycle,exact);assert.equal(cyclic.nodes.length,h.nodes.length);assert.ok(cyclic.diagnostics.some(d=>d.code==='cycle'));assert.ok(getFeatureHistoryRelations(cyclic,'cut:last').upstream.length<cyclic.nodes.length);
 const holes=structuredClone(state);holes.sketches[1].holes=['s'];assert.ok(buildFeatureHistory(holes,exact).diagnostics.some(d=>d.code==='cycle'&&d.nodeId==='sketch:s'));
 const duplicate=structuredClone(state);duplicate.revolutions[0].bodyId='root';assert.ok(buildFeatureHistory(duplicate,exact).diagnostics.some(d=>d.code==='duplicate-output'));
