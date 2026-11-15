@@ -13,6 +13,7 @@ export type KernelRequest=
  |{op:'extrude-sketch';points:[number,number][];plane:SketchPlane;origin:Vec3;depth:number}
  |{op:'box';size:Vec3;origin:Vec3}
  |{op:'cylinder';radius:number;height:number;origin:Vec3}
+ |{op:'body-boolean';kind:'common'|'cut';a:string;b:string}
  |{op:'boolean';kind:'fuse'|'cut'|'common';a:string;b:string}
  |{op:'inspect';brep:string}
  |{op:'import-step';text:string}

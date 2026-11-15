@@ -81,7 +81,7 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  };
  const bodyDependencies=(state:SketchModelState)=>[
   ...(state.cuts??[]).map(feature=>({id:feature.id,inputs:[feature.targetBodyId]})),
-  ...(state.fusions??[]).map(feature=>({id:feature.id,inputs:[feature.aBodyId,feature.bBodyId]}))
+  ...[...(state.fusions??[]),...(state.bodyBooleans??[])].map(feature=>({id:feature.id,inputs:[feature.aBodyId,feature.bBodyId]}))
  ];
  const setExactModel=(next:ExactModelState,_label?:string)=>{
   let exact=validateExactModelState(next);
