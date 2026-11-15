@@ -1,6 +1,6 @@
-# Delivery status — 2026-11-14
+# Delivery status — 2026-11-15
 
-Baseline: `main` at `fe50e11` (completion-score documentation), following parametric fusion merge `dd844be` ([PR #23](https://github.com/Do4ent/CADGUI/pull/23)). This is a bounded working CAD prototype with an Open CASCADE WASM exact-solid backend, not a complete mechanical CAD system. Earlier claims that no implementation was merged or no geometry kernel existed are obsolete.
+Baseline: `main` at `a5b112f`, including fusion ([PR #23](https://github.com/Do4ent/CADGUI/pull/23)), reference foundations (#27), accessible Ribbon dropdowns (#28), revision-bound selection (#25) and backup-generation recovery (#29). This is a bounded working CAD prototype with an Open CASCADE WASM exact-solid backend, not a complete mechanical CAD system. Earlier claims that no implementation was merged or no geometry kernel existed are obsolete.
 
 ## Delivered capabilities on the baseline
 
@@ -15,19 +15,20 @@ Baseline: `main` at `fe50e11` (completion-score documentation), following parame
 
 Merge ancestry establishes delivered code, not that every historical roadmap acceptance item is complete. Research catalogs remain requirements, not lists of implemented commands. Current native schema is v11. Undo history is per session; it is not restored across browser reload. STEP geometry is not semantic PMI or a full assembly/product-data interchange.
 
-## Current acceptance work
+## Latest merged foundations and evidence
 
-[PR #25](https://github.com/Do4ent/CADGUI/pull/25) protects transient exact-face selection with document/BRep/rendered-mesh identity. It does not implement persistent topological naming. At this status snapshot it remains under review; do not describe its unmerged behavior as part of the baseline.
+- `c68bd40` ([PR #27](https://github.com/Do4ent/CADGUI/pull/27)): transient geometry-reference sessions with strict revision/mesh identity and diagnostics. This helper is not yet the viewport resolver and is not persistent topological naming. See [consumer contract](implementation/GEOMETRY_REFERENCES.md).
+- `0c6449d` ([PR #28](https://github.com/Do4ent/CADGUI/pull/28)): keyboard-accessible Ribbon command dropdowns.
+- `6690bbe` ([PR #25](https://github.com/Do4ent/CADGUI/pull/25)): exact-face selection guarded by document, BRep and rendered inspection identity; hidden retained sources remain inspectable as bodies. Earlier review failures were resolved before this merge; they are not open baseline blockers.
+- `a5b112f` ([PR #29](https://github.com/Do4ent/CADGUI/pull/29)): validated retained backup generation for workspace recovery. Recovery from backup disables autosave and reports the need to export recovered documents, preserving original data.
 
-Independent local selection/render module checks passed during review. The first full browser attempt stopped at 10 passed / 1 failed: inspecting a retained hidden cut target showed the selected result's volume instead of the source's volume. A hidden-body selection correction is being integrated and must be checked on a rebuilt production app, followed by a complete rerun. Pending-body selection also requires document isolation. These observations are scoped to that review attempt, not final PR status.
-
-No successful final-head CI run is asserted here. PR checks and the exact tested SHA are authoritative. See the [parallel delivery plan](PARALLEL_DELIVERY_PLAN.md) for independent next packages and integration gates.
+The integrator reports 58 local suites and the production build passing on this baseline, with successful [CI run 43711777279](https://github.com/Do4ent/CADGUI/actions/runs/43711777279). That evidence applies to the baseline; later implementation heads require their own checks. This documentation update does not claim the newly assigned packages are complete. See the [parallel delivery plan](PARALLEL_DELIVERY_PLAN.md).
 
 ## Remaining product gaps
 
 Persistent geometric references, broad feature editing/reordering/suppression, complete nonlinear sketch solving, real assembly occurrences/mates, associative drawing views from model topology, semantic GD&T/PMI, sheet-metal bend/unfold and production-scale performance remain separate work. Existing visual notes, exact geometry and source-linked features must not be described as absent.
 
-Historical P0 package labels in the roadmap are acceptance history rather than a current whole-product completion tally. Use the completion-score methodology in PR #24 only with its declared denominator and evidence limits, if that document is present on the reviewed branch.
+Historical P0 package labels in the roadmap are acceptance history rather than a current whole-product completion tally. Use the [completion-score methodology](PROJECT_COMPLETION_SPEC.md) only with its declared denominator and evidence limits.
 
 ## Release gates
 
