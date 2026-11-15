@@ -129,3 +129,26 @@ def test_native_reopen_rebuilds_wrong_boolean_cache_and_preserves_source_on_relo
     prepare(page)
     assert inspect(page, feature['bodyId'])['volume'] == pytest.approx(4, rel=1e-7)
     assert document(page, tmp_path, 'body-native-recovered.json')['sketchModel'] == original_model
+
+
+def test_cancel_and_document_switch_cannot_commit_old_body_boolean_draft(page, tmp_path):
+    prepare(page)
+    a, b = cube(page, tmp_path), cube(page, tmp_path, x=1)
+    before = document(page, tmp_path, 'body-draft-original.json')
+    dialog = open_boolean(page, 'common', a, b)
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    assert document(page, tmp_path, 'body-draft-cancelled.json') == before
+    # Open a second document first; an active modal intentionally traps pointer
+    # focus, so dispatch activation through the real tab button's DOM click.
+    page.get_by_title('Новый документ', exact=True).click()
+    tabs = page.get_by_role('tablist', name='Документы').get_by_role('tab')
+    expect(tabs).to_have_count(2)
+    tabs.first.click()
+    dialog = open_boolean(page, 'common', a, b)
+    tabs.nth(1).evaluate('(tab) => tab.click()')
+    expect(tabs.nth(1)).to_have_attribute('aria-selected', 'true')
+    expect(dialog).not_to_be_visible()
+    expect(exact_rows(page)).to_have_count(0)
+    tabs.first.click()
+    expect(dialog).not_to_be_visible()
+    assert document(page, tmp_path, 'body-reactivated-original.json') == before
