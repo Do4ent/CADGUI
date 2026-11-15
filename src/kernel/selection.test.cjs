@@ -1,22 +1,25 @@
-const assert=require('node:assert/strict');
-const fs=require('node:fs'),ts=require('typescript');
+const assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript');
 require.extensions['.ts']=(module,file)=>module._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);
-const {exactBodySelection,validateExactSelection,reconcileExactSelection}=require('./selection.ts');
-const body={id:'body',name:'Body',brep:'CASCADE Topology V1 A',color:'#123456',visible:true};
-const state={version:1,kernel:'occt-wasm',kernelVersion:'5.15.0',units:'mm',bodies:[body]};
-const mesh={mesh:{faceGroups:new Int32Array([0,3,-17])}};
-const face=exactBodySelection('doc-a',body,-17,mesh,'view-1');
-assert.deepEqual(face,{documentId:'doc-a',bodyId:'body',brepSource:body.brep,faceId:-17,meshSource:mesh,renderScope:'view-1'});
-assert.equal(validateExactSelection('doc-a',state,face),face);
-assert.equal(validateExactSelection('doc-b',state,face),null,'document isolation');
-assert.equal(validateExactSelection('doc-a',{...state,bodies:[]},face),null,'deleted body');
-assert.equal(validateExactSelection('doc-a',{...state,bodies:[{...body,visible:false}]},face),null,'hidden body');
-const hiddenState={...state,bodies:[{...body,visible:false}]};
-assert.deepEqual(validateExactSelection('doc-a',hiddenState,exactBodySelection('doc-a',body)),exactBodySelection('doc-a',body),'hidden source remains selectable in panel');
-assert.deepEqual(reconcileExactSelection('doc-a',hiddenState,face),exactBodySelection('doc-a',body),'hiding downgrades face to inspectable body');
-assert.equal(validateExactSelection('doc-a',{...state,bodies:[{...body,brep:'CASCADE Topology V1 B'}]},face),null,'stale BREP');
-assert.equal(validateExactSelection('doc-a',{...state,bodies:[{...body,color:'#abcdef'}]},face),face,'style edit preserves selection');
-const rebuilt={...state,bodies:[{...body,brep:'CASCADE Topology V1 B'}]};
-assert.deepEqual(reconcileExactSelection('doc-a',rebuilt,face),{documentId:'doc-a',bodyId:'body',brepSource:rebuilt.bodies[0].brep,faceId:null,meshSource:null,renderScope:null},'rebuild downgrades to body');
-assert.equal(reconcileExactSelection('doc-b',state,face),null);
-console.log('PASS exact selection document/BREP revision validation and safe body downgrade');
+const {ExactSelectionRuntime}=require('./selection.ts');
+const body={id:'body',name:'Body',brep:'BREP A',color:'#123456',visible:true},state={version:1,kernel:'occt-wasm',kernelVersion:'5.15.0',units:'mm',bodies:[body]};
+const payload=()=>({brep:'canonical A',mesh:{positions:new Float32Array([0,0,0,2,0,0,2,2,0,0,2,0]),normals:new Float32Array([0,0,1,0,0,1,0,0,1,0,0,1]),indices:new Uint32Array([0,1,2,0,2,3]),faceGroups:new Int32Array([0,3,47,3,3,47])},lines:new Float32Array(),volume:4});
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+(async()=>{
+ let requests=[];const runtime=new ExactSelectionRuntime('doc',request=>new Promise((resolve,reject)=>requests.push({request,resolve,reject})));runtime.commit(state);
+ const selectedBody=runtime.captureBody(body.id);assert.equal(selectedBody.reference.kind,'body');assert.equal(runtime.validate(selectedBody),selectedBody);
+ for(let view=0;view<4;view++)runtime.ensureInspection(body);await tick();assert.equal(requests.length,1,'all viewports share one pending request');const result=payload();requests[0].resolve(result);await tick();
+ const record=runtime.inspection(body),first=runtime.captureFace(body,record,0,'view1'),second=runtime.captureFace(body,record,1,'view2');assert.equal(first.reference.faceId,second.reference.faceId,'collision fixture');assert.notEqual(first.reference.groupIndex,second.reference.groupIndex);assert.equal(runtime.selectedFace(body,record,second).indexStart,3);assert.equal(runtime.selectedFace(body,record,second).indexCount,3);
+ assert.ok(!JSON.stringify(second).includes('BREP'));assert.deepEqual(Object.keys(second).sort(),['reference','renderScope']);assert.ok(!('meshSource' in second)&&!('brepSource' in second));
+ const style={...state,bodies:[{...body,name:'Renamed',color:'#abcdef'}]};runtime.commit(style);assert.equal(runtime.inspection(style.bodies[0]),record);assert.equal(runtime.validate(second),second,'unrelated style edits keep the face');
+ runtime.commit({...state,bodies:[{...body,visible:false}]});assert.equal(runtime.validate(second),null);assert.equal(runtime.reconcile(second).reference.kind,'body');assert.equal(runtime.validate(runtime.captureBody(body.id)).reference.kind,'body','hidden body remains inspectable');runtime.commit(state);
+ const oldRevision=second.reference.bodyRevision;runtime.commit({...state,bodies:[{...body,brep:'BREP B'}]});runtime.ensureInspection({...body,brep:'BREP B'});await tick();const pendingB=requests[1];runtime.commit(state);runtime.ensureInspection(body);await tick();const freshA=requests[2];pendingB.resolve(payload());await tick();assert.equal(runtime.inspection(body).status,'loading','late B cannot bind into returned A');freshA.resolve(result);await tick();assert.equal(runtime.resolve(second).code,'body-rebuilt');assert.ok(runtime.captureBody(body.id).reference.bodyRevision>oldRevision);assert.equal(runtime.captureFace(body,record,1,'old-view'),null,'late triangle on old canonical record is dropped');
+ const renewed=runtime.captureFace(body,runtime.inspection(body),1,'view');let notifications=0;runtime.subscribe(()=>notifications++);runtime.invalidateInspections();assert.ok(notifications);assert.equal(runtime.validate(renewed),null);runtime.ensureInspection(body);await tick();requests.at(-1).resolve(result);await tick();const postReset=runtime.captureFace(body,runtime.inspection(body),1,'view');assert.notEqual(postReset.reference.meshToken,renewed.reference.meshToken,'reset cannot revive token, even for cached result identity');
+ const beforeFailure=postReset;runtime.invalidateInspections('worker failed');assert.equal(runtime.validate(beforeFailure),null);assert.equal(runtime.inspection(body).status,'error');const requestCount=requests.length;runtime.ensureInspection(body);await tick();assert.equal(requests.length,requestCount,'failed worker never auto-loops');runtime.retryInspection(body);runtime.ensureInspection(body);await tick();requests.at(-1).resolve(payload());await tick();assert.equal(runtime.inspection(body).status,'ready');
+ const beforeDelete=postReset;runtime.commit({...state,bodies:[]});assert.equal(runtime.reconcile(beforeDelete),null);runtime.commit(state);assert.equal(runtime.resolve(beforeDelete).code,'body-rebuilt');
+ const reopened=new ExactSelectionRuntime('doc',async()=>payload());reopened.commit(state);assert.equal(reopened.resolve(beforeDelete).code,'session-expired');assert.equal(new ExactSelectionRuntime('other',async()=>payload()).validate(beforeDelete),null);runtime.dispose();assert.equal(runtime.captureBody(body.id),null);
+ // More than the worker client's eight cached results: the runtime pins all
+ // active body revisions, independent of layout/view mount and client eviction.
+ let calls=0;const many=new ExactSelectionRuntime('large',async()=>{calls++;return payload()}),bodies=Array.from({length:12},(_,i)=>({...body,id:'b'+i,brep:'source'+i}));many.commit({...state,bodies});for(let view=0;view<4;view++)for(const item of bodies)many.ensureInspection(item);await tick();assert.equal(calls,12);const kept=many.inspection(bodies[0]),keptFace=many.captureFace(bodies[0],kept,0,'v0');for(let view=0;view<4;view++)for(const item of bodies)many.ensureInspection(item);await tick();assert.equal(calls,12);assert.equal(many.inspection(bodies[0]),kept);assert.equal(many.validate(keptFace),keptFace);
+ const failed=new ExactSelectionRuntime('failed',async()=>{throw Error('native error')});failed.commit(state);failed.ensureInspection(body);await tick();assert.equal(failed.inspection(body).error,'native error');assert.equal(failed.inspection(body).result,undefined);assert.equal(failed.captureBody(body.id).reference.kind,'body');
+ console.log('PASS canonical session references: group/hash collisions, A→B→A, stale async/pointer, hide/delete/reopen/reset, immutable selection and 12 bodies × 4 views');
+})().catch(error=>{console.error(error);process.exitCode=1});

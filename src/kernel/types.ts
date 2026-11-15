@@ -19,5 +19,5 @@ export type KernelRequest=
  |{op:'export-step';brep:string};
 export type KernelOutput=KernelBodyResult|string;
 export type KernelWorkerReply={id:number;result:KernelOutput}|{id:number;error:string};
-/** Transient selection. Face IDs belong to one BREP inspection result only. */
-export type ExactSelection={documentId:string;bodyId:string;brepSource:string;faceId:number|null;meshSource:KernelBodyResult|null;renderScope:string|null};
+/** Transient session-local reference, not persistent topology naming. */
+export type ExactSelection={reference:import('./references').GeometryReference;renderScope:string|null};

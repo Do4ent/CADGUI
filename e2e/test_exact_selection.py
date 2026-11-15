@@ -83,6 +83,7 @@ def test_real_face_pick_same_body_rebuild_and_history_drop_revision_local_face(p
     # pending ID which never becomes actionable after React commits the model.
     expect(page.locator(f'[data-exact-body-row="{body_id}"]').get_by_role('button')).to_have_attribute('aria-pressed', 'true')
     assert_volume(page, body_id, 24)
+    original_revision = int(rendered(page, body_id).first.get_attribute('data-exact-body-revision'))
     assert pick_face(page, body_id) is not None
 
     edit_width(page, sketch_id, 5)
@@ -91,6 +92,8 @@ def test_real_face_pick_same_body_rebuild_and_history_drop_revision_local_face(p
     rebuilt = after['exactModel']['bodies'][0]
     assert rebuilt['id'] == body_id
     assert rebuilt['brep'] != body['brep'], 'the same source-owned body must really rebuild'
+    rebuilt_revision = int(rendered(page, body_id).first.get_attribute('data-exact-body-revision'))
+    assert rebuilt_revision > original_revision
     no_face_highlight(page, body_id)
     expect(page.locator(f'[data-exact-body-row="{body_id}"]').get_by_role('button')).to_have_attribute('aria-pressed', 'true')
 
@@ -99,9 +102,12 @@ def test_real_face_pick_same_body_rebuild_and_history_drop_revision_local_face(p
     assert pick_face(page, body_id) is not None
     page.keyboard.press('Control+z')
     assert_volume(page, body_id, 24)
+    undo_revision = int(rendered(page, body_id).first.get_attribute('data-exact-body-revision'))
+    assert undo_revision > rebuilt_revision, 'A→B→A must advance identity, never revive A references'
     no_face_highlight(page, body_id)
     page.keyboard.press('Control+y')
     assert_volume(page, body_id, 60)
+    assert int(rendered(page, body_id).first.get_attribute('data-exact-body-revision')) > undo_revision
     no_face_highlight(page, body_id)
 
 
@@ -135,3 +141,64 @@ def test_same_body_ids_and_brep_do_not_transfer_face_selection_between_document_
     assert pick_face(page, body_id) is not None
     tabs(page).get_by_role('tab').nth(2).click()
     no_face_highlight(page, body_id)
+
+
+def test_canonical_face_survives_client_cache_eviction_and_four_viewports(page):
+    blank_model(page)
+    create_box(page, size=(2, 3, 4))
+    body_id = exact_rows(page).first.get_attribute('data-exact-body-row')
+    # Native distinct BREP results exceed KernelClient's eight-entry cache.
+    # Hidden fillers are retained sources, but only the first box remains a
+    # visible ray target. No synthetic meshes or private selection APIs.
+    for i in range(9):
+        create_box(page, size=(1 + i / 10, 1, 1), origin=(20 + 3 * i, 0, 0))
+        row = exact_rows(page).last
+        row.get_by_role('checkbox').uncheck()
+    expect(exact_rows(page)).to_have_count(10)
+    page.locator('.view-wrap').first.get_by_title('Вписать модель', exact=True).click()
+    assert pick_face(page, body_id) is not None
+    canonical_generation = rendered(page, body_id).first.get_attribute('data-exact-mesh-generation')
+    page.locator('.multi-view-tools').get_by_role('button', name='4', exact=True).click()
+    expect(rendered(page, body_id)).to_have_count(4, timeout=120000)
+    page.wait_for_function(
+        """({id, generation}) => {
+          const nodes = [...document.querySelectorAll('[data-kernel-render-body]')]
+            .filter(node => node.dataset.kernelRenderBody === id);
+          return nodes.length === 4 && nodes.every(node =>
+            node.dataset.exactMeshGeneration === generation &&
+            node.hasAttribute('data-exact-selected-face-group'));
+        }""", arg={'id': body_id, 'generation': canonical_generation}, timeout=120000,
+    )
+    # A physical click in a newly mounted front viewport must keep the same
+    # canonical group in every other window, rather than oscillating tokens.
+    assert pick_face(page, body_id, viewport=0) is not None
+    groups = rendered(page, body_id).evaluate_all('(nodes) => nodes.map(n => n.dataset.exactSelectedFaceGroup)')
+    assert len(groups) == 4 and None not in groups and len(set(groups)) == 1
+
+
+def test_failed_native_inspection_is_visible_and_retries_without_stale_payload(page, tmp_path):
+    blank_model(page)
+    create_box(page, size=(2, 3, 4))
+    saved = save_document(page, tmp_path, 'inspection-retry.json')
+    body_id = saved['exactModel']['bodies'][0]['id']
+    assert pick_face(page, body_id) is not None
+    # Reload a real persisted body while its actual WASM asset is unavailable.
+    # No fabricated kernel reply or private selection mutation is involved.
+    blocked = []
+    wasm = re.compile(r'/assets/occt-wasm-[^/]+\.wasm(?:\?.*)?$')
+    def abort_wasm(route):
+        blocked.append(route.request.url)
+        route.abort('failed')
+    page.route(wasm, abort_wasm)
+    page.reload(wait_until='domcontentloaded')
+    page.locator('.environment-panel').wait_for()
+    prepare(page)
+    retry = page.get_by_role('button', name='Повторить расчёт Параллелепипед', exact=True)
+    expect(retry).to_be_visible(timeout=120000)
+    assert blocked, 'a real WASM request must fail, not a form validation'
+    expect(page.locator(f'[data-kernel-render-body="{body_id}"]')).to_have_count(0)
+    page.unroute(wasm, abort_wasm)
+    retry.click()
+    assert_volume(page, body_id, 24)
+    no_face_highlight(page, body_id)
+    assert pick_face(page, body_id) is not None

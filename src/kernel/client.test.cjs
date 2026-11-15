@@ -11,5 +11,6 @@ vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleK
  const old=c.execute({op:'inspect',brep:'pending'});c.reset();await assert.rejects(old,/отменено/);assert.equal(workers[0].stopped,true);const fresh=c.execute(request);assert.equal(workers.length,2);workers[1].reply({brep:'a',volume:6});assert.equal((await fresh).volume,6,'reset invalidates prior geometry cache');c.reset();
  const timeoutClient=new KernelClient(()=>new FakeWorker(),5);await assert.rejects(timeoutClient.execute(request),/время/);assert.equal(workers.at(-1).stopped,true);
  const errorClient=new KernelClient(()=>new FakeWorker(),1000);const failed=errorClient.execute(request);workers.at(-1).onerror({preventDefault(){}});await assert.rejects(failed,/WebAssembly/);const retry=errorClient.execute(request);workers.at(-1).reply({brep:'a',volume:3});assert.equal((await retry).volume,3);errorClient.reset();
+ let resetMessage=null;const unsubscribe=c.subscribeReset(message=>resetMessage=message);c.reset('explicit reset');assert.equal(resetMessage,'explicit reset');unsubscribe();c.reset('not observed');assert.equal(resetMessage,'explicit reset');
  console.log('PASS kernel client deduplication, shared viewport cache, reset, timeouts and real-error retry routing');
 })().catch(e=>{console.error(e);process.exitCode=1});
