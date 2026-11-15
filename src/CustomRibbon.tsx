@@ -22,6 +22,8 @@ const catalog:Entry[]=[
 {id:'sketch',label:'Эскиз',icon:'sketch',group:'Построение',action:'sketch',demo:true},
 {id:'extrude',label:'Выдавливание',icon:'extrude',group:'Построение',action:'extrude',demo:true},
 {id:'revolve',label:'Вращение эскиза',icon:'revolve',group:'Построение',action:'sketch-revolve'},
+{id:'common',label:'Пересечение тел',icon:'extrude',group:'Построение',action:'sketch-common'},
+{id:'subtract',label:'Вычитание тел',icon:'extrude',group:'Построение',action:'sketch-subtract'},
 {id:'fusion',label:'Объединение тел',icon:'extrude',group:'Построение',action:'sketch-fuse'},
 {id:'hole',label:'Отверстие',icon:'hole',group:'Построение',action:'hole',demo:true},
 {id:'fillet',label:'Скругление',icon:'fillet',group:'Построение',action:'fillet',demo:true},
@@ -41,7 +43,7 @@ const catalog:Entry[]=[
 {id:'measure',label:'Измерить',icon:'measure',group:'Анализ',action:'measure',demo:true},
 ];
 const presets:Record<string,string[]>={
-'Модель':['select','sketch-model','exact-model','model-note','box','cylinder','sketch','extrude','revolve','fusion','hole','fillet','chamfer','shell','pattern','mirror'],
+'Модель':['select','sketch-model','exact-model','model-note','box','cylinder','sketch','extrude','revolve','fusion','common','subtract','hole','fillet','chamfer','shell','pattern','mirror'],
 'Сборка':['select','sketch-model','exact-model','model-note','box','cylinder','pipe','duplicate','hide','isolate','showall','mate','section','pattern'],
 'Эскиз':['select','sketch-model','sketch','dimension','mirror','pattern'],
 'Чертёж':['select','sheet','draft','dimension','section'],
