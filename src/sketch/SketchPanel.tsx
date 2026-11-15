@@ -46,6 +46,8 @@ export interface SketchPanelProps {
   onSelectBody: (bodyId: string) => void;
   revolutionCreateRequest?: number;
   onRevolutionRequestHandled?: () => void;
+  bodyBooleanCreateRequest?:{id:number;operation:'common'|'cut'}|null;
+  onBodyBooleanRequestHandled?:(id:number)=>void;
   fusionCreateRequest?: number;
   onFusionRequestHandled?: () => void;
 }
@@ -295,6 +297,8 @@ export function SketchPanel({
   onSelectBody,
   revolutionCreateRequest = 0,
   onRevolutionRequestHandled,
+  bodyBooleanCreateRequest=null,
+  onBodyBooleanRequestHandled,
   fusionCreateRequest = 0,
   onFusionRequestHandled,
 }: SketchPanelProps) {
@@ -314,6 +318,7 @@ export function SketchPanel({
     generation = useRef(0),
     seenRevolutionRequest = useRef(0),
     seenFusionRequest = useRef(0),
+    seenBodyBooleanRequest=useRef(0),
     current = useRef<Baseline>({ state, exactModel, documentId, revision });
   current.current = { state, exactModel, documentId, revision };
   useEffect(() => {
@@ -437,6 +442,7 @@ export function SketchPanel({
     });
   };
   const editBodyBoolean=(operation:'common'|'cut',existing?:BodyBooleanFeature)=>{const bodies=availableFusionBodies(state,exactModel,existing);if(!existing&&bodies.length<2){setError('Нужны два точных тела');return;}generation.current++;setBusy(false);setError('');setSession({kind:'bodyBoolean',draft:existing?structuredClone(existing):{id:crypto.randomUUID(),bodyId:crypto.randomUUID(),aBodyId:bodies[0]?.id??'',bBodyId:bodies[1]?.id??'',operation},base:current.current});};
+  useEffect(()=>{const request=bodyBooleanCreateRequest;if(!request||request.id<=0||request.id===seenBodyBooleanRequest.current)return;seenBodyBooleanRequest.current=request.id;editBodyBoolean(request.operation);onBodyBooleanRequestHandled?.(request.id);},[bodyBooleanCreateRequest?.id]);
   const removeBodyBoolean=()=>{if(bodyBoolean)void commit({kind:'deleteBodyBoolean',draft:structuredClone(bodyBoolean),base:current.current});};
   const editFusion = (existing?: SketchFusion) => {
     const bodies = availableFusionBodies(state, exactModel, existing);
