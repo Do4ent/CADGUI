@@ -54,3 +54,9 @@ Next bounded work after approval: optional Ribbon/search entry points, broader b
 Concrete findings fixed in `7a865ed`: changing to another source/extrusion/revolution/cut/fusion clears the previous body-boolean selection, and the dependency tree uses ∩/− instead of +. Active body booleans no longer leave a fallback extrusion selected. All existing E2E save/migration expectations now assert schema12. QA added two regression variants in `a728d81` covering selection transitions and correct operation symbols.
 
 The new head is being rebuilt/retested before the targeted two-case browser review regression. Earlier63-suite/8-case results remain valid historical checkpoints; final results below supersede them when completed. PR39 remains unmerged.
+
+## Review closure / final local gates
+
+Final code head: `61395904c9be9efde938c3b31a15ea0e938170e6` (review fixes `7a865ed`, regression tests `a728d81`). After those fixes, `npm test` again passed63 suites and production build passed. QA's two new production selection/operator regressions passed2/2 in42.95 seconds: boolean→extrusion/fusion clears stale selection/actions; common/cut show ∩/−. The UI reviewer independently confirmed both findings closed and found no further blocker in that limited recheck.
+
+Total local browser evidence: original8/8 runtime acceptance, final rebuilt analytic2/2 smoke, and final review-regression2/2 smoke. Logs are `/tmp/body-booleans-qa-e2e.log`, `/tmp/body-booleans-final-smoke.log`, `/tmp/body-booleans-selection-smoke.log` in the shared workspace. CI for code head was in progress at https://github.com/Do4ent/CADGUI/actions/runs/43746194243; documentation-only updates also trigger CI. No merge has been performed. The next required action is to inspect final PR39 CI and merge only after approval and successful checks.
