@@ -28,3 +28,14 @@ No persistent face/topology naming is introduced. Runtime uses fresh body BREP a
 `fae2dca` wires real controlled common/subtraction create/edit/delete into SketchPanel, shared dependency rows, cycle-safe operands, atomic source/native commit and branch-aware retained-input visibility. Focused panel/tree suites and TypeScript build passed. QA browser commits picked through `39c44c1` (new file only).
 
 Current gates: full `npm test` and `npm run build` running on the integrated branch. QA will run production preview on port4182 after build. Remaining: actual browser failures/fixes, final full checks if code changes, PR creation and independent review. Last completed native and persistence checkpoint remains `238cfae`.
+
+## Final integration gate checkpoint
+
+Runtime commits rebased cleanly onto merged foundations/UI at `origin/main` `3635e58`:
+- Core/native/schema/history: `3f5db80` (previously `238cfae`).
+- UI: `8daa72d` (previously `fae2dca`).
+- QA browser file: through `ca36af8` (previously `39c44c1`).
+
+Completed gates: full `npm test` passed 63 suites; production build passed; independent QA ran all 8 real production-browser cases on port4182, all passed (169.22 seconds). Independent Documents review passed actual schema12 BREP/history tests and found no blocker. Native runtime follow-up now passes 55 checks including STEP and default operation names; derived-target labels distinguish body booleans from static bodies.
+
+Final rebase/follow-up requires one final full test/build run before runtime PR. The original foundation and dialog PRs are merged separately; this branch now contains only runtime integration changes. No merge authorization is exercised by this agent.
