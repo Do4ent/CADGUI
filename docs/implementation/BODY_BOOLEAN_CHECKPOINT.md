@@ -22,3 +22,9 @@ SketchPanel create/edit/delete UI and shared dependency tree are implemented but
 5. Push branch and create a runtime PR, not merge. Existing foundation/UI PRs may be merged independently; root can rebase/cherry-pick integration commits after comparing main.
 
 No persistent face/topology naming is introduced. Runtime uses fresh body BREP and whole-body references only. Source/input/result commit remains atomic; native rejection does not alter history or dirty state.
+
+## UI checkpoint
+
+`fae2dca` wires real controlled common/subtraction create/edit/delete into SketchPanel, shared dependency rows, cycle-safe operands, atomic source/native commit and branch-aware retained-input visibility. Focused panel/tree suites and TypeScript build passed. QA browser commits picked through `39c44c1` (new file only).
+
+Current gates: full `npm test` and `npm run build` running on the integrated branch. QA will run production preview on port4182 after build. Remaining: actual browser failures/fixes, final full checks if code changes, PR creation and independent review. Last completed native and persistence checkpoint remains `238cfae`.
