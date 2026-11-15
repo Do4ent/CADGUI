@@ -39,3 +39,12 @@ Runtime commits rebased cleanly onto merged foundations/UI at `origin/main` `363
 Completed gates: full `npm test` passed 63 suites; production build passed; independent QA ran all 8 real production-browser cases on port4182, all passed (169.22 seconds). Independent Documents review passed actual schema12 BREP/history tests and found no blocker. Native runtime follow-up now passes 55 checks including STEP and default operation names; derived-target labels distinguish body booleans from static bodies.
 
 Final rebase/follow-up requires one final full test/build run before runtime PR. The original foundation and dialog PRs are merged separately; this branch now contains only runtime integration changes. No merge authorization is exercised by this agent.
+
+## Runtime PR ready for review
+
+PR: https://github.com/Do4ent/CADGUI/pull/39 (not merged).
+Final implementation head before this documentation update: `a152b2a30477c42955689bbab645a60ca99c1632`.
+
+Final rebased-head gates completed: `npm test` PASS63 suites; `npm run build` PASS. The native body runtime suite passed55 checks including STEP. Independent QA's production suite passed8/8 cases; final rebuilt-dist analytic smoke is delegated to QA. Independent Documents review found no blockers. CI review and merge remain the root Orchestrator's responsibility; this agent does not merge.
+
+Next bounded work after approval: optional Ribbon/search entry points, broader body-boolean native compound/large-scale acceptance expansion, and separately planned feature-history operations. Current CAD workflow is available through SketchPanel and is fully source/native linked.
