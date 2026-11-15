@@ -10,6 +10,7 @@ import type {
   SketchCut,
   SketchRevolution,
   SketchFusion,
+  BodyBooleanFeature,
 } from "./types";
 import {
   createRectangleSketch,
@@ -22,6 +23,7 @@ import {
   removeSketchCut,
   removeSketchRevolution,
   removeSketchFusion,
+  removeSketchBodyBoolean,
   sketchRegion,
   revolutionAxis,
   ownedSketchBodyIds,
@@ -33,6 +35,7 @@ import { HoleContoursEditor } from "./HoleContoursEditor";
 import { CutFeatureTree } from "./CutFeatureTree";
 import { RevolutionAxisPreview } from "./RevolutionAxisPreview";
 import { FusionDialog, type FusionDraft } from "./FusionDialog";
+import {BodyBooleanDialog} from "./BodyBooleanDialog";
 import "./sketch.css";
 export interface SketchPanelProps {
   state: SketchModelState;
@@ -63,7 +66,8 @@ type Session =
       draft: SketchRevolution;
       base: Baseline;
     }
-  | { kind: "fusion" | "deleteFusion"; draft: SketchFusion; base: Baseline };
+  | { kind: "fusion" | "deleteFusion"; draft: SketchFusion; base: Baseline }
+  | {kind:"bodyBoolean"|"deleteBodyBoolean";draft:BodyBooleanFeature;base:Baseline};
 export function validSketchNumber(raw: string, positive = false) {
   const n = Number(raw);
   return (
@@ -108,7 +112,7 @@ function featureInputs(state: SketchModelState) {
       bodyId: c.bodyId,
       inputs: [c.targetBodyId],
     })),
-    ...(state.fusions ?? []).map((f) => ({
+    ...[...(state.fusions ?? []),...(state.bodyBooleans??[])].map((f) => ({
       id: f.id,
       bodyId: f.bodyId,
       inputs: [f.aBodyId, f.bBodyId],
@@ -207,17 +211,7 @@ export function availableCutTargets(
   exactModel: ExactModelState,
   cut?: SketchCut,
 ) {
-  const blocked = new Set<string>(cut ? [cut.bodyId] : []);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const c of state.cuts ?? [])
-      if (blocked.has(c.targetBodyId) && !blocked.has(c.bodyId)) {
-        blocked.add(c.bodyId);
-        changed = true;
-      }
-  }
-  return exactModel.bodies.filter((b) => !blocked.has(b.id));
+  return availableFusionBodies(state,exactModel,cut);
 }
 
 export function validRevolutionAngle(raw: string) {
@@ -277,28 +271,18 @@ export function stageFusionDraft(state: SketchModelState, draft: SketchFusion) {
   else next.fusions[index] = structuredClone(draft);
   return validateSketchModelState(next);
 }
+export function stageBodyBooleanDraft(state:SketchModelState,draft:BodyBooleanFeature){const next=structuredClone(state);next.bodyBooleans??=[];const index=next.bodyBooleans.findIndex(f=>f.id===draft.id);if(index<0)next.bodyBooleans.push(structuredClone(draft));else next.bodyBooleans[index]=structuredClone(draft);return validateSketchModelState(next);}
+export function stageBodyBooleanDeletion(state:SketchModelState,exact:ExactModelState,id:string){return stageOwnedFeatureRemoval(state,removeSketchBodyBoolean(state,id),exact);}
 export function availableFusionBodies(
   state: SketchModelState,
   exactModel: ExactModelState,
-  feature?: SketchFusion,
+  feature?: Pick<SketchFusion,"bodyId">,
 ) {
   const blocked = new Set<string>(feature ? [feature.bodyId] : []);
   let changed = true;
   while (changed) {
     changed = false;
-    for (const cut of state.cuts ?? [])
-      if (blocked.has(cut.targetBodyId) && !blocked.has(cut.bodyId)) {
-        blocked.add(cut.bodyId);
-        changed = true;
-      }
-    for (const fusion of state.fusions ?? [])
-      if (
-        (blocked.has(fusion.aBodyId) || blocked.has(fusion.bBodyId)) &&
-        !blocked.has(fusion.bodyId)
-      ) {
-        blocked.add(fusion.bodyId);
-        changed = true;
-      }
+    for(const f of featureInputs(state))if(f.inputs.some(id=>blocked.has(id))&&!blocked.has(f.bodyId)){blocked.add(f.bodyId);changed=true;}
   }
   return exactModel.bodies.filter((body) => !blocked.has(body.id));
 }
@@ -319,6 +303,7 @@ export function SketchPanel({
     [cutId, setCutId] = useState<string | null>(null),
     [revolutionId, setRevolutionId] = useState<string | null>(null),
     [fusionId, setFusionId] = useState<string | null>(null),
+    [bodyBooleanId,setBodyBooleanId]=useState<string|null>(null),
     [session, setSession] = useState<Session | null>(null),
     [raw, setRaw] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
@@ -344,13 +329,15 @@ export function SketchPanel({
     setBusy(false);
     setError("");
     setSelected(null);
+    setBodyBooleanId(null);
     setFeatureId(null);
     setCutId(null);
     setRevolutionId(null);
     setFusionId(null);
   }, [documentId]);
+  const bodyBoolean=state.bodyBooleans?.find(f=>f.id===bodyBooleanId);
   const sketch =
-    state.sketches.find((s) => s.id === selected) || state.sketches[0];
+    bodyBoolean ? undefined : (state.sketches.find((s) => s.id === selected) || state.sketches[0]);
   const feature =
     state.extrusions.find(
       (f) => f.id === featureId && f.sketchId === sketch?.id,
@@ -449,6 +436,8 @@ export function SketchPanel({
       base: current.current,
     });
   };
+  const editBodyBoolean=(operation:'common'|'cut',existing?:BodyBooleanFeature)=>{const bodies=availableFusionBodies(state,exactModel,existing);if(!existing&&bodies.length<2){setError('Нужны два точных тела');return;}generation.current++;setBusy(false);setError('');setSession({kind:'bodyBoolean',draft:existing?structuredClone(existing):{id:crypto.randomUUID(),bodyId:crypto.randomUUID(),aBodyId:bodies[0]?.id??'',bBodyId:bodies[1]?.id??'',operation},base:current.current});};
+  const removeBodyBoolean=()=>{if(bodyBoolean)void commit({kind:'deleteBodyBoolean',draft:structuredClone(bodyBoolean),base:current.current});};
   const editFusion = (existing?: SketchFusion) => {
     const bodies = availableFusionBodies(state, exactModel, existing);
     if (!existing && bodies.length < 2) {
@@ -999,7 +988,7 @@ export function SketchPanel({
                     captured.base.exactModel,
                     captured.draft.id,
                   )
-                : null;
+                : captured.kind === "deleteBodyBoolean" ? stageBodyBooleanDeletion(captured.base.state,captured.base.exactModel,captured.draft.id) : null;
       if (captured.kind === "sketch") {
         const solved = solveSketch(captured.draft);
         if (solved.status === "inconsistent")
@@ -1021,11 +1010,12 @@ export function SketchPanel({
         captured.kind === "delete" ||
         captured.kind === "deleteCut" ||
         captured.kind === "deleteRevolution" ||
-        captured.kind === "deleteFusion"
+        captured.kind === "deleteFusion" || captured.kind === "deleteBodyBoolean"
       ) {
         next = deletion!.state;
       } else if (captured.kind === "revolution") {
         next = stageRevolutionDraft(captured.base.state, captured.draft);
+      } else if(captured.kind === "bodyBoolean"){next=stageBodyBooleanDraft(captured.base.state,captured.draft);
       } else if (captured.kind === "fusion") {
         next = stageFusionDraft(captured.base.state, captured.draft);
       } else if (captured.kind === "cut") {
@@ -1051,7 +1041,7 @@ export function SketchPanel({
           baseExact,
           captured.draft.id,
         );
-      if (captured.kind === "fusion")
+      if (captured.kind === "fusion" || captured.kind === "bodyBoolean")
         baseExact = stageFusionVisibility(
           captured.base.state,
           next,
@@ -1066,13 +1056,14 @@ export function SketchPanel({
       )
         return;
       change(next, exact);
+      if(captured.kind!=="bodyBoolean")setBodyBooleanId(null);
       if (captured.kind === "sketch") setSelected(captured.draft.id);
       else if (captured.kind === "ring") setSelected(captured.outer.id);
       else if (
         captured.kind === "delete" ||
         captured.kind === "deleteCut" ||
         captured.kind === "deleteRevolution" ||
-        captured.kind === "deleteFusion"
+        captured.kind === "deleteFusion" || captured.kind === "deleteBodyBoolean"
       ) {
         setRevolutionId(null);
         setFusionId(null);
@@ -1085,6 +1076,7 @@ export function SketchPanel({
         setFusionId(null);
         setFeatureId(null);
         onSelectBody(captured.draft.bodyId);
+      } else if(captured.kind === "bodyBoolean"){setBodyBooleanId(captured.draft.id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);onSelectBody(captured.draft.bodyId);
       } else if (captured.kind === "fusion") {
         setFusionId(captured.draft.id);
         setCutId(null);
@@ -1238,6 +1230,10 @@ export function SketchPanel({
           removeRevolution,
           !revolution,
         )}
+        {button("Пересечь тела",()=>editBodyBoolean('common'),exactModel.bodies.length<2)}
+        {button("Вычесть тела",()=>editBodyBoolean('cut'),exactModel.bodies.length<2)}
+        {button("Изменить булеву операцию",()=>bodyBoolean&&editBodyBoolean(bodyBoolean.operation,bodyBoolean),!bodyBoolean)}
+        {button("Удалить булеву операцию и зависимые тела",removeBodyBoolean,!bodyBoolean)}
         {button(
           "Объединить тела",
           () => editFusion(),
@@ -1267,13 +1263,13 @@ export function SketchPanel({
           <li
             key={s.id}
             data-sketch-id={s.id}
-            onClick={() => setSelected(s.id)}
+            onClick={() => {setBodyBooleanId(null);setSelected(s.id)}}
           >
             <button
               type="button"
               aria-pressed={sketch?.id === s.id}
               onClick={() => {
-                setSelected(s.id);
+                setBodyBooleanId(null);setSelected(s.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
@@ -1292,8 +1288,8 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={feature?.id === f.id}
                       onClick={() => {
-                        setSelected(s.id);
-                        setFeatureId(f.id);
+                        setBodyBooleanId(null);setSelected(s.id);
+                        setBodyBooleanId(null);setFeatureId(f.id);
                         onSelectBody(f.bodyId);
                       }}
                     >
@@ -1309,8 +1305,8 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={revolution?.id === r.id}
                       onClick={() => {
-                        setSelected(s.id);
-                        setRevolutionId(r.id);
+                        setBodyBooleanId(null);setSelected(s.id);
+                        setBodyBooleanId(null);setRevolutionId(r.id);
                         setFeatureId(null);
                         setCutId(null);
                         setFusionId(null);
@@ -1334,8 +1330,8 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={cut?.id === c.id}
                       onClick={() => {
-                        setSelected(s.id);
-                        setCutId(c.id);
+                        setBodyBooleanId(null);setSelected(s.id);
+                        setBodyBooleanId(null);setCutId(c.id);
                         setFeatureId(null);
                         setFusionId(null);
                         onSelectBody(c.bodyId);
@@ -1357,6 +1353,7 @@ export function SketchPanel({
           </li>
         ))}
       </ul>
+      <ul aria-label="Булевы операции тел">{(state.bodyBooleans??[]).map(f=><li key={f.id} data-body-boolean-id={f.id} data-body-boolean-operation={f.operation}><button type="button" aria-pressed={bodyBooleanId===f.id} onClick={()=>{setBodyBooleanId(f.id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);onSelectBody(f.bodyId)}}>{f.operation==='common'?'Пересечение':'Вычитание'} · {exactModel.bodies.find(b=>b.id===f.aBodyId)?.name??f.aBodyId} {f.operation==='common'?'∩':'−'} {exactModel.bodies.find(b=>b.id===f.bBodyId)?.name??f.bBodyId}</button><small>Результат: {exactModel.bodies.find(b=>b.id===f.bodyId)?.name??f.bodyId}</small></li>)}</ul>
       <ul aria-label="Объединения тел">
         {(state.fusions ?? []).map((f) => (
           <li key={f.id} data-fusion-id={f.id}>
@@ -1364,7 +1361,7 @@ export function SketchPanel({
               type="button"
               aria-pressed={fusion?.id === f.id}
               onClick={() => {
-                setFusionId(f.id);
+                setBodyBooleanId(null);setFusionId(f.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
@@ -1380,17 +1377,18 @@ export function SketchPanel({
       <CutFeatureTree
         state={state}
         exactModel={exactModel}
-        selectedId={fusion?.id ?? cut?.id}
+        selectedId={bodyBoolean?.id ?? fusion?.id ?? cut?.id}
         disabled={busy}
         onSelect={(id, bodyId) => {
           const source = state.cuts?.find((c) => c.id === id);
-          if (source) {
-            setSelected(source.sketchId);
+          if(state.bodyBooleans?.some(f=>f.id===id)){setBodyBooleanId(id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);}
+          else if (source) {
+            setBodyBooleanId(null);setSelected(source.sketchId);
             setCutId(id);
             setFusionId(null);
             setFeatureId(null);
           } else if (state.fusions?.some((f) => f.id === id)) {
-            setFusionId(id);
+            setBodyBooleanId(null);setFusionId(id);
             setCutId(null);
             setFeatureId(null);
           }
@@ -1406,6 +1404,7 @@ export function SketchPanel({
         </p>
       )}
       {error && !session && <p role="alert">{error}</p>}
+      {session?.kind==='bodyBoolean'&&<BodyBooleanDialog operation={session.draft.operation} bodies={availableFusionBodies(session.base.state,session.base.exactModel,session.draft).map(b=>({id:b.id,name:b.name}))} draft={{a:session.draft.aBodyId,b:session.draft.bBodyId}} busy={busy} stale={stale} error={error} mode={session.base.state.bodyBooleans?.some(f=>f.id===session.draft.id)?'edit':'create'} onChange={d=>setSession({...session,draft:{...session.draft,aBodyId:d.a,bBodyId:d.b}})} onOperationChange={operation=>setSession({...session,draft:{...session.draft,operation}})} onCancel={close} onConfirm={d=>void commit({...session,draft:{...session.draft,aBodyId:d.a,bBodyId:d.b}})}/>}
       {session?.kind === "fusion" && (
         <FusionDialog
           bodies={availableFusionBodies(session.base.state, session.base.exactModel, session.draft).map((body) => ({ id: body.id, name: body.name }))}
@@ -1419,7 +1418,7 @@ export function SketchPanel({
           onCancel={close}
         />
       )}
-      {session && session.kind !== "fusion" && session.kind !== "deleteFusion" && (
+      {session && session.kind !== "fusion" && session.kind !== "deleteFusion" && session.kind!=="bodyBoolean" && session.kind!=="deleteBodyBoolean" && (
         <Dialog
           open
           title={

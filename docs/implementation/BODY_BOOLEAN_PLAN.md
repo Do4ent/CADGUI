@@ -1,8 +1,8 @@
-# Source-linked body common / subtraction: independent core
+# Source-linked body common / subtraction
 
-## Delivered foundation
+## Delivered runtime contract
 
-`src/sketch/bodyBooleanModel.ts` validates detached drafts of up to 50 features:
+Native schema12 optionally persists `sketchModel.bodyBooleans` (maximum 50):
 
 ```ts
 type BodyBooleanFeature = {
@@ -12,26 +12,28 @@ type BodyBooleanFeature = {
 };
 ```
 
-`cut` means A minus B; `common` is the solid intersection. IDs must be nonempty safe strings; inputs and output must be distinct. Unknown fields, unsupported operations, duplicate draft feature/output IDs and sparse arrays are rejected. Validation clones inputs.
+`common` is solid intersection; `cut` is directed A minus B. Inputs are retained exact bodies, including imported/static bodies or outputs of extrusion, revolution, sketch cut, fusion or another body boolean. Input/output IDs are distinct; feature/output ownership is globally unique. Missing static inputs and all cross-kind cycles fail before native execution. Existing optional-field absence and saved/dirty fingerprints survive schema11 migration.
 
-`diagnoseBodyBooleanGraph(existing, features, availableBodyIds)` combines the proposed features with current extrusion/revolution roots and dependent sketch cuts/fusions. It checks global feature/output uniqueness, static input existence and cross-kind cycles. Derived outputs need not exist in the cache yet. Invalid graphs return an empty order and explicit diagnostics; valid graphs return detached tagged nodes in rebuild order. Existing cut/fusion order takes precedence when several nodes are ready.
+The shared dependency sorter rebuilds fresh predecessor BREP before dependents. Output IDs, custom names, colors and visibility remain stable. New output names identify intersection/subtraction. Shared history commits source plus every rebuilt output in one operation. Failed, cancelled or stale computations commit neither; undo/redo restores paired native/source snapshots. Input visibility and deletion reveal respect sibling consumers; deleting either operand or a source feature cascades through all dependent kinds.
 
-The adapter reuses `orderedSketchBodyFeatures` by representing the new nodes' two-input dependency shape as fusion nodes internally, then mapping them back to `kind: 'body-boolean'`. This temporary shadow is never returned or validated as a persisted source model and must never be sent to a native fusion executor. No second topological sorting implementation is introduced.
+## Native policy
 
-`planBodyBooleanRemoval(existing, features, removedBodyIds)` returns a detached `{state, features, removedBodyIds}` plan, cascading through both operands and all three dependent kinds. It retains unrelated source sketches, the other operands and absent legacy optional fields. It does not remove exact bodies, alter visibility, or publish a document update. It validates structural dependencies but intentionally requires no static-body existence list for deletion planning.
+The new strict `body-boolean` backend request invokes actual OCCT `common` / `cut`. Subtraction requires positive valid solid material in the actual intersection; it does not infer change by subtracting nearly equal large volumes. Disjoint/touch-only subtraction, empty or face-only common, and complete material removal are rejected. Positive-volume compound results remain within the existing 1–100-solid limit. The older generic `boolean` request retains its existing behavior.
 
-## Explicit boundaries
+SketchPanel exposes create/edit/delete controls and the controlled BodyBooleanDialog. A−B operands are explicitly ordered. Self/descendant outputs are excluded from retarget choices. Exact body selection uses the existing revision-bound runtime; this feature does not introduce persistent face naming.
 
-This foundation does not extend `SketchModelState`, the native document schema, runtime rebuild, backend, UI or storage. Its `features` collection is an external draft; it is not currently persisted. Tests cover validators, the real existing graph adapter and removal plans, without claiming native geometry execution.
+## Reusable validation and planning
 
-The adapter imports and validates the current `SketchModelState`. A future extended model validator must not call this adapter recursively on itself: the current validator rejects new persisted fields, and a reverse import would create a validation cycle. Integrate the dependency logic in the central graph layer once, or explicitly project a validated legacy-shaped state for a detached draft.
+`bodyBooleanValidation.ts` holds the pure strict draft validator used by the native model. `bodyBooleanModel.ts` remains a detached diagnostic/removal adapter for additional drafts. It reuses the central graph instead of a second topological sorter; no shadow feature is executed as fusion.
 
-The available-body list identifies existence, not ownership. A future document integration must separately prevent a newly created feature from claiming an unrelated independent body's output ID, while allowing valid previously owned cached results. Existing native-document/source revision guards remain required.
+`diagnoseBodyBooleanGraph(existing, additionalFeatures, availableBodyIds)` returns detached tagged rebuild nodes or explicit diagnostics. Proposed derived outputs need not exist yet; this is a planning API, not native document reference validation. `validateSketchReferences` requires all persisted owned outputs and inputs in the committed exact model. The document hook separately prevents a new output from claiming an unrelated independent body's ID.
 
-## Next integration package
+`planBodyBooleanRemoval` returns a detached source/draft/output-ID removal plan without changing exact bodies or visibility. It preserves unrelated sketches/operands and legacy optional absence. Native model validation imports only the pure validator, avoiding recursion through the external adapter.
 
-- Add one optional native collection under an agreed storage name, keeping absence unchanged on legacy migration; advance schema version and preserve saved/dirty fingerprints.
-- Extend central ownership, dependency ordering, cascade helpers and atomic source/result commit once. Rebuild both operation kinds using fresh predecessor BREP, never cached derived outputs.
-- Existing `KernelRequest` boolean `common` / `cut` already executes real OCCT. Add a strict workflow policy for subtraction: reject no-material intersection using actual positive-solid `common` volume, rather than subtracting two large nearly equal volumes. Reject complete removal and empty/face-only common. Permit validated positive-volume compound results within kernel limits.
-- Retain operands. Define explicit branch-aware visibility and deletion reveal behavior, stable output IDs/metadata, asynchronous revision guards and cancel/no-op semantics.
-- Add native analytic volume/STEP tests, mixed graph source-edit rebuild and second-operation rollback tests, schema migration/undo tests, then browser interaction tests. None of these runtime capabilities is claimed delivered by this foundation.
+## Validation gates
+
+The implementation checkpoint records current SHAs and final gates. Regression coverage includes analytic real-OCCT common/subtraction, strict no-op/full-removal rejection, fresh dependency outputs, STEP, atomic failures, actual native persistence and unified undo, legacy clean/dirty migrations, cross-kind cycle-safe staging and retained-operand visibility. Production browser tests cover real UI execution, editing, deletion, rollback, reload and stale-tab isolation.
+
+## Scope limits
+
+This is whole-body solid feature history. Surface/face boolean results, empty result features, face-driven operations, persistent topology naming, arbitrary feature reordering and suppression are not provided. All standard coordinate, BREP-size and native mesh complexity limits remain enforced. Inputs are retained; no destructive boolean replacement is implied.
