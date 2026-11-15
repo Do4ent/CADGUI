@@ -4,6 +4,8 @@ type Pending={resolve:(result:KernelOutput)=>void;reject:(error:Error)=>void;tim
  * are never delivered to a caller after reset. UI/document revision guards
  * provide the independent protection against committing to another document. */
 export class KernelClient{
+ private resetListeners=new Set<(message:string)=>void>();
+ subscribeReset(listener:(message:string)=>void):()=>void{this.resetListeners.add(listener);return()=>{this.resetListeners.delete(listener)}}
  private worker:Worker|null=null;private serial=0;private pending=new Map<number,Pending>();private inspections=new Map<string,Promise<KernelOutput>>();
  constructor(private factory:()=>Worker=()=>new Worker(new URL('./worker.ts',import.meta.url),{type:'module'}),private timeoutMs=45_000){}
  private start(){
@@ -29,6 +31,7 @@ export class KernelClient{
  reset(message='Вычисление отменено; документ не изменён.'){
   this.worker?.terminate();this.worker=null;this.inspections.clear();
   for(const p of this.pending.values()){clearTimeout(p.timer);p.reject(new Error(message));}this.pending.clear();
+  for(const listener of this.resetListeners){try{listener(message)}catch(error){console.error('Kernel reset listener failed',error)}}
  }
 }
 export const kernelClient=new KernelClient();
