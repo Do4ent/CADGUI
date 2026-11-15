@@ -10,20 +10,24 @@ Updated 2026-11-15. Resume by inspecting actual branches and CI; do not assume r
 - PR #35: bounded body boolean integration plan, documentation only; merged after green CI.
 - PR #36 `ff22653`: detached body boolean validator, DAG adapter and removal plan; 69 focused checks, 61 suites/build passed; merged after green CI. No runtime/schema integration claim.
 - PR #37 `b9c64ad`: standalone common/cut dialog; 61 suites/build and isolated light/dark browser checks passed; merged after green CI. No root integration claim.
-- Current merged main: `3635e58`. End-to-end body boolean worktree: `/workspace/wt-body-boolean-runtime`, branch `feature/body-boolean-runtime`; initial stacked head `dd24e92` contains foundation/UI only. Inspect actual files before claiming schema12/runtime completion.
+- Current merged main at this snapshot: `3635e58`. PR #39 is open and unmerged at `8c5afba`, worktree `/workspace/wt-body-boolean-runtime`, branch `feature/body-boolean-runtime`. It implements source-linked whole-body common/A−B, schema12, actual OCCT operations, atomic fresh DAG rebuild, ownership, visibility/cascade and history through SketchPanel. The older foundation-only `dd24e92` is not its current head.
+- PR #39 reports 63 module suites/build passing, 55 native analytic/STEP/metadata/rollback checks, independent production acceptance 8/8, rebuilt analytic smoke 2/2 and review regressions 2/2. These are local/review results; required final-head CI remains pending. No merge is asserted.
+- Runtime details and remaining gates are in [the PR #39 checkpoint](https://github.com/Do4ent/CADGUI/blob/8c5afbaa4678391c45ccace91db9d828db2575e6/docs/implementation/BODY_BOOLEAN_CHECKPOINT.md). The commit-pinned link is intentional because the document is not yet part of merged main.
 
 ## Active work and ownership
 
-CAD Workflows owns the next end-to-end body boolean integration: optional `bodyBooleans`, native schema v12 preserving absent fields and clean/dirty markers, strict OCCT common/cut, general DAG/rebuild, visibility/cascade, dialog/controller and atomic history. It is the sole editor of shared model/schema/backend/hook/SketchPanel/main files for this stage.
+CAD Workflows has delivered the PR #39 implementation for review. Root reviews the complete package and required checks before any merge. Documents' read-only persistence/history review and QA's new body-boolean production acceptance have reported their results; keep their evidence scoped to the tested head.
 
-Documents reviews persistence read-only. QA owns only a new `e2e/test_body_booleans.py`. Root reviews and integrates verified PRs. Preserve every existing dirty worktree; never reset another agent's files.
+The next UI routing package is assigned to UI as sole editor of `src/main.tsx`, `src/CommandRegistry.ts`, `src/CustomRibbon.tsx` and command/request props for this stage. It connects Ribbon/search entry points to real common/A−B workflows. Those entry points are not claimed by PR #39, whose current entry points are SketchPanel controls. Coordinate any shared-file ownership transfer before another agent edits those files; do not overlap the routing work with core integration edits.
+
+Preserve every existing dirty worktree; never reset another agent's files. Continue local module/native/browser review independently where ownership permits.
 
 ## Next actions
 
-1. Check #34 head CI, review browser tests, merge only when successful.
-2. Review and integrate #35–#37 when their own checks pass, or keep explicitly stacked dependencies.
-3. Complete actual linked common/A−B workflows: reject empty intersection, cut no-op/touch/full removal; rebuild fresh dependencies atomically; protect consumed operands and owned outputs.
-4. Verify schema migration/native roundtrip, Undo/Redo, branch-aware visibility/delete, cancellation and stale-document guards.
-5. Run module/build/production browser checks and same-head CI, then publish/merge the bounded feature PR.
+1. Inspect PR #39's actual head and CI; review source-linked common/A−B, schema12 and local/native/browser evidence. Merge only after required same-head CI and independent review succeed.
+2. Keep PR #38 (this checkpoint) separate and unmerged until its updated-head checks pass. A green check on its previous head does not verify this edit.
+3. Let UI implement the isolated Ribbon/search routing package with document-aware request acknowledgement, disabled-state handling and stale/busy/cancel guards; do not claim those entry points are already delivered.
+4. Validate routing against real SketchPanel execution, selection transitions and both boolean operators, then run module/build/production browser checks and its own same-head CI.
+5. After any merge, update checkpoints from actual main/PR state rather than promoting pending work based on a plan or old local result.
 
 The agent cannot schedule its own restart after a usage-limit reset. A new active session must read this checkpoint, inspect git/PR/CI state and resume unfinished work. Percent completion must not increase for standalone foundations alone.
