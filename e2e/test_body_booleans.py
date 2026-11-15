@@ -192,3 +192,45 @@ def test_edit_operation_rebuilds_same_output_then_delete_cascades_and_undo_resto
     restored = document(page, tmp_path, 'body-delete-undone.json')
     assert restored['sketchModel'] == before_delete['sketchModel']
     assert restored['exactModel'] == before_delete['exactModel']
+
+
+@pytest.mark.parametrize('operation,symbol', [('common', '∩'), ('cut', '−')])
+def test_nonboolean_selection_clears_stale_boolean_actions_and_tree_uses_correct_symbol(page, tmp_path, operation, symbol):
+    prepare(page)
+    create_sketch(page, width=2, height=2)
+    extrude(page, 2)
+    extrusion = document(page, tmp_path)['sketchModel']['extrusions'][0]
+    b = cube(page, tmp_path, x=1)
+    feature = boolean(page, tmp_path, operation, extrusion['bodyId'], b)
+    row = panel(page).locator(f'[data-body-boolean-id="{feature["id"]}"]')
+    graph_row = panel(page).locator(f'[data-body-boolean-graph-id="{feature["id"]}"]')
+    expect(graph_row).to_contain_text(symbol)
+    assert '+' not in graph_row.inner_text(), 'Difference/intersection must not be labeled as fusion'
+    edit = panel(page).get_by_role('button', name='Изменить булеву операцию', exact=True)
+    delete = panel(page).get_by_role('button', name='Удалить булеву операцию и зависимые тела', exact=True)
+
+    def select_boolean():
+        row.get_by_role('button').first.click()
+        expect(row.get_by_role('button').first).to_have_attribute('aria-pressed', 'true')
+        expect(edit).to_be_enabled()
+        expect(delete).to_be_enabled()
+
+    def expect_cleared():
+        expect(row.get_by_role('button').first).to_have_attribute('aria-pressed', 'false')
+        expect(edit).to_be_disabled()
+        expect(delete).to_be_disabled()
+
+    select_boolean()
+    panel(page).locator(f'[data-extrusion-id="{extrusion["id"]}"]').get_by_role('button').first.click()
+    expect_cleared()
+    # A flat fusion list selection must also replace the prior boolean context.
+    panel(page).get_by_role('button', name='Объединить тела', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Объединение тел', exact=True)
+    dialog.get_by_label('Тело A', exact=True).select_option(extrusion['bodyId'])
+    dialog.get_by_label('Тело B', exact=True).select_option(b)
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    fusion = document(page, tmp_path)['sketchModel']['fusions'][0]
+    select_boolean()
+    panel(page).locator(f'[data-fusion-id="{fusion["id"]}"]').get_by_role('button').first.click()
+    expect_cleared()
