@@ -1,8 +1,8 @@
-import {readWorkspaceRecovery,saveWorkspaceRecovery} from './workspaceRecovery';
+import {readWorkspaceRecovery,saveWorkspaceRecovery,resumeWorkspaceRecovery} from './workspaceRecovery';
 import {createSketchModelState,validateSketchModelState,validateSketchReferences,pruneSketchExtrusions,ownedSketchBodyIds} from '../sketch/model';
 import type {SketchModelState} from '../sketch/types';
 import {createExactModelState,validateExactModelState,type ExactModelState} from '../kernel/model';
-import {useEffect,useState,type Dispatch,type SetStateAction} from 'react';
+import {useEffect,useState,useRef,type Dispatch,type SetStateAction} from 'react';
 import {createDocument,parseDocument,serializeDocument,validateItems,validateSceneAnnotationReferences,type CadDocument,type CadItem} from '../documents/documentModel';
 import {validateModelAnnotationState,type ModelAnnotationState} from '../modelAnnotations/model';
 import {validateDrawingDocument} from '../drawing/model';
@@ -11,7 +11,7 @@ import {type SelectionState} from '../selection/selectionModel';
 
 type SceneSnapshot={items:CadItem[];modelAnnotations:ModelAnnotationState;exactModel:ExactModelState;sketchModel:SketchModelState};
 type EditorTab={document:CadDocument;saved:string|null;history:SceneSnapshot[];future:SceneSnapshot[];selection:SelectionState;drawingHistory:DrawingDocument[];drawingFuture:DrawingDocument[];drawingSelection:string[]};
-type Workspace={tabs:EditorTab[];activeId:string;recoveryError:string|null};
+type Workspace={tabs:EditorTab[];activeId:string;recoveryError:string|null;recoveryCanResume:boolean};
 const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items,doc.drawing,doc.modelAnnotations,doc.exactModel,doc.sketchModel]);
 const makeTab=(document:CadDocument,saved:string|null=null):EditorTab=>({document,saved,history:[],future:[],drawingHistory:[],drawingFuture:[],drawingSelection:[],selection:{selectedIds:[],anchorId:null}});
 
@@ -30,23 +30,24 @@ function decodeWorkspace(raw:string):Workspace{
  if(data.version!==1||!Array.isArray(data.tabs)||!data.tabs.length)throw Error('Unsupported workspace');
  const tabs:EditorTab[]=data.tabs.map((tab:{document:unknown;saved:unknown})=>restoreTab(tab.document,tab.saved));
  if(new Set(tabs.map(t=>t.document.id)).size!==tabs.length)throw Error('Duplicate document identifiers');
- return {tabs,activeId:tabs.some(t=>t.document.id===data.activeId)?data.activeId:tabs[0].document.id,recoveryError:null};
+ return {tabs,activeId:tabs.some(t=>t.document.id===data.activeId)?data.activeId:tabs[0].document.id,recoveryError:null,recoveryCanResume:false};
 }
 function loadWorkspace(initial:()=>CadItem[]):Workspace{
  const recovered=(()=>{try{return readWorkspaceRecovery(localStorage,decodeWorkspace)}catch{return {status:'unrecoverable' as const,value:null}}})();
  if(recovered.status==='primary')return recovered.value;
- if(recovered.status==='backup')return {...recovered.value,recoveryError:'Вкладки восстановлены из резервной записи. Автоматическое сохранение отключено, чтобы не перезаписать исходные данные. Экспортируйте восстановленные документы в JSON.'};
+ if(recovered.status==='backup')return {...recovered.value,recoveryCanResume:true,recoveryError:'Вкладки восстановлены из резервной записи. Автоматическое сохранение отключено, чтобы не перезаписать исходные данные. Экспортируйте восстановленные документы в JSON.'};
  if(recovered.status==='unrecoverable'){
   const document={...createDocument(crypto.randomUUID(),'Восстановленный документ'),items:initial()};
-  return {tabs:[makeTab(document)],activeId:document.id,recoveryError:'Не удалось открыть сохранённые вкладки. Исходные данные сохранены в хранилище; автоматическое сохранение вкладок отключено.'};
+  return {tabs:[makeTab(document)],activeId:document.id,recoveryError:'Не удалось открыть сохранённые вкладки. Исходные данные сохранены в хранилище; автоматическое сохранение вкладок отключено.',recoveryCanResume:false};
  }
  const document={...createDocument(crypto.randomUUID(),'Редуктор.asm'),items:initial()};
  const tab=makeTab(document);tab.selection={selectedIds:document.items.some(i=>i.id==='gear2')?['gear2']:[],anchorId:document.items.some(i=>i.id==='gear2')?'gear2':null};
- return {tabs:[tab],activeId:document.id,recoveryError:null};
+ return {tabs:[tab],activeId:document.id,recoveryError:null,recoveryCanResume:false};
 }
 /** Each tab retains its own scene, selection and undo stacks during the session. */
 export function useEditorDocuments(initial:()=>CadItem[]){
  const [workspace,setWorkspace]=useState(()=>loadWorkspace(initial));
+ const currentWorkspace=useRef(workspace);currentWorkspace.current=workspace;
  const active=workspace.tabs.find(t=>t.document.id===workspace.activeId)!;
  const updateActive=(update:(tab:EditorTab)=>EditorTab)=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===w.activeId?update(t):t)}));
  function setter<K extends 'selection'|'drawingSelection'>(key:K):Dispatch<SetStateAction<EditorTab[K]>>{
@@ -147,6 +148,16 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   const drawing=tab.drawingFuture.at(-1);if(!drawing)return tab;
   return {...tab,document:{...tab.document,drawing,modifiedAt:new Date().toISOString()},drawingHistory:[...tab.drawingHistory,tab.document.drawing],drawingFuture:tab.drawingFuture.slice(0,-1),drawingSelection:[]};
  });
+ const resumeRecovery=()=>{
+  const source=currentWorkspace.current;if(!source.recoveryCanResume||!source.recoveryError)return;
+  try{
+   resumeWorkspaceRecovery(localStorage,JSON.stringify({version:1,activeId:source.activeId,tabs:source.tabs.map(t=>({document:t.document,saved:t.saved}))}),decodeWorkspace);
+   setWorkspace(current=>current===source?{...current,recoveryError:null,recoveryCanResume:false}:current);
+  }catch(error){
+   const detail=error instanceof Error?error.message:'Не удалось прочитать или сохранить архив исходных данных.';
+   setWorkspace(current=>current===source?{...current,recoveryError:'Автосохранение не возобновлено. '+detail}:current);
+  }
+ };
  const isDirty=(tab:EditorTab)=>tab.saved!==fingerprint(tab.document);
  const dirty=workspace.tabs.some(isDirty);
  useEffect(()=>{
@@ -169,5 +180,5 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  });
  const exportDocument=()=>({id:active.document.id,json:serializeDocument(active.document),fingerprint:fingerprint(active.document)});
  const markSaved=(snapshot:{id:string;fingerprint:string})=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===snapshot.id?{...t,saved:snapshot.fingerprint}:t)}));
- return {sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,activate,open,newDocument,close,exportDocument,markSaved};
+ return {sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,recoveryCanResume:workspace.recoveryCanResume,resumeRecovery,activate,open,newDocument,close,exportDocument,markSaved};
 }

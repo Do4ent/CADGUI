@@ -64,7 +64,7 @@ assert.deepEqual(plain(parseDocument(serializeDocument(complex))),complex);
 
 let state;
 const storage=new Map();
-const mocks={react:{useState:init=>{if(state===undefined)state=init();return [state,value=>{state=typeof value==='function'?value(state):value}];},useEffect:()=>{}},localStorage:{getItem:key=>storage.get(key)??null}};
+const mocks={react:{useState:init=>{if(state===undefined)state=init();return [state,value=>{state=typeof value==='function'?value(state):value}];},useEffect:()=>{},useRef:value=>({current:value})},localStorage:{getItem:key=>storage.get(key)??null}};
 const {useEditorDocuments}=load(path.resolve(__dirname,'../editor/useEditorDocuments.ts'),mocks);
 let hook=useEditorDocuments(()=>[item]);
 const first=hook.activeId;
