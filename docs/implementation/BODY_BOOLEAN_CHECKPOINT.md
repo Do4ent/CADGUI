@@ -45,6 +45,6 @@ Final rebase/follow-up requires one final full test/build run before runtime PR.
 PR: https://github.com/Do4ent/CADGUI/pull/39 (not merged).
 Final implementation head before this documentation update: `a152b2a30477c42955689bbab645a60ca99c1632`.
 
-Final rebased-head gates completed: `npm test` PASS63 suites; `npm run build` PASS. The native body runtime suite passed55 checks including STEP. Independent QA's production suite passed8/8 cases; final rebuilt-dist analytic smoke is delegated to QA. Independent Documents review found no blockers. CI review and merge remain the root Orchestrator's responsibility; this agent does not merge.
+Final rebased-head gates completed: `npm test` PASS63 suites; `npm run build` PASS. The native body runtime suite passed55 checks including STEP. Independent QA's production suite passed8/8 cases; final rebuilt-dist analytic smoke passed2/2 (35.54 seconds), confirming actual4mm³ common/cut, bounds and retained operands after rebase. Independent Documents review found no blockers. CI review and merge remain the root Orchestrator's responsibility; this agent does not merge.
 
 Next bounded work after approval: optional Ribbon/search entry points, broader body-boolean native compound/large-scale acceptance expansion, and separately planned feature-history operations. Current CAD workflow is available through SketchPanel and is fully source/native linked.
