@@ -3,6 +3,7 @@ import {Html,useBounds} from '@react-three/drei';
 import * as THREE from 'three';
 import {kernelClient} from './client';
 import type {ExactBody,ExactModelState,ExactSelection,KernelBodyResult} from './types';
+import {exactBodySelection} from './selection';
 
 /** OCCT faceGroups describe index ranges, not triangle ranges. IDs are revision-local. */
 export function faceAtTriangle(groups:Int32Array,triangle:number):number|null {
@@ -26,21 +27,33 @@ export function faceHighlightGeometry(result:KernelBodyResult,faceId:number):THR
  geometry.setAttribute('position',new THREE.BufferAttribute(result.mesh.positions,3));
  geometry.setIndex(indices);return geometry;
 }
+export function hasFace(result:KernelBodyResult,faceId:number):boolean {
+ const groups=result.mesh.faceGroups;
+ for(let i=0;i+2<groups.length;i+=3)if(groups[i+2]===faceId)return true;
+ return false;
+}
+export function selectedFaceForResult(documentId:string,body:ExactBody,result:KernelBodyResult,selected:ExactSelection|null):number|null {
+ if(!selected||selected.documentId!==documentId||selected.bodyId!==body.id||selected.brepSource!==body.brep||selected.meshSource!==result||selected.faceId===null)return null;
+ return hasFace(result,selected.faceId)?selected.faceId:null;
+}
 export function exactClippingPlanes(section='off',offset=0):THREE.Plane[]{return section==='off'?[]:[new THREE.Plane(section==='XY'?new THREE.Vector3(0,0,-1):section==='XZ'?new THREE.Vector3(0,-1,0):new THREE.Vector3(-1,0,0),offset)];}
-export type ExactModelLayerProps={state:ExactModelState;selected:ExactSelection|null;onSelect:(selection:ExactSelection)=>void;section?:string;sectionOffset?:number;wire?:boolean;edges?:boolean};
-function BodyMesh({body,result,selected,onSelect,section,sectionOffset,wire,edges}:Omit<ExactModelLayerProps,'state'>&{body:ExactBody;result:KernelBodyResult}){
+export type ExactModelLayerProps={documentId:string;renderScope:string;state:ExactModelState;selected:ExactSelection|null;onSelect:(selection:ExactSelection)=>void;section?:string;sectionOffset?:number;wire?:boolean;edges?:boolean};
+function BodyMesh({documentId,renderScope,body,result,selected,onSelect,section,sectionOffset,wire,edges}:Omit<ExactModelLayerProps,'state'>&{body:ExactBody;result:KernelBodyResult}){
  const geometry=useMemo(()=>createBodyGeometry(result),[result]);const bounds=useBounds();useLayoutEffect(()=>{bounds.refresh().clip().fit();},[bounds,geometry]);
  const lines=useMemo(()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(result.lines,3));return g},[result]);
- const highlight=useMemo(()=>selected?.bodyId===body.id&&selected.faceId!==null?faceHighlightGeometry(result,selected.faceId):null,[result,selected,body.id]);
+ const revisionMatches=selected?.documentId===documentId&&selected.bodyId===body.id&&selected.brepSource===body.brep;
+ const selectedFace=selectedFaceForResult(documentId,body,result,selected);
+ const highlight=useMemo(()=>selectedFace!==null?faceHighlightGeometry(result,selectedFace):null,[result,selectedFace]);
+ useEffect(()=>{if(revisionMatches&&selected?.renderScope===renderScope&&selected.faceId!==null&&selectedFace===null)onSelect(exactBodySelection(documentId,body))},[body,documentId,onSelect,renderScope,revisionMatches,selected?.faceId,selected?.renderScope,selectedFace]);
  useEffect(()=>()=>geometry.dispose(),[geometry]);useEffect(()=>()=>lines.dispose(),[lines]);useEffect(()=>()=>highlight?.dispose(),[highlight]);
- const planes=useMemo(()=>exactClippingPlanes(section,sectionOffset),[section,sectionOffset]);const active=selected?.bodyId===body.id;
+ const planes=useMemo(()=>exactClippingPlanes(section,sectionOffset),[section,sectionOffset]);const active=revisionMatches;
  return <group userData={{modelGeometry:true,exactBodyId:body.id}}>
-  <mesh geometry={geometry} dispose={null} onClick={event=>{event.stopPropagation();onSelect({bodyId:body.id,faceId:event.faceIndex==null?null:faceAtTriangle(result.mesh.faceGroups,event.faceIndex)})}} castShadow receiveShadow>
+  <mesh geometry={geometry} dispose={null} onClick={event=>{event.stopPropagation();const faceId=event.faceIndex==null?null:faceAtTriangle(result.mesh.faceGroups,event.faceIndex);onSelect(exactBodySelection(documentId,body,faceId,faceId===null?null:result,renderScope))}} castShadow receiveShadow>
    <meshStandardMaterial color={active?'#ffb347':body.color} metalness={.42} roughness={.35} wireframe={wire} side={THREE.DoubleSide} clippingPlanes={planes}/>
   </mesh>
   {highlight&&<mesh geometry={highlight} dispose={null} raycast={()=>{}}><meshBasicMaterial color="#ffd477" side={THREE.DoubleSide} clippingPlanes={planes} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}/></mesh>}
   {(edges||wire)&&result.lines.length>0&&<lineSegments geometry={lines} dispose={null} raycast={()=>{}}><lineBasicMaterial color={active?'#ffdd82':'#243e55'} clippingPlanes={planes}/></lineSegments>}
-  <Html style={{pointerEvents:'none'}}><span hidden data-kernel-render-body={body.id} data-exact-body-state="ready" data-exact-body-bounds={JSON.stringify(result.bounds)} data-exact-body-volume={result.volume} data-exact-body-triangles={result.mesh.indices.length/3} data-exact-body-faces={result.topology.faces} data-exact-selected-face={active?selected?.faceId??undefined:undefined} data-exact-body-units="mm"/></Html>
+  <Html style={{pointerEvents:'none'}}><span hidden data-kernel-render-body={body.id} data-exact-body-state="ready" data-exact-body-bounds={JSON.stringify(result.bounds)} data-exact-body-volume={result.volume} data-exact-body-triangles={result.mesh.indices.length/3} data-exact-body-faces={result.topology.faces} data-exact-selected-face={selectedFace??undefined} data-exact-body-units="mm"/></Html>
  </group>;
 }
 function InspectedBody(props:Omit<ExactModelLayerProps,'state'>&{body:ExactBody}){

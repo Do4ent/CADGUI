@@ -9,7 +9,7 @@ for(const value of ['',' ','NaN','Infinity','1000001','-1000001'])assert.equal(v
 for(const value of ['0','-1','0.000001','1000001'])assert.equal(validExactNumber(value,true),false);
 assert.equal(validExactNumber('0.00001',true),true);assert.equal(validExactNumber('1000000',true),true);
 const state=createExactModelState();state.bodies.push({id:'body',name:'<script>escaped</script>',brep:'CASCADE Topology V1',visible:true,color:'#2378e8'});const initial=JSON.stringify(state);let changes=0;
-const html=renderToStaticMarkup(React.createElement(ExactModelPanel,{state,selected:{bodyId:'body',faceId:null},documentId:'doc',onChange:()=>changes++,onSelect:()=>changes++}));
+const html=renderToStaticMarkup(React.createElement(ExactModelPanel,{state,selected:{documentId:'doc',bodyId:'body',brepSource:state.bodies[0].brep,faceId:null,meshSource:null,renderScope:null},documentId:'doc',onChange:()=>changes++,onSelect:()=>changes++}));
 for(const text of ['Точная геометрия','Создать точный параллелепипед','Создать точный цилиндр','Булева операция','Файл STEP','Экспорт STEP','Проверить тело','Удалить тело','data-exact-body-id="body"','aria-pressed="true"'])assert.ok(html.includes(text),text);
 assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script>'));assert.equal(calls,0);assert.equal(changes,0);assert.equal(JSON.stringify(state),initial);
 console.log('Exact panel SSR and numeric validation checks passed');
