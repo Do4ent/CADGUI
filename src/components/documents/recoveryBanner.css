@@ -1,0 +1,5 @@
+.recovery-banner{display:flex;align-items:center;gap:12px;padding:8px 12px;flex-wrap:wrap;border:1px solid currentColor;background:var(--panel);color:var(--text)}
+.recovery-banner span{flex:1;min-width:220px}
+.recovery-banner button{border:1px solid currentColor;border-radius:0;padding:5px 9px;background:var(--panel);color:inherit;cursor:pointer;font:inherit}
+.recovery-banner button:focus-visible{outline:2px solid #1688bf;outline-offset:2px}
+.recovery-banner button:hover{background:var(--hover)}
