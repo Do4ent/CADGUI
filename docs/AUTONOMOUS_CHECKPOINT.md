@@ -6,10 +6,11 @@ Updated 2026-11-15. Resume by inspecting actual branches and CI; do not assume r
 
 - Main `d2e93f7`: PRs #25–#33 integrated, including canonical runtime geometry references, Ribbon shared dialogs, and recovery foundation.
 - PR #34 connects RecoveryBanner to the editor. Local 60 suites/build and original-head CI passed. Actual production recovery tests passed 3/3, including both themes and real storage quota exhaustion.
-- Those browser tests were added to #34 as `0ef9d7b`; this new head needs its own CI before merge.
-- PR #35: bounded body boolean integration plan, documentation only.
-- PR #36 `ff22653`: detached body boolean validator, DAG adapter and removal plan; 69 focused checks, 61 suites/build passed. No runtime/schema integration claim.
-- PR #37 `b9c64ad`: standalone common/cut dialog; 61 suites/build and isolated light/dark browser checks passed. No root integration claim.
+- Those browser tests were added to #34 as `0ef9d7b`; both head checks passed and #34 is now merged.
+- PR #35: bounded body boolean integration plan, documentation only; merged after green CI.
+- PR #36 `ff22653`: detached body boolean validator, DAG adapter and removal plan; 69 focused checks, 61 suites/build passed; merged after green CI. No runtime/schema integration claim.
+- PR #37 `b9c64ad`: standalone common/cut dialog; 61 suites/build and isolated light/dark browser checks passed; merged after green CI. No root integration claim.
+- Current merged main: `3635e58`. End-to-end body boolean worktree: `/workspace/wt-body-boolean-runtime`, branch `feature/body-boolean-runtime`; initial stacked head `dd24e92` contains foundation/UI only. Inspect actual files before claiming schema12/runtime completion.
 
 ## Active work and ownership
 
