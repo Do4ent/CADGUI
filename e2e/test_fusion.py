@@ -14,7 +14,7 @@ from test_curves import open_curve
 
 def state(page, tmp_path, name='fusion.json'):
     document = save_document(page, tmp_path, name)
-    assert document['schemaVersion'] == 11
+    assert document['schemaVersion'] == 12
     return document
 
 

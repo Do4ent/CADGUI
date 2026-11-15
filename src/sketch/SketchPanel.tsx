@@ -329,13 +329,15 @@ export function SketchPanel({
     setBusy(false);
     setError("");
     setSelected(null);
+    setBodyBooleanId(null);
     setFeatureId(null);
     setCutId(null);
     setRevolutionId(null);
     setFusionId(null);
   }, [documentId]);
+  const bodyBoolean=state.bodyBooleans?.find(f=>f.id===bodyBooleanId);
   const sketch =
-    state.sketches.find((s) => s.id === selected) || state.sketches[0];
+    bodyBoolean ? undefined : (state.sketches.find((s) => s.id === selected) || state.sketches[0]);
   const feature =
     state.extrusions.find(
       (f) => f.id === featureId && f.sketchId === sketch?.id,
@@ -348,7 +350,6 @@ export function SketchPanel({
     (state.revolutions ?? []).find(
       (r) => r.id === revolutionId && r.sketchId === sketch?.id,
     ) || (state.revolutions ?? []).find((r) => r.sketchId === sketch?.id);
-  const bodyBoolean=state.bodyBooleans?.find(f=>f.id===bodyBooleanId);
   const fusion = (state.fusions ?? []).find((f) => f.id === fusionId);
   const close = () => {
     generation.current++;
@@ -1055,6 +1056,7 @@ export function SketchPanel({
       )
         return;
       change(next, exact);
+      if(captured.kind!=="bodyBoolean")setBodyBooleanId(null);
       if (captured.kind === "sketch") setSelected(captured.draft.id);
       else if (captured.kind === "ring") setSelected(captured.outer.id);
       else if (
@@ -1261,13 +1263,13 @@ export function SketchPanel({
           <li
             key={s.id}
             data-sketch-id={s.id}
-            onClick={() => setSelected(s.id)}
+            onClick={() => {setBodyBooleanId(null);setSelected(s.id)}}
           >
             <button
               type="button"
               aria-pressed={sketch?.id === s.id}
               onClick={() => {
-                setSelected(s.id);
+                setBodyBooleanId(null);setSelected(s.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
@@ -1286,8 +1288,8 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={feature?.id === f.id}
                       onClick={() => {
-                        setSelected(s.id);
-                        setFeatureId(f.id);
+                        setBodyBooleanId(null);setSelected(s.id);
+                        setBodyBooleanId(null);setFeatureId(f.id);
                         onSelectBody(f.bodyId);
                       }}
                     >
@@ -1303,8 +1305,8 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={revolution?.id === r.id}
                       onClick={() => {
-                        setSelected(s.id);
-                        setRevolutionId(r.id);
+                        setBodyBooleanId(null);setSelected(s.id);
+                        setBodyBooleanId(null);setRevolutionId(r.id);
                         setFeatureId(null);
                         setCutId(null);
                         setFusionId(null);
@@ -1328,8 +1330,8 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={cut?.id === c.id}
                       onClick={() => {
-                        setSelected(s.id);
-                        setCutId(c.id);
+                        setBodyBooleanId(null);setSelected(s.id);
+                        setBodyBooleanId(null);setCutId(c.id);
                         setFeatureId(null);
                         setFusionId(null);
                         onSelectBody(c.bodyId);
@@ -1359,7 +1361,7 @@ export function SketchPanel({
               type="button"
               aria-pressed={fusion?.id === f.id}
               onClick={() => {
-                setFusionId(f.id);
+                setBodyBooleanId(null);setFusionId(f.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
