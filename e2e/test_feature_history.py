@@ -34,6 +34,21 @@ def test_unified_history_real_roots_relations_keyboard_reload_and_undo(page, tmp
     inspector = page.get_by_label('Зависимости выбранного объекта', exact=True)
     expect(inspector.get_by_role('heading', name='Исходные объекты (3)', exact=True)).to_be_visible()
     expect(inspector.get_by_role('button')).to_have_count(3)
+    # Selecting a non-sketch history node must not leave actions bound to the
+    # previously selected sketch (or the first-sketch fallback).
+    for node_id in [f'body:{static_id}', f'fusion:{joined["id"]}']:
+        tree.locator(f'[data-history-id="{node_id}"]').click()
+        expect(panel(page).get_by_role('button', name='Редактировать эскиз', exact=True)).to_be_disabled()
+        expect(panel(page).get_by_role('button', name='Удалить эскиз и тела', exact=True)).to_be_disabled()
+    # The legacy list remains a supported entry point and must clear the
+    # unified inspector rather than show a different operation as selected.
+    legacy_sketch = panel(page).get_by_role('list', name='Эскизы', exact=True).locator(f'[data-sketch-id="{sketch_id}"] > button')
+    legacy_sketch.click()
+    expect(tree.locator('[aria-selected="true"]')).to_have_count(0)
+    expect(inspector).to_have_count(0)
+    expect(panel(page).get_by_role('button', name='Редактировать эскиз', exact=True)).to_be_enabled()
+    expect(panel(page).get_by_role('button', name='Удалить эскиз и тела', exact=True)).to_be_enabled()
+    fusion_row.click()
     expect(tree.locator('[tabindex="0"]')).to_have_count(1)
     fusion_row.focus()
     page.keyboard.press('Home')
