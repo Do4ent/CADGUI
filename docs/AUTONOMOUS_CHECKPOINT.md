@@ -16,10 +16,10 @@ Main at this snapshot is `7fd08cd4e6b84a21171a0f8b21d49c4a94afa4a5`.
 
 - PR #42 is open at `3ace83c`: pure unified history model for all supported operation/source kinds, static bodies and direct/transitive dependencies. Explicit exact-model inspection diagnoses missing BREP results; source-only inspection remains supported.
 - PR #43 is open at `db9f853`, based on the history-model branch. It adds the accessible read-only tree and dependency inspector.
-- PR #44 is open on GitHub at `b22b16e`; the local integration worktree `/workspace/wt-history-integration`, branch `integration/feature-history`, has the later commit `efb8d7e`. It includes foundations and panel selection integration. Suppression, chronological feature reordering and persistent topological naming are outside this package.
+- PR #44 is open on GitHub at `b22b16e`; the local integration worktree `/workspace/wt-history-integration`, branch `integration/feature-history`, has the later commit `f8ea528`. It includes foundations and panel selection integration. Suppression, chronological feature reordering and persistent topological naming are outside this package.
 - Earlier integration evidence reports 66 module suites and production build PASS, plus two production theme cases passed in 43.88 seconds on `b22b16e`. The browser regression was prepared as `87b9740`; later QA work exists in `/workspace/wt-history-qa`. The previous `/tmp/history-qa-e2e.log` is absent in the restored environment, so verify retained commits and rerun the final artifact rather than treating that temporary log as available evidence.
-- Both #44 head-`b22b16e` CI runs passed: [43777696092](https://github.com/Do4ent/CADGUI/actions/runs/43777696092) and [43777700075](https://github.com/Do4ent/CADGUI/actions/runs/43777700075). They do not verify the later local `efb8d7e`. No history integration merge is asserted.
-- Review found a remaining blocker in `efb8d7e`: blanket `onClickCapture` outside the history tree clears `historyOnly/historyId`, so clicking an inert heading or empty panel after selecting a static body can reactivate unrelated sketch edit/delete controls. Root must replace blanket clearing with explicit legacy-selection synchronization and reset both states on document changes. Final regression/build/CI are required after that fix.
+- Both #44 head-`b22b16e` CI runs passed: [43777696092](https://github.com/Do4ent/CADGUI/actions/runs/43777696092) and [43777700075](https://github.com/Do4ent/CADGUI/actions/runs/43777700075). They do not verify the later local `f8ea528`. No history integration merge is asserted.
+- Review found that blanket `onClickCapture` in `efb8d7e` could reactivate unrelated sketch actions after an inert panel click. Root's `f8ea528` replaces it with explicit legacy-selection clearing and document-context reset. QA reports rebuilt production browser 2/2 PASS in both themes (60.08 seconds), including static/fusion action isolation and legacy-row clearing. QA commits `87b9740`, `5411c5d`, `7560501` remain in `/workspace/wt-history-qa`; inspect whether they have been included before publishing a final head. Final module/build/CI and independent fix review remain required.
 
 ## Active ownership
 
@@ -27,9 +27,15 @@ Root alone owns SketchPanel integration and applies specialist commits. History 
 
 The resumed parallel stage has six specialist roles: model review, UI review, browser acceptance, persistence review, leaf-suppression design, and checkpoint documentation. Agent liveness must be checked in the active session; a saved assignment is not proof that a worker is still running.
 
+## Planned leaf-suppression package
+
+The next proposed function is suppression of terminal body operations with no saved consumers. Definitions and stable output IDs remain reserved; active BREP is removed, and resume requires an actual atomic OCCT rebuild. Metadata must be retained so resume preserves name, color and visibility. This is a proposed contract, not an implemented feature or a merged schema change.
+
+Ownership for the next bounded stage: root alone edits SketchPanel integration; CAD owns only a new pure suppression planner; UI owns only new suppression controls; QA owns only new E2E coverage; Documents reviews persistence read-only. Freeze the planner/control interfaces before integration, and preserve existing worktrees.
+
 ## Next actions
 
-1. Fix the reviewed blanket-click context regression in root-owned SketchPanel, then inspect actual PR #44 head/checks and QA browser commit. Cover missing results, static/fusion versus sketch action context, inert clicks, legacy selection synchronization, dirty state, reload and Undo on the final head.
+1. Review the root `f8ea528` context fix and inspect actual PR #44 head/checks and QA browser commits. Cover missing results, static/fusion versus sketch action context, inert clicks, legacy selection synchronization, dirty state, reload and Undo on the final head.
 2. Include the browser regression in the integration PR, then verify module/build/browser and CI for that updated head.
 3. Integrate in dependency order only after required checks and independent review pass; avoid duplicating cherry-picked foundations when retargeting stacked PRs.
 4. Update delivery records from actual merged state. The read-only DAG view must not imply chronological editing or suppression.
