@@ -40,6 +40,12 @@ def test_unified_history_real_roots_relations_keyboard_reload_and_undo(page, tmp
         tree.locator(f'[data-history-id="{node_id}"]').click()
         expect(panel(page).get_by_role('button', name='Редактировать эскиз', exact=True)).to_be_disabled()
         expect(panel(page).get_by_role('button', name='Удалить эскиз и тела', exact=True)).to_be_disabled()
+        # An inert panel click is not an intentional model selection. It must
+        # preserve the history context and cannot enable an unrelated sketch.
+        panel(page).get_by_role('heading', name='Эскизы и выдавливания', exact=True).click()
+        expect(tree.locator(f'[data-history-id="{node_id}"]')).to_have_attribute('aria-selected', 'true')
+        expect(panel(page).get_by_role('button', name='Редактировать эскиз', exact=True)).to_be_disabled()
+        expect(panel(page).get_by_role('button', name='Удалить эскиз и тела', exact=True)).to_be_disabled()
     # The legacy list remains a supported entry point and must clear the
     # unified inspector rather than show a different operation as selected.
     legacy_sketch = panel(page).get_by_role('list', name='Эскизы', exact=True).locator(f'[data-sketch-id="{sketch_id}"] > button')
