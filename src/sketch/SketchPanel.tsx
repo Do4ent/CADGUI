@@ -306,6 +306,7 @@ export function SketchPanel({
 }: SketchPanelProps) {
   const history = useMemo(()=>buildFeatureHistory(state,exactModel),[state,exactModel]);
   const [historyId,setHistoryId]=useState<string|null>(null);
+  const [historyOnly,setHistoryOnly]=useState(false);
   const [selected, setSelected] = useState<string | null>(null),
     [featureId, setFeatureId] = useState<string | null>(null),
     [cutId, setCutId] = useState<string | null>(null),
@@ -346,7 +347,7 @@ export function SketchPanel({
   }, [documentId]);
   const bodyBoolean=state.bodyBooleans?.find(f=>f.id===bodyBooleanId);
   const sketch =
-    bodyBoolean ? undefined : (state.sketches.find((s) => s.id === selected) || state.sketches[0]);
+    bodyBoolean || historyOnly ? undefined : (state.sketches.find((s) => s.id === selected) || state.sketches[0]);
   const feature =
     state.extrusions.find(
       (f) => f.id === featureId && f.sketchId === sketch?.id,
@@ -1191,11 +1192,11 @@ export function SketchPanel({
     </button>
   );
   return (
-    <section className="sketch-panel" aria-label="Эскизы и выдавливания">
+    <section className="sketch-panel" aria-label="Эскизы и выдавливания" onClickCapture={event=>{if(!(event.target as HTMLElement).closest('.feature-history')){setHistoryId(null);setHistoryOnly(false);}}}>
       <h3>Эскизы и выдавливания</h3>
       <FeatureHistoryTree history={history} selectedId={historyId} disabled={busy||!!session} onSelect={(id,bodyId)=>{
         const node=history.nodes.find(candidate=>candidate.id===id);if(!node)return;
-        setHistoryId(id);setFeatureId(null);setRevolutionId(null);setCutId(null);setFusionId(null);setBodyBooleanId(null);
+        setHistoryId(id);setHistoryOnly(!node.sketchId&&node.kind!=='sketch');setFeatureId(null);setRevolutionId(null);setCutId(null);setFusionId(null);setBodyBooleanId(null);
         if(node.kind==='sketch')setSelected(node.sourceId);
         else if(node.kind==='extrusion'){setFeatureId(node.sourceId);if(node.sketchId)setSelected(node.sketchId);}
         else if(node.kind==='revolution'){setRevolutionId(node.sourceId);if(node.sketchId)setSelected(node.sketchId);}
