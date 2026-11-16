@@ -339,6 +339,7 @@ export function SketchPanel({
     setBusy(false);
     setError("");
     setSelected(null);
+    setHistoryId(null);setHistoryOnly(false);
     setBodyBooleanId(null);
     setFeatureId(null);
     setCutId(null);
@@ -1192,7 +1193,7 @@ export function SketchPanel({
     </button>
   );
   return (
-    <section className="sketch-panel" aria-label="Эскизы и выдавливания" onClickCapture={event=>{if(!(event.target as HTMLElement).closest('.feature-history')){setHistoryId(null);setHistoryOnly(false);}}}>
+    <section className="sketch-panel" aria-label="Эскизы и выдавливания">
       <h3>Эскизы и выдавливания</h3>
       <FeatureHistoryTree history={history} selectedId={historyId} disabled={busy||!!session} onSelect={(id,bodyId)=>{
         const node=history.nodes.find(candidate=>candidate.id===id);if(!node)return;
@@ -1285,13 +1286,13 @@ export function SketchPanel({
           <li
             key={s.id}
             data-sketch-id={s.id}
-            onClick={() => {setBodyBooleanId(null);setSelected(s.id)}}
+            onClick={() => {setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id)}}
           >
             <button
               type="button"
               aria-pressed={sketch?.id === s.id}
               onClick={() => {
-                setBodyBooleanId(null);setSelected(s.id);
+                setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
@@ -1310,7 +1311,7 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={feature?.id === f.id}
                       onClick={() => {
-                        setBodyBooleanId(null);setSelected(s.id);
+                        setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                         setBodyBooleanId(null);setFeatureId(f.id);
                         onSelectBody(f.bodyId);
                       }}
@@ -1327,7 +1328,7 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={revolution?.id === r.id}
                       onClick={() => {
-                        setBodyBooleanId(null);setSelected(s.id);
+                        setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                         setBodyBooleanId(null);setRevolutionId(r.id);
                         setFeatureId(null);
                         setCutId(null);
@@ -1352,7 +1353,7 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={cut?.id === c.id}
                       onClick={() => {
-                        setBodyBooleanId(null);setSelected(s.id);
+                        setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                         setBodyBooleanId(null);setCutId(c.id);
                         setFeatureId(null);
                         setFusionId(null);
@@ -1375,7 +1376,7 @@ export function SketchPanel({
           </li>
         ))}
       </ul>
-      <ul aria-label="Булевы операции тел">{(state.bodyBooleans??[]).map(f=><li key={f.id} data-body-boolean-id={f.id} data-body-boolean-operation={f.operation}><button type="button" aria-pressed={bodyBooleanId===f.id} onClick={()=>{setBodyBooleanId(f.id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);onSelectBody(f.bodyId)}}>{f.operation==='common'?'Пересечение':'Вычитание'} · {exactModel.bodies.find(b=>b.id===f.aBodyId)?.name??f.aBodyId} {f.operation==='common'?'∩':'−'} {exactModel.bodies.find(b=>b.id===f.bBodyId)?.name??f.bBodyId}</button><small>Результат: {exactModel.bodies.find(b=>b.id===f.bodyId)?.name??f.bodyId}</small></li>)}</ul>
+      <ul aria-label="Булевы операции тел">{(state.bodyBooleans??[]).map(f=><li key={f.id} data-body-boolean-id={f.id} data-body-boolean-operation={f.operation}><button type="button" aria-pressed={bodyBooleanId===f.id} onClick={()=>{setHistoryId(null);setHistoryOnly(true);setBodyBooleanId(f.id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);onSelectBody(f.bodyId)}}>{f.operation==='common'?'Пересечение':'Вычитание'} · {exactModel.bodies.find(b=>b.id===f.aBodyId)?.name??f.aBodyId} {f.operation==='common'?'∩':'−'} {exactModel.bodies.find(b=>b.id===f.bBodyId)?.name??f.bBodyId}</button><small>Результат: {exactModel.bodies.find(b=>b.id===f.bodyId)?.name??f.bodyId}</small></li>)}</ul>
       <ul aria-label="Объединения тел">
         {(state.fusions ?? []).map((f) => (
           <li key={f.id} data-fusion-id={f.id}>
@@ -1383,7 +1384,7 @@ export function SketchPanel({
               type="button"
               aria-pressed={fusion?.id === f.id}
               onClick={() => {
-                setBodyBooleanId(null);setFusionId(f.id);
+                setHistoryId(null);setHistoryOnly(true);setBodyBooleanId(null);setFusionId(f.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
@@ -1402,6 +1403,7 @@ export function SketchPanel({
         selectedId={bodyBoolean?.id ?? fusion?.id ?? cut?.id}
         disabled={busy}
         onSelect={(id, bodyId) => {
+          setHistoryId(null);setHistoryOnly(!state.cuts?.some(c=>c.id===id));
           const source = state.cuts?.find((c) => c.id === id);
           if(state.bodyBooleans?.some(f=>f.id===id)){setBodyBooleanId(id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);}
           else if (source) {
