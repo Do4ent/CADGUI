@@ -49,6 +49,20 @@ def test_assembly_occurrences_share_source_with_independent_placement_and_reopen
             timeout=120000
         )
 
+    second = by_name['Вторая копия']
+    second_row = page.locator(f'[data-assembly-occurrence="{second["id"]}"]')
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(second_row).to_have_count(0)
+    undone = save_document(page, tmp_path, 'assembly-undo.json')
+    assert undone['assemblyInstances'] == [by_name['Первая копия']]
+    assert undone['exactModel'] == before['exactModel']
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+y')
+    expect(second_row).to_have_count(1)
+    redone = save_document(page, tmp_path, 'assembly-redo.json')
+    assert redone['assemblyInstances'] == occurrences
+
     tabs = page.get_by_role('tablist', name='Документы').get_by_role('tab')
     count = tabs.count()
     page.get_by_label('Импорт документа JSON', exact=True).set_input_files(
