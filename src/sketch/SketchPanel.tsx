@@ -1070,6 +1070,9 @@ export function SketchPanel({
       change(next, exact);
       setHistoryId(null);
       setHistoryOnly(captured.kind==='fusion'||captured.kind==='bodyBoolean');
+      if(captured.kind==='sketch'||captured.kind==='ring'){
+        setFeatureId(null);setCutId(null);setRevolutionId(null);setFusionId(null);setBodyBooleanId(null);
+      }
       if(captured.kind!=="bodyBoolean")setBodyBooleanId(null);
       if (captured.kind === "sketch") setSelected(captured.draft.id);
       else if (captured.kind === "ring") setSelected(captured.outer.id);
