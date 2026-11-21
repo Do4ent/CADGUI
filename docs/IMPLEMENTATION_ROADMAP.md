@@ -44,8 +44,9 @@ The foundational UI, document, drawing, 3D-note and exact-kernel deliveries have
 - Exit: no command silently mutates a model before confirmation; undo/redo works.
 
 ### P1-06 — Feature history and property editing [BOUNDED IMPLEMENTATION; ACCEPTANCE IN PROGRESS]
-- [Parametric fusion](PARAMETRIC_FUSION_IMPLEMENTATION.md) connects two retained exact operands through a generalized cut/fusion dependency graph. The bounded implementation is complete and final acceptance is in progress; standalone intersection/subtraction snapshots, general reordering/suppression and persistent topological naming remain outside this package.
-- Linked sketch extrusions and finite cuts now provide a bounded dependency graph with atomic source/BRep rebuild and scene undo/redo. See [revolution implementation](SKETCH_REVOLUTION_IMPLEMENTATION.md) and [cut implementation](SKETCH_CUT_IMPLEMENTATION.md) for ownership, cascade deletion, visibility and verification limits. General feature reordering, suppression and arbitrary boolean dependencies remain outside this stage.
+- Linked extrusion, revolution, sketch cuts, fusion, body intersection and body subtraction share atomic source/BRep rebuild and scene Undo/Redo. See the [body boolean implementation](implementation/BODY_BOOLEAN_PLAN.md) and [unified history PR](https://github.com/Do4ent/CADGUI/pull/44).
+- The history panel can suppress and resume a leaf operation or a closed dependent branch. Branch commands preserve result identity and presentation, and reject a branch containing an already suppressed operation. Grouped suppression is stored in native schema 14. See [PR #51](https://github.com/Do4ent/CADGUI/pull/51).
+- Next acceptance target: reorder adjacent independent derived operations of the same kind with a common input. Verify the change in rebuild order, preservation through save/reopen and Undo/Redo, and rejection when dependencies or suppression prevent the move. General reorder and persistent topological naming remain future work.
 - Operation history, editable properties, dependency awareness, reliable undo/redo.
 - Exit: state persists and remains consistent across reload and editing.
 
