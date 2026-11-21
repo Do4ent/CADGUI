@@ -13,7 +13,7 @@ from test_curves import open_curve
 
 def document(page, tmp_path, name='body-booleans.json'):
     result = save_document(page, tmp_path, name)
-    assert result['schemaVersion'] == 12
+    assert result['schemaVersion'] == 13
     return result
 
 

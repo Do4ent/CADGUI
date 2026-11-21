@@ -96,8 +96,10 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   const sketch=pruneSketchExtrusions(active.document.sketchModel,removed);
   const retainedOwned=new Set(ownedSketchBodyIds(sketch));
   const retainedFeatures=new Set(bodyDependencies(sketch).map(feature=>feature.id));
-  const consumedTargets=new Set(bodyDependencies(sketch).flatMap(feature=>feature.inputs));
-  const revealTargets=new Set(bodyDependencies(active.document.sketchModel).filter(feature=>!retainedFeatures.has(feature.id)).flatMap(feature=>feature.inputs).filter(id=>!consumedTargets.has(id)));
+  const suppressed=new Set(sketch.suppressedFeatures?.map(record=>record.featureId));
+  const previouslySuppressed=new Set(active.document.sketchModel.suppressedFeatures?.map(record=>record.featureId));
+  const consumedTargets=new Set(bodyDependencies(sketch).filter(feature=>!suppressed.has(feature.id)).flatMap(feature=>feature.inputs));
+  const revealTargets=new Set(bodyDependencies(active.document.sketchModel).filter(feature=>!previouslySuppressed.has(feature.id)&&!retainedFeatures.has(feature.id)).flatMap(feature=>feature.inputs).filter(id=>!consumedTargets.has(id)));
   exact={...exact,bodies:exact.bodies.filter(body=>!owned.has(body.id)||retainedOwned.has(body.id)).map(body=>revealTargets.has(body.id)?{...body,visible:true}:body)};
   validateSketchReferences(sketch,exact);commitScene(active.document.items,active.document.modelAnnotations,exact,sketch);
  };
