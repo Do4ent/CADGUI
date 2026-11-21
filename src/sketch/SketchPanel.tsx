@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {FeatureHistoryTree} from './FeatureHistoryTree';
+import {buildFeatureHistory} from './featureHistory';
 import { Dialog } from "../components/dialog/Dialog";
 import { ParameterField } from "../components/dialog/ParameterField";
 import { TechnicalIcon } from "../components/icons/TechnicalIcon";
@@ -302,6 +304,9 @@ export function SketchPanel({
   fusionCreateRequest = 0,
   onFusionRequestHandled,
 }: SketchPanelProps) {
+  const history = useMemo(()=>buildFeatureHistory(state,exactModel),[state,exactModel]);
+  const [historyId,setHistoryId]=useState<string|null>(null);
+  const [historyOnly,setHistoryOnly]=useState(false);
   const [selected, setSelected] = useState<string | null>(null),
     [featureId, setFeatureId] = useState<string | null>(null),
     [cutId, setCutId] = useState<string | null>(null),
@@ -334,6 +339,7 @@ export function SketchPanel({
     setBusy(false);
     setError("");
     setSelected(null);
+    setHistoryId(null);setHistoryOnly(false);
     setBodyBooleanId(null);
     setFeatureId(null);
     setCutId(null);
@@ -342,7 +348,7 @@ export function SketchPanel({
   }, [documentId]);
   const bodyBoolean=state.bodyBooleans?.find(f=>f.id===bodyBooleanId);
   const sketch =
-    bodyBoolean ? undefined : (state.sketches.find((s) => s.id === selected) || state.sketches[0]);
+    bodyBoolean || historyOnly ? undefined : (state.sketches.find((s) => s.id === selected) || state.sketches[0]);
   const feature =
     state.extrusions.find(
       (f) => f.id === featureId && f.sketchId === sketch?.id,
@@ -1062,6 +1068,11 @@ export function SketchPanel({
       )
         return;
       change(next, exact);
+      setHistoryId(null);
+      setHistoryOnly(captured.kind==='fusion'||captured.kind==='bodyBoolean');
+      if(captured.kind==='sketch'||captured.kind==='ring'){
+        setFeatureId(null);setCutId(null);setRevolutionId(null);setFusionId(null);setBodyBooleanId(null);
+      }
       if(captured.kind!=="bodyBoolean")setBodyBooleanId(null);
       if (captured.kind === "sketch") setSelected(captured.draft.id);
       else if (captured.kind === "ring") setSelected(captured.outer.id);
@@ -1189,6 +1200,17 @@ export function SketchPanel({
   return (
     <section className="sketch-panel" aria-label="Эскизы и выдавливания">
       <h3>Эскизы и выдавливания</h3>
+      <FeatureHistoryTree history={history} selectedId={historyId} disabled={busy||!!session} onSelect={(id,bodyId)=>{
+        const node=history.nodes.find(candidate=>candidate.id===id);if(!node)return;
+        setHistoryId(id);setHistoryOnly(!node.sketchId&&node.kind!=='sketch');setFeatureId(null);setRevolutionId(null);setCutId(null);setFusionId(null);setBodyBooleanId(null);
+        if(node.kind==='sketch')setSelected(node.sourceId);
+        else if(node.kind==='extrusion'){setFeatureId(node.sourceId);if(node.sketchId)setSelected(node.sketchId);}
+        else if(node.kind==='revolution'){setRevolutionId(node.sourceId);if(node.sketchId)setSelected(node.sketchId);}
+        else if(node.kind==='cut'){setCutId(node.sourceId);if(node.sketchId)setSelected(node.sketchId);}
+        else if(node.kind==='fusion')setFusionId(node.sourceId);
+        else if(node.kind==='body-boolean')setBodyBooleanId(node.sourceId);
+        if(bodyId&&exactModel.bodies.some(body=>body.id===bodyId))onSelectBody(bodyId);
+      }}/>
       <p>Параметрические профили · мм · выдавливание Open CASCADE</p>
       <p className="sketch-scope">
         Линейные ограничения, расстояния, равные длины, углы и касательность
@@ -1269,13 +1291,13 @@ export function SketchPanel({
           <li
             key={s.id}
             data-sketch-id={s.id}
-            onClick={() => {setBodyBooleanId(null);setSelected(s.id)}}
+            onClick={() => {setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id)}}
           >
             <button
               type="button"
               aria-pressed={sketch?.id === s.id}
               onClick={() => {
-                setBodyBooleanId(null);setSelected(s.id);
+                setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
@@ -1294,7 +1316,7 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={feature?.id === f.id}
                       onClick={() => {
-                        setBodyBooleanId(null);setSelected(s.id);
+                        setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                         setBodyBooleanId(null);setFeatureId(f.id);
                         onSelectBody(f.bodyId);
                       }}
@@ -1311,7 +1333,7 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={revolution?.id === r.id}
                       onClick={() => {
-                        setBodyBooleanId(null);setSelected(s.id);
+                        setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                         setBodyBooleanId(null);setRevolutionId(r.id);
                         setFeatureId(null);
                         setCutId(null);
@@ -1336,7 +1358,7 @@ export function SketchPanel({
                       type="button"
                       aria-pressed={cut?.id === c.id}
                       onClick={() => {
-                        setBodyBooleanId(null);setSelected(s.id);
+                        setHistoryId(null);setHistoryOnly(false);setBodyBooleanId(null);setSelected(s.id);
                         setBodyBooleanId(null);setCutId(c.id);
                         setFeatureId(null);
                         setFusionId(null);
@@ -1359,7 +1381,7 @@ export function SketchPanel({
           </li>
         ))}
       </ul>
-      <ul aria-label="Булевы операции тел">{(state.bodyBooleans??[]).map(f=><li key={f.id} data-body-boolean-id={f.id} data-body-boolean-operation={f.operation}><button type="button" aria-pressed={bodyBooleanId===f.id} onClick={()=>{setBodyBooleanId(f.id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);onSelectBody(f.bodyId)}}>{f.operation==='common'?'Пересечение':'Вычитание'} · {exactModel.bodies.find(b=>b.id===f.aBodyId)?.name??f.aBodyId} {f.operation==='common'?'∩':'−'} {exactModel.bodies.find(b=>b.id===f.bBodyId)?.name??f.bBodyId}</button><small>Результат: {exactModel.bodies.find(b=>b.id===f.bodyId)?.name??f.bodyId}</small></li>)}</ul>
+      <ul aria-label="Булевы операции тел">{(state.bodyBooleans??[]).map(f=><li key={f.id} data-body-boolean-id={f.id} data-body-boolean-operation={f.operation}><button type="button" aria-pressed={bodyBooleanId===f.id} onClick={()=>{setHistoryId(null);setHistoryOnly(true);setBodyBooleanId(f.id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);onSelectBody(f.bodyId)}}>{f.operation==='common'?'Пересечение':'Вычитание'} · {exactModel.bodies.find(b=>b.id===f.aBodyId)?.name??f.aBodyId} {f.operation==='common'?'∩':'−'} {exactModel.bodies.find(b=>b.id===f.bBodyId)?.name??f.bBodyId}</button><small>Результат: {exactModel.bodies.find(b=>b.id===f.bodyId)?.name??f.bodyId}</small></li>)}</ul>
       <ul aria-label="Объединения тел">
         {(state.fusions ?? []).map((f) => (
           <li key={f.id} data-fusion-id={f.id}>
@@ -1367,7 +1389,7 @@ export function SketchPanel({
               type="button"
               aria-pressed={fusion?.id === f.id}
               onClick={() => {
-                setBodyBooleanId(null);setFusionId(f.id);
+                setHistoryId(null);setHistoryOnly(true);setBodyBooleanId(null);setFusionId(f.id);
                 setFeatureId(null);
                 setCutId(null);
                 setRevolutionId(null);
@@ -1386,6 +1408,7 @@ export function SketchPanel({
         selectedId={bodyBoolean?.id ?? fusion?.id ?? cut?.id}
         disabled={busy}
         onSelect={(id, bodyId) => {
+          setHistoryId(null);setHistoryOnly(!state.cuts?.some(c=>c.id===id));
           const source = state.cuts?.find((c) => c.id === id);
           if(state.bodyBooleans?.some(f=>f.id===id)){setBodyBooleanId(id);setFusionId(null);setCutId(null);setFeatureId(null);setRevolutionId(null);}
           else if (source) {
