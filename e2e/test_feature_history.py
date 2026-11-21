@@ -3,7 +3,7 @@ import pytest
 from playwright.sync_api import expect
 from test_regression import browser, page
 from test_kernel import prepare, panel as exact_panel
-from test_sketch import create_sketch, extrude, panel
+from test_sketch import create_sketch, start_sketch, extrude, panel
 from test_fusion import box, fuse
 from test_drawing import save_document
 
@@ -80,3 +80,26 @@ def test_unified_history_real_roots_relations_keyboard_reload_and_undo(page, tmp
     restored = save_document(page, tmp_path, 'history-undo.json')
     assert restored['sketchModel'] == before['sketchModel']
     assert restored['exactModel'] == before['exactModel']
+
+
+def test_new_sketch_after_static_history_selection_restores_its_action_context(page, tmp_path):
+    prepare(page)
+    create_sketch(page)
+    static_id = box(page, tmp_path, origin=(1, 0, 0))
+    tree = page.get_by_role('tree', name='Объекты истории построения', exact=True)
+    tree.locator(f'[data-history-id="body:{static_id}"]').click()
+    expect(panel(page).get_by_role('button', name='Редактировать эскиз', exact=True)).to_be_disabled()
+    before = save_document(page, tmp_path, 'before-second-sketch.json')
+    dialog = start_sketch(page, width=5, height=6)
+    dialog.get_by_label('Название эскиза', exact=True).fill('Новый активный профиль')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible(timeout=120000)
+    expect(tree.locator('[aria-selected="true"]')).to_have_count(0)
+    expect(panel(page).get_by_role('button', name='Редактировать эскиз', exact=True)).to_be_enabled()
+    expect(panel(page).get_by_role('button', name='Удалить эскиз и тела', exact=True)).to_be_enabled()
+    expect(panel(page).get_by_role('button', name='Выдавить эскиз', exact=True)).to_be_enabled()
+    after = save_document(page, tmp_path, 'after-second-sketch.json')
+    assert len(after['sketchModel']['sketches']) == len(before['sketchModel']['sketches']) + 1
+    assert after['exactModel'] == before['exactModel']
+    panel(page).get_by_role('button', name='Редактировать эскиз', exact=True).click()
+    expect(page.get_by_role('dialog', name='Редактор эскиза', exact=True).get_by_label('Название эскиза', exact=True)).to_have_value('Новый активный профиль')
