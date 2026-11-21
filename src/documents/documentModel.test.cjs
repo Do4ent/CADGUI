@@ -519,6 +519,29 @@ console.log('PASS schema13 v12 clean/dirty migration and native suppression owne
 
 const legacy11=plain(validateDocument(fusionDocument));legacy11.schemaVersion=11;const migrated11=plain(parseDocument(JSON.stringify(legacy11)));assert.equal(migrated11.schemaVersion,15);assert.deepEqual(migrated11.sketchModel,legacy11.sketchModel);assert.ok(!Object.hasOwn(migrated11.sketchModel,'bodyBooleans'));console.log('PASS schema12 v11 absence-preserving source migration');
 
+state=undefined;storage.clear();
+hook=useEditorDocuments(()=>[]);
+hook.setExactModel(assemblyDocument.exactModel);
+hook=useEditorDocuments(()=>[]);
+assert.ok(!Object.hasOwn(parseDocument(hook.exportDocument().json),'assemblyInstances'));
+hook.setAssemblyInstances([occurrence]);
+hook=useEditorDocuments(()=>[]);
+assert.deepEqual(plain(hook.assemblyInstances),[occurrence]);
+hook.modelUndo();
+hook=useEditorDocuments(()=>[]);
+assert.ok(!Object.hasOwn(hook.document,'assemblyInstances'));
+assert.ok(!Object.hasOwn(parseDocument(hook.exportDocument().json),'assemblyInstances'));
+hook.modelRedo();
+hook=useEditorDocuments(()=>[]);
+hook.setExactModel({...hook.exactModel,bodies:[]});
+hook=useEditorDocuments(()=>[]);
+assert.deepEqual(plain(hook.assemblyInstances),[]);
+hook.modelUndo();
+hook=useEditorDocuments(()=>[]);
+assert.deepEqual(plain(hook.assemblyInstances),[occurrence]);
+assert.equal(hook.exactModel.bodies[0].id,sourceBody.id);
+console.log('PASS schema15 assembly add, absence-preserving Undo and source deletion restoration');
+
 for(const dirty of [false,true]){state=undefined;const source=plain(legacy11);const saved=[dirty?'Unsaved v11':source.name,source.items,source.drawing,source.modelAnnotations,source.exactModel,source.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:source.id,tabs:[{document:source,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.document.schemaVersion,15);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel,'bodyBooleans'));}console.log('PASS schema12 v11 workspace clean/dirty fingerprints preserved');
 (async()=>{const{OcctKernel}=await import('occt-wasm'),kernel=await OcctKernel.init();try{const a=kernel.makeBox(2,2,2),b=kernel.translate(kernel.makeBox(2,2,2),1,0,0),common=kernel.common(a,b),cut=kernel.cut(a,b),source={version:1,units:'mm',sketches:[],extrusions:[],bodyBooleans:[{id:'bc',bodyId:'bc-out',aBodyId:'ba',bBodyId:'bb',operation:'common'},{id:'bd',bodyId:'bd-out',aBodyId:'ba',bBodyId:'bb',operation:'cut'}]},native={version:1,kernel:'occt-wasm',kernelVersion:'5.15.0',units:'mm',bodies:[{id:'ba',name:'A',brep:kernel.toBREP(a),color:'#123456',visible:false},{id:'bb',name:'B',brep:kernel.toBREP(b),color:'#abcdef',visible:false},{id:'bc-out',name:'Common',brep:kernel.toBREP(common),color:'#123456',visible:true},{id:'bd-out',name:'Difference',brep:kernel.toBREP(cut),color:'#123456',visible:true}]},nativeDoc={...document,id:'body-bool-document',sketchModel:source,exactModel:native};assert.deepEqual(plain(parseDocument(serializeDocument(nativeDoc))),plain(nativeDoc));for(const id of ['ba','bb','bc-out','bd-out']){const missing=plain(nativeDoc);missing.exactModel.bodies=missing.exactModel.bodies.filter(b=>b.id!==id);assert.throws(()=>validateDocument(missing));}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(source,native);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.sketchModel.bodyBooleans.length,2);assert.equal(hook.tabs[0].dirty,true);const before=plain(hook.document);const mutated=plain(hook.exactModel);mutated.bodies[0].brep+='\n';assert.throws(()=>hook.setExactModel(mutated),/эскиз/);assert.deepEqual(plain(hook.document),before);

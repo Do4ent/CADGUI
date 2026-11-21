@@ -10,7 +10,7 @@ export type AssemblyInstance = {
 
 function vector(value: unknown, limit: number): Vec3 {
   if (!Array.isArray(value) || value.length !== 3 ||
-      !value.every(n => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= limit)) {
+      !Array.from(value).every(n => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= limit)) {
     throw Error('Некорректное размещение вхождения');
   }
   return [value[0], value[1], value[2]];
