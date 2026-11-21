@@ -1,3 +1,5 @@
+import {FeatureSuppressionControls} from './FeatureSuppressionControls';
+import {getFeatureSuppressionEligibility,planFeatureSuppression,planFeatureResume} from './featureSuppression';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {FeatureHistoryTree} from './FeatureHistoryTree';
 import {buildFeatureHistory} from './featureHistory';
@@ -110,6 +112,7 @@ export function updateSketchDimension(
   return next;
 }
 function featureInputs(state: SketchModelState) {
+  const suppressed=new Set(state.suppressedFeatures?.map(record=>record.featureId));
   return [
     ...(state.cuts ?? []).map((c) => ({
       id: c.id,
@@ -121,7 +124,7 @@ function featureInputs(state: SketchModelState) {
       bodyId: f.bodyId,
       inputs: [f.aBodyId, f.bBodyId],
     })),
-  ];
+  ].filter(feature=>!suppressed.has(feature.id));
 }
 export function stageOwnedFeatureRemoval(
   before: SketchModelState,
@@ -346,6 +349,39 @@ export function SketchPanel({
     setRevolutionId(null);
     setFusionId(null);
   }, [documentId]);
+  const historyFeature=history.nodes.find(node=>node.id===historyId&&node.kind!=='body'&&node.kind!=='sketch');
+  const suppression=useMemo(()=>historyFeature?getFeatureSuppressionEligibility(state,historyFeature.sourceId):null,[state,historyFeature]);
+  const isSuppressed=state.suppressedFeatures?.some(record=>record.featureId===historyFeature?.sourceId)??false;
+
+  async function changeSuppression(resume:boolean) {
+    if(!historyFeature||!suppression?.eligible||busy||session)return;
+    const base=current.current;
+    const token=++generation.current;
+    setBusy(true);
+    setError('');
+    try{
+      const id=historyFeature.sourceId;
+      const records=base.state.suppressedFeatures??[];
+      const resumePlan=resume?planFeatureResume(base.state,base.exactModel,records,id):null;
+      const plan=resumePlan??planFeatureSuppression(base.state,base.exactModel,records,id);
+      const next={...plan.state,suppressedFeatures:plan.records};
+      let exact=plan.exact;
+      if(resumePlan){
+        const {bodyId,...metadata}=resumePlan.restoreOutput;
+        const rebuilt=await rebuildSketchBodies(next,exact);
+        const output=rebuilt.bodies.find(body=>body.id===bodyId);
+        if(!output)throw Error('Возобновлённое тело отсутствует');
+        exact={...rebuilt,bodies:rebuilt.bodies.map(body=>body.id===bodyId?{...body,...metadata}:body)};
+      }
+      if(!live.current||generation.current!==token||!sketchBaselineMatches(base,current.current))return;
+      onChange(next,exact);
+      if(resume&&historyFeature.bodyId)onSelectBody(historyFeature.bodyId);
+    }catch(cause){
+      if(live.current&&generation.current===token)setError(cause instanceof Error?cause.message:String(cause));
+    }finally{
+      if(live.current&&generation.current===token)setBusy(false);
+    }
+  }
   const bodyBoolean=state.bodyBooleans?.find(f=>f.id===bodyBooleanId);
   const sketch =
     bodyBoolean || historyOnly ? undefined : (state.sketches.find((s) => s.id === selected) || state.sketches[0]);
@@ -1211,6 +1247,16 @@ export function SketchPanel({
         else if(node.kind==='body-boolean')setBodyBooleanId(node.sourceId);
         if(bodyId&&exactModel.bodies.some(body=>body.id===bodyId))onSelectBody(bodyId);
       }}/>
+      {historyFeature&&suppression&&<FeatureSuppressionControls
+        featureId={historyFeature.id}
+        featureName={historyFeature.label}
+        eligible={suppression.eligible&&historyFeature.status!=='broken'&&!session}
+        suppressed={isSuppressed}
+        reason={suppression.reason}
+        busy={busy}
+        onSuppress={()=>void changeSuppression(false)}
+        onResume={()=>void changeSuppression(true)}
+      />}
       <p>Параметрические профили · мм · выдавливание Open CASCADE</p>
       <p className="sketch-scope">
         Линейные ограничения, расстояния, равные длины, углы и касательность
