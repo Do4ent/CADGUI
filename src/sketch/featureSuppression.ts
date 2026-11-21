@@ -1,7 +1,7 @@
 import type {ExactBody,ExactModelState} from '../kernel/types';
 import {validateExactModelState} from '../kernel/model';
 import type {SketchModelState,SuppressedFeatureRecord} from './types';
-import {validateSketchModelState} from './model';
+import {validateSketchModelState,validateSketchReferences} from './model';
 import {ownedSketchBodyIds} from './cutGraph';
 import {suppressionFeatures,validateSuppressedFeatureRecords,type SuppressibleFeatureKind} from './suppressionValidation';
 export {validateSuppressedFeatureRecords} from './suppressionValidation';
@@ -20,9 +20,7 @@ export function getFeatureSuppressionEligibility(state:SketchModelState,featureI
 }
 function context(state:SketchModelState,exact:ExactModelState,records:unknown){
  const source=validateSketchModelState(state),model=validateExactModelState(exact),saved=validateSuppressedFeatureRecords(records),all=suppressionFeatures(source);
- for(const item of saved){const eligibility=getFeatureSuppressionEligibility(source,item.featureId);if(!eligibility.eligible)throw Error(eligibility.reason);if(model.bodies.some(b=>b.id===eligibility.bodyId))throw Error('Подавленный результат не должен присутствовать в активной модели');}
- const suppressed=new Set(saved.map(item=>item.featureId)),available=new Set(model.bodies.map(body=>body.id));
- for(const feature of all){if(!suppressed.has(feature.id)&&!available.has(feature.bodyId))throw Error('Активный результат операции отсутствует');for(const input of feature.inputs)if(!available.has(input))throw Error('Исходное тело отсутствует');}
+ validateSketchReferences({...source,suppressedFeatures:saved},model);
  return {source,model,saved,all};
 }
 function requireLeaf(state:SketchModelState,featureId:string):{bodyId:string;kind:SuppressibleFeatureKind}{const e=getFeatureSuppressionEligibility(state,featureId);if(!e.eligible||!e.bodyId||!e.kind)throw Error(e.reason??'Операция недоступна');return {bodyId:e.bodyId,kind:e.kind};}
@@ -45,7 +43,7 @@ export function planFeatureSuppression(state:SketchModelState,exact:ExactModelSt
  * If rebuild fails, discard this detached plan and retain the suppressed state. */
 export function planFeatureResume(state:SketchModelState,exact:ExactModelState,records:unknown,featureId:string):ResumePlan{
  const {source,model,saved,all}=context(state,exact,records),leaf=requireLeaf(source,featureId),savedRecord=saved.find(r=>r.featureId===featureId);
- if(!savedRecord)throw Error('Операция не подавлена');
+ if(!savedRecord||savedRecord.groupId)throw Error('Операция не подавлена отдельно');
  const feature=all.find(f=>f.id===featureId)!;
  for(const input of feature.inputs)if(!model.bodies.some(b=>b.id===input))throw Error('Исходное тело отсутствует');
  const bodies=model.bodies.map((b):ExactBody=>feature.inputs.includes(b.id)?{...b,visible:false}:b);

@@ -1,4 +1,5 @@
 import {FeatureSuppressionControls} from './FeatureSuppressionControls';
+import {describeSuppressionBranch,planBranchSuppression,planBranchResume} from './suppressionBranch';
 import {getFeatureSuppressionEligibility,planFeatureSuppression,planFeatureResume} from './featureSuppression';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {FeatureHistoryTree} from './FeatureHistoryTree';
@@ -351,10 +352,17 @@ export function SketchPanel({
   }, [documentId]);
   const historyFeature=history.nodes.find(node=>node.id===historyId&&node.kind!=='body'&&node.kind!=='sketch');
   const suppression=useMemo(()=>historyFeature?getFeatureSuppressionEligibility(state,historyFeature.sourceId):null,[state,historyFeature]);
-  const isSuppressed=state.suppressedFeatures?.some(record=>record.featureId===historyFeature?.sourceId)??false;
+  const suppressionRecord=state.suppressedFeatures?.find(record=>record.featureId===historyFeature?.sourceId);
+  const isSuppressed=!!suppressionRecord;
+  const branch=useMemo(()=>historyFeature?describeSuppressionBranch(state,historyFeature.sourceId):[],[state,historyFeature]);
+  const branchSize=suppressionRecord?.groupId
+    ?state.suppressedFeatures!.filter(record=>record.groupId===suppressionRecord.groupId).length
+    :branch.length;
+  const canSuppress=!!suppression?.eligible||!!suppressionRecord?.groupId||
+    (branch.length>1&&!branch.some(member=>member.alreadySuppressed));
 
   async function changeSuppression(resume:boolean) {
-    if(!historyFeature||!suppression?.eligible||busy||session)return;
+    if(!historyFeature||!canSuppress||busy||session)return;
     const base=current.current;
     const token=++generation.current;
     setBusy(true);
@@ -362,6 +370,23 @@ export function SketchPanel({
     try{
       const id=historyFeature.sourceId;
       const records=base.state.suppressedFeatures??[];
+      if(suppressionRecord?.groupId||(!resume&&branch.length>1)){
+        const resumeBranch=resume&&suppressionRecord?.groupId
+          ?planBranchResume(base.state,base.exactModel,suppressionRecord.groupId):null;
+        const plan=resumeBranch??planBranchSuppression(base.state,base.exactModel,id);
+        let exact=plan.exact;
+        if(resumeBranch){
+          const rebuilt=await rebuildSketchBodies(plan.state,exact);
+          if([...resumeBranch.restored.keys()].some(id=>!rebuilt.bodies.some(body=>body.id===id))){
+            throw Error('Не все тела ветви были возобновлены');
+          }
+          exact={...rebuilt,bodies:rebuilt.bodies.map(body=>({...body,...resumeBranch.restored.get(body.id)}))};
+        }
+        if(!live.current||generation.current!==token||!sketchBaselineMatches(base,current.current))return;
+        onChange(plan.state,exact);
+        if(resume&&historyFeature.bodyId)onSelectBody(historyFeature.bodyId);
+        return;
+      }
       const resumePlan=resume?planFeatureResume(base.state,base.exactModel,records,id):null;
       const plan=resumePlan??planFeatureSuppression(base.state,base.exactModel,records,id);
       const next={...plan.state,suppressedFeatures:plan.records};
@@ -1250,9 +1275,10 @@ export function SketchPanel({
       {historyFeature&&suppression&&<FeatureSuppressionControls
         featureId={historyFeature.id}
         featureName={historyFeature.label}
-        eligible={suppression.eligible&&historyFeature.status!=='broken'&&!session}
+        eligible={canSuppress&&historyFeature.status!=='broken'&&!session}
         suppressed={isSuppressed}
-        reason={suppression.reason}
+        reason={canSuppress?undefined:branch.length>1?'В ветви уже есть подавленная операция':suppression.reason}
+        branchSize={branchSize}
         busy={busy}
         onSuppress={()=>void changeSuppression(false)}
         onResume={()=>void changeSuppression(true)}

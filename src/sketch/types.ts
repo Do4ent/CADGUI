@@ -16,7 +16,7 @@ export type SketchCut={id:string;sketchId:string;bodyId:string;targetBodyId:stri
 export type SketchRevolution={id:string;sketchId:string;bodyId:string;axis:'u'|'v';offset:number;angle:number};
 export type SketchFusion={id:string;bodyId:string;aBodyId:string;bBodyId:string};
 export type BodyBooleanFeature={id:string;bodyId:string;aBodyId:string;bBodyId:string;operation:'common'|'cut'};
-export type SuppressedFeatureRecord={featureId:string;output:{name:string;color:string;visible:boolean}};
+export type SuppressedFeatureRecord={featureId:string;groupId?:string;output:{name:string;color:string;visible:boolean}};
 export type SketchModelState={version:1;units:'mm';sketches:Sketch[];extrusions:SketchExtrusion[];cuts?:SketchCut[];revolutions?:SketchRevolution[];fusions?:SketchFusion[];bodyBooleans?:BodyBooleanFeature[];suppressedFeatures?:SuppressedFeatureRecord[]};
 export type SketchSolveResult={status:'fully-constrained'|'under-constrained'|'inconsistent';dof:number;rank:number;points:SketchPoint[];residual:number;redundant:number;message?:string};
 
