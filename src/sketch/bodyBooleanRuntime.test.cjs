@@ -8,5 +8,26 @@ try{
  const touch=run({op:'box',size:[2,2,2],origin:[2,0,0]});checks++;assert.throws(()=>run({op:'body-boolean',kind:'cut',a:a.brep,b:touch.brep}));near(run({op:'body-boolean',kind:'common',a:a.brep,b:a.brep}).volume,8);
  const chain={...state,bodyBooleans:[{id:'after',bodyId:'after-result',aBodyId:'a',bBodyId:'common-result',operation:'cut'},state.bodyBooleans[0]]},calls=[],rebuilt=await rebuildSketchBodies(chain,{...initial,bodies:initial.bodies.map(body=>body.id==='common-result'?{...body,name:'Saved',visible:false,color:'#aabbcc',brep:far.brep}:body)},async r=>{calls.push(r);return run(r);});near(volume(rebuilt,'after-result'),4);eq(rebuilt.bodies.find(b=>b.id==='common-result').name,'Saved');eq(rebuilt.bodies.find(b=>b.id==='common-result').color,'#aabbcc');eq(calls.map(r=>r.kind),['common','cut']);const snapshot=JSON.stringify(base),source=JSON.stringify(state);let count=0;checks++;await assert.rejects(()=>rebuildSketchBodies(state,base,async r=>{if(++count===2)throw Error('Second failed');return run(r);}));eq(JSON.stringify(base),snapshot);eq(JSON.stringify(state),source);
  let attempted=0;checks++;await assert.rejects(()=>rebuildSketchBodies(state,{...base,bodies:[base.bodies[0]]},async r=>{attempted++;return run(r);}));eq(attempted,0);
+ const {planSiblingFeatureMove}=load('featureOrder.ts');
+ const reordered=planSiblingFeatureMove(state,'cut',-1);
+ ok(reordered);
+ eq(state.bodyBooleans.map(operation=>operation.id),['common','cut']);
+ eq(reordered.bodyBooleans.map(operation=>operation.id),['cut','common']);
+ eq(planSiblingFeatureMove(reordered,'cut',1),state);
+ eq(planSiblingFeatureMove(chain,'after',-1),null);
+ eq(planSiblingFeatureMove({...state,suppressedFeatures:[
+  {featureId:'cut',output:{name:'Cut',color:'#123456',visible:true}},
+ ]},'common',1),null);
+ const reorderedCalls=[];
+ const reorderedModel=await rebuildSketchBodies(reordered,initial,async request=>{
+  reorderedCalls.push(request.kind);
+  return run(request);
+ });
+ eq(reorderedCalls,['cut','common']);
+ for(const body of reorderedModel.bodies){
+  const previous=initial.bodies.find(candidate=>candidate.id===body.id);
+  eq([body.name,body.color,body.visible],[previous.name,previous.color,previous.visible]);
+  near(volume(reorderedModel,body.id),volume(initial,body.id));
+ }
  const shifted={...base,bodies:[base.bodies[0],{...base.bodies[1],brep:run({op:'box',size:[2,2,2],origin:[.5,0,0]}).brep}]},updated=await rebuildSketchBodies(chain,shifted,executor);near(volume(updated,'common-result'),6);near(volume(updated,'after-result'),2);eq(kernel.shapeCount,0);console.log(`PASS: ${checks} native body common/cut analytic volumes, strict no-op rejection, fresh DAG targets and atomic rebuild checks`);
 }finally{kernel[Symbol.dispose]();}})().catch(e=>{console.error(e);process.exitCode=1;});

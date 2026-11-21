@@ -1,4 +1,5 @@
 import {FeatureSuppressionControls} from './FeatureSuppressionControls';
+import {planSiblingFeatureMove} from './featureOrder';
 import {describeSuppressionBranch,planBranchSuppression,planBranchResume} from './suppressionBranch';
 import {getFeatureSuppressionEligibility,planFeatureSuppression,planFeatureResume} from './featureSuppression';
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -310,6 +311,7 @@ export function SketchPanel({
 }: SketchPanelProps) {
   const history = useMemo(()=>buildFeatureHistory(state,exactModel),[state,exactModel]);
   const [historyId,setHistoryId]=useState<string|null>(null);
+  const [pendingMove,setPendingMove]=useState<{base:Baseline;featureId:string;direction:-1|1}|null>(null);
   const [historyOnly,setHistoryOnly]=useState(false);
   const [selected, setSelected] = useState<string | null>(null),
     [featureId, setFeatureId] = useState<string | null>(null),
@@ -343,7 +345,7 @@ export function SketchPanel({
     setBusy(false);
     setError("");
     setSelected(null);
-    setHistoryId(null);setHistoryOnly(false);
+    setHistoryId(null);setHistoryOnly(false);setPendingMove(null);
     setBodyBooleanId(null);
     setFeatureId(null);
     setCutId(null);
@@ -360,6 +362,34 @@ export function SketchPanel({
     :branch.length;
   const canSuppress=!!suppression?.eligible||!!suppressionRecord?.groupId||
     (branch.length>1&&!branch.some(member=>member.alreadySuppressed));
+
+  const movableFeature = historyFeature?.status === 'ready' && ['cut','fusion','body-boolean'].includes(historyFeature.kind)
+    ? historyFeature : null;
+  const movableId = movableFeature?.sourceId;
+  const moveUp = useMemo(() => !!movableId && !!planSiblingFeatureMove(state, movableId, -1), [state, movableId]);
+  const moveDown = useMemo(() => !!movableId && !!planSiblingFeatureMove(state, movableId, 1), [state, movableId]);
+
+  async function confirmMove() {
+    if (!pendingMove || busy || session) return;
+    const {base, featureId, direction} = pendingMove;
+    setPendingMove(null);
+    if (!sketchBaselineMatches(base, current.current)) return;
+    const next = planSiblingFeatureMove(base.state, featureId, direction);
+    if (!next) return;
+    const token = ++generation.current;
+    setBusy(true);
+    setError('');
+    try {
+      const exact = await rebuildSketchBodies(next, base.exactModel);
+      if (live.current && generation.current === token && sketchBaselineMatches(base, current.current)) {
+        onChange(next, exact);
+      }
+    } catch (cause) {
+      if (live.current && generation.current === token) setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      if (live.current && generation.current === token) setBusy(false);
+    }
+  }
 
   async function changeSuppression(resume:boolean) {
     if(!historyFeature||!canSuppress||busy||session)return;
@@ -1272,6 +1302,16 @@ export function SketchPanel({
         else if(node.kind==='body-boolean')setBodyBooleanId(node.sourceId);
         if(bodyId&&exactModel.bodies.some(body=>body.id===bodyId))onSelectBody(bodyId);
       }}/>
+      {movableFeature&&<section className="feature-suppression-controls" aria-label="Порядок перестроения">
+        <p>Можно поменять местами соседние операции одного типа с общим исходным телом.</p>
+        <button type="button" disabled={!moveUp||busy||!!session} onClick={()=>setPendingMove({base:current.current,featureId:movableFeature.sourceId,direction:-1})}>Переместить раньше</button>
+        <button type="button" disabled={!moveDown||busy||!!session} onClick={()=>setPendingMove({base:current.current,featureId:movableFeature.sourceId,direction:1})}>Переместить позже</button>
+      </section>}
+      {pendingMove&&<Dialog open title="Изменение порядка перестроения" confirmLabel="Перестроить"
+        confirmDisabled={busy||!!session||!sketchBaselineMatches(pendingMove.base,current.current)}
+        onConfirm={()=>void confirmMove()} onCancel={()=>setPendingMove(null)}>
+        <p>Соседние операции поменяются местами. Исходные тела и связи сохранятся.</p>
+      </Dialog>}
       {historyFeature&&suppression&&<FeatureSuppressionControls
         featureId={historyFeature.id}
         featureName={historyFeature.label}
