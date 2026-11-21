@@ -11,13 +11,14 @@ export function suppressionFeatures(state:SketchModelState):Feature[]{return [
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const keys=(v:Record<string,unknown>,expected:string[])=>Object.keys(v).length===expected.length&&expected.every(k=>Object.hasOwn(v,k));
 const text=(v:unknown,max:number):v is string=>typeof v==='string'&&!!v.trim()&&v.length<=max&&!/[\u0000-\u001f\u007f]/.test(v);
+const outputName=(value:unknown):value is string=>typeof value==='string'&&!!value.trim()&&value.length<=200&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value);
 
 /** Validate and detach persisted suppression records. */
 export function validateSuppressedFeatureRecords(value:unknown):SuppressedFeatureRecord[]{
  if(!Array.isArray(value)||value.length>250)throw Error('Некорректный список подавленных операций');
  const ids=new Set<string>();
  return Array.from(value,raw=>{
-  if(!record(raw)||!keys(raw,['featureId','output'])||!text(raw.featureId,256)||ids.has(raw.featureId)||!record(raw.output)||!keys(raw.output,['name','color','visible'])||!text(raw.output.name,200)||typeof raw.output.color!=='string'||!/^#[\da-f]{6}$/i.test(raw.output.color)||typeof raw.output.visible!=='boolean')throw Error('Некорректные метаданные подавленной операции');
+  if(!record(raw)||!keys(raw,['featureId','output'])||!text(raw.featureId,256)||ids.has(raw.featureId)||!record(raw.output)||!keys(raw.output,['name','color','visible'])||!outputName(raw.output.name)||typeof raw.output.color!=='string'||!/^#[\da-f]{6}$/i.test(raw.output.color)||typeof raw.output.visible!=='boolean')throw Error('Некорректные метаданные подавленной операции');
   ids.add(raw.featureId);return {featureId:raw.featureId,output:{name:raw.output.name,color:raw.output.color,visible:raw.output.visible}};
  });
 }
