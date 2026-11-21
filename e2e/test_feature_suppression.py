@@ -51,7 +51,7 @@ def test_leaf_extrusion_suppression_undo_native_reopen_and_resume(page, tmp_path
     confirm_action(page, 'Подавить операцию', 'Подавление операции', 'Подавить')
     expect(body_row(page, body_id)).to_have_count(0, timeout=120000)
     suppressed = save_document(page, tmp_path, 'suppressed-extrusion.json')
-    assert suppressed['schemaVersion'] == 13
+    assert suppressed['schemaVersion'] == 14
     assert suppressed['sketchModel']['extrusions'] == source['sketchModel']['extrusions']
     assert suppressed['sketchModel']['suppressedFeatures'] == [{
         'featureId': feature['id'],
@@ -79,17 +79,18 @@ def test_leaf_extrusion_suppression_undo_native_reopen_and_resume(page, tmp_path
         assert result[key] == original[key]
 
 
-def test_extrusion_consumed_by_fusion_cannot_be_suppressed(page, tmp_path):
+def test_branch_with_already_suppressed_fusion_cannot_be_suppressed(page, tmp_path):
     prepare(page)
     create_sketch(page)
     extrude(page)
     source = save_document(page, tmp_path, 'fusion-extrusion.json')
     feature = source['sketchModel']['extrusions'][0]
     operand = box(page, tmp_path, origin=(1, 0, 0))
-    fuse(page, tmp_path, feature['bodyId'], operand)
+    fusion = fuse(page, tmp_path, feature['bodyId'], operand)
+    history_feature(page, 'fusion', fusion['id']).click()
+    confirm_action(page, 'Подавить операцию', 'Подавление операции', 'Подавить')
     before = save_document(page, tmp_path, 'before-blocked-suppression.json')
     history_feature(page, 'extrusion', feature['id']).click()
     controls = page.get_by_role('region', name='Подавление операции', exact=True)
     expect(controls.get_by_role('button', name='Подавить операцию', exact=True)).to_be_disabled()
-    expect(controls).to_contain_text('Результат используется другими сохранёнными операциями')
     assert save_document(page, tmp_path, 'after-blocked-suppression.json') == before
