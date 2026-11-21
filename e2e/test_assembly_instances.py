@@ -76,3 +76,21 @@ def test_assembly_occurrences_share_source_with_independent_placement_and_reopen
         expect(page.locator(f'[data-assembly-instance="{occurrence["id"]}"]').first).to_be_attached(
             timeout=120000
         )
+
+    second_row.get_by_role('button', name='Изменить вхождение', exact=True).click()
+    dialog = page.get_by_role('dialog', name='Вхождение детали', exact=True)
+    dialog.get_by_label('Смещение X', exact=True).fill('11')
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    expect(dialog).not_to_be_visible()
+    assert save_document(page, tmp_path, 'assembly-edit-canceled.json')['assemblyInstances'] == occurrences
+
+    second_row.get_by_role('button', name='Изменить вхождение', exact=True).click()
+    dialog.get_by_label('Смещение X', exact=True).fill('11')
+    dialog.get_by_role('button', name='ОК', exact=True).click()
+    expect(dialog).not_to_be_visible()
+    moved = save_document(page, tmp_path, 'assembly-moved.json')
+    assert moved['assemblyInstances'] == [
+        by_name['Первая копия'],
+        {**second, 'position': [11, 7, 2]},
+    ]
+    assert moved['exactModel'] == reopened['exactModel']
