@@ -1,10 +1,18 @@
 """Assembly placement of multiple occurrences of one real exact body."""
 
+import json
+
+import pytest
 from playwright.sync_api import expect
 
 from test_drawing import save_document
 from test_kernel import create_box, prepare
 from test_regression import browser, page
+from test_sketch import create_sketch, edit_width, extrude, inspect
+
+
+def instance_marker(page, instance_id):
+    return page.locator(f'[data-assembly-instance="{instance_id}"]').first
 
 
 def add_occurrence(page, source_id, name, position, rotation):
@@ -45,9 +53,10 @@ def test_assembly_occurrences_share_source_with_independent_placement_and_reopen
         assert occurrence['position'] == position
         assert occurrence['rotation'] == rotation
         expect(page.locator(f'[data-assembly-occurrence="{occurrence["id"]}"]')).to_contain_text(name)
-        expect(page.locator(f'[data-assembly-instance="{occurrence["id"]}"]').first).to_be_attached(
-            timeout=120000
-        )
+        marker = instance_marker(page, occurrence['id'])
+        expect(marker).to_be_attached(timeout=120000)
+        assert json.loads(marker.get_attribute('data-assembly-position')) == position
+        assert json.loads(marker.get_attribute('data-assembly-rotation')) == rotation
 
     second = by_name['Вторая копия']
     second_row = page.locator(f'[data-assembly-occurrence="{second["id"]}"]')
@@ -94,3 +103,37 @@ def test_assembly_occurrences_share_source_with_independent_placement_and_reopen
         {**second, 'position': [11, 7, 2]},
     ]
     assert moved['exactModel'] == reopened['exactModel']
+
+
+def test_both_occurrences_refresh_from_one_rebuilt_parametric_source(page, tmp_path):
+    prepare(page)
+    sketch_id = create_sketch(page, width=2, height=3)
+    extrude(page, depth=4)
+    source = save_document(page, tmp_path, 'assembly-parametric-source.json')
+    body_id = source['sketchModel']['extrusions'][0]['bodyId']
+    page.get_by_role('button', name='Сборка', exact=True).click()
+    add_occurrence(page, body_id, 'Левое вхождение', [8, 0, 0], [0, 0, 0])
+    add_occurrence(page, body_id, 'Правое вхождение', [-8, 0, 0], [0, 0, 90])
+    initial = save_document(page, tmp_path, 'assembly-before-rebuild.json')
+    markers = [instance_marker(page, occurrence['id']) for occurrence in initial['assemblyInstances']]
+    for marker in markers:
+        expect(marker).to_be_attached(timeout=120000)
+    previous_generation = markers[0].get_attribute('data-assembly-mesh-generation')
+    assert previous_generation
+    expect(markers[1]).to_have_attribute('data-assembly-mesh-generation', previous_generation)
+
+    page.get_by_role('button', name='Модель', exact=True).click()
+    edit_width(page, sketch_id, 5)
+    assert inspect(page, body_id)['volume'] == pytest.approx(60, rel=1e-9)
+    rebuilt = save_document(page, tmp_path, 'assembly-after-rebuild.json')
+    assert rebuilt['assemblyInstances'] == initial['assemblyInstances']
+    assert [body['id'] for body in rebuilt['exactModel']['bodies']] == [body_id]
+    assert rebuilt['exactModel']['bodies'][0]['brep'] != initial['exactModel']['bodies'][0]['brep']
+
+    page.get_by_role('button', name='Сборка', exact=True).click()
+    for marker in markers:
+        expect(marker).to_be_attached(timeout=120000)
+        expect(marker).not_to_have_attribute('data-assembly-mesh-generation', previous_generation)
+    current_generation = markers[0].get_attribute('data-assembly-mesh-generation')
+    assert current_generation
+    expect(markers[1]).to_have_attribute('data-assembly-mesh-generation', current_generation)
