@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type {ExactBody,ExactModelState,ExactSelection,KernelBodyResult} from './types';
 import {ExactSelectionRuntime,validateInspectionMesh} from './selection';
 import type {CanonicalInspection} from './selection';
+import type {AssemblyInstance} from '../documents/assemblyInstances';
 
 /** OCCT faceGroups describe index ranges, not triangle ranges. IDs are revision-local. */
 export function faceAtTriangle(groups:Int32Array,triangle:number):number|null {
@@ -56,4 +57,36 @@ function InspectedBody(props:Omit<ExactModelLayerProps,'state'>&{body:ExactBody}
  if(record?.status==='ready')return <BodyMesh {...props} record={record}/>;
  return <Html fullscreen style={{pointerEvents:'none'}}><div role="status" data-exact-body-status={body.id} style={{position:'absolute',left:8,top:8,color:record?.error?'#c43a3a':'#456',background:'var(--panel,#fff)',padding:4,fontSize:12}}>{record?.error?`${body.name}: ${record.error}`:`${body.name}: расчёт BREP…`}{record?.status==='error'&&<button type="button" style={{pointerEvents:'auto',borderRadius:0,marginLeft:6}} aria-label={`Повторить расчёт ${body.name}`} onClick={event=>{event.stopPropagation();runtime.retryInspection(body)}}>Повторить расчёт</button>}</div></Html>;
 }
-export function ExactModelLayer({state,...props}:ExactModelLayerProps){return <group>{state.bodies.map(body=><InspectedBody key={body.id} body={body} {...props}/>)}</group>}
+function Occurrence({instance,body,runtime,wire,section,sectionOffset}:{
+ instance:AssemblyInstance;body:ExactBody;runtime:ExactSelectionRuntime;wire?:boolean;section?:string;sectionOffset?:number;
+}){
+ const version=useSyncExternalStore(runtime.subscribe,runtime.getSnapshot,runtime.getSnapshot);
+ const record=runtime.inspection(body),result=record?.result;
+ useEffect(()=>{runtime.ensureInspection(body,true);},[runtime,body,version]);
+ const geometry=useMemo(()=>result?createBodyGeometry(result):null,[result]);
+ const bounds=useBounds();
+ useLayoutEffect(()=>{if(geometry)bounds.refresh().clip().fit();},[bounds,geometry,instance.position,instance.rotation]);
+ useEffect(()=>()=>geometry?.dispose(),[geometry]);
+ if(!geometry)return record?.status==='error'&&!body.visible?
+  <Html position={instance.position}>
+   <div role="status">{instance.name}: {record.error} <button type="button" onClick={()=>runtime.retryInspection(body)}>Повторить расчёт</button></div>
+  </Html>:null;
+ const [x,y,z]=instance.rotation.map(angle=>angle*Math.PI/180);
+ return <group position={instance.position} rotation={[x,y,z,'XYZ']} userData={{modelGeometry:true}}>
+  <mesh geometry={geometry} dispose={null} raycast={()=>{}} castShadow receiveShadow>
+   <meshStandardMaterial color={body.color} wireframe={wire} clippingPlanes={exactClippingPlanes(section,sectionOffset)} side={THREE.DoubleSide}/>
+  </mesh>
+  <Html style={{pointerEvents:'none'}}><span hidden data-assembly-instance={instance.id}
+   data-assembly-mesh-generation={record?.generation} data-assembly-position={JSON.stringify(instance.position)}
+   data-assembly-rotation={JSON.stringify(instance.rotation)}/></Html>
+ </group>;
+}
+export function ExactModelLayer({state,instances=[],...props}:ExactModelLayerProps & {instances?:readonly AssemblyInstance[]}){
+ return <group>
+  {state.bodies.map(body=><InspectedBody key={body.id} body={body} {...props}/>)}
+  {instances.map(instance=>{
+   const body=state.bodies.find(source=>source.id===instance.sourceBodyId);
+   return body&&<Occurrence key={instance.id} body={body} instance={instance} {...props}/>;
+  })}
+ </group>;
+}

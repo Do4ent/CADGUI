@@ -23,8 +23,8 @@ export class ExactSelectionRuntime {
  }
  matches(body:ExactBody):boolean{return !this.closed&&!!this.state?.bodies.some(current=>current.id===body.id&&current.brep===body.brep)}
  inspection(body:ExactBody):CanonicalInspection|undefined{return this.matches(body)?this.records.get(body.id):undefined}
- ensureInspection(body:ExactBody):void {
-  if(!this.matches(body)||!body.visible||this.records.has(body.id))return;
+ ensureInspection(body:ExactBody, includeHidden=false):void {
+  if(!this.matches(body)||(!includeHidden&&!body.visible)||this.records.has(body.id))return;
   const reference=this.session.captureBody(body.id),record:CanonicalInspection={bodyId:body.id,sourceBrep:body.brep,bodyRevision:reference.bodyRevision,generation:++this.generation,status:'loading'};
   this.records.set(body.id,record);this.publish();
   const current=()=>!this.closed&&this.records.get(body.id)===record&&this.session.resolve(reference).status==='valid';
@@ -38,7 +38,7 @@ export class ExactSelectionRuntime {
   if(this.closed)return;this.records.clear();this.generation++;this.session.invalidateInspections();
   // A failed worker must not enter an automatic restart/failure loop. Offer an
   // explicit per-body retry after notifying every viewport of the lost payload.
-  if(error&&this.state)for(const body of this.state.bodies)if(body.visible)this.records.set(body.id,{bodyId:body.id,sourceBrep:body.brep,bodyRevision:this.session.captureBody(body.id).bodyRevision,generation:++this.generation,status:'error',error});
+  if(error&&this.state)for(const body of this.state.bodies)this.records.set(body.id,{bodyId:body.id,sourceBrep:body.brep,bodyRevision:this.session.captureBody(body.id).bodyRevision,generation:++this.generation,status:'error',error});
   this.publish();
  }
  retryInspection(body:ExactBody):void {if(this.matches(body)&&this.records.get(body.id)?.status==='error'){this.records.delete(body.id);this.publish()}}

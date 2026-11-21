@@ -16,13 +16,25 @@ const {createDocument, validateDocument, parseDocument, serializeDocument} = exp
 const plain = value => JSON.parse(JSON.stringify(value));
 const item = {id:'a', name:'Box', kind:'box', pos:[0,1,-2], size:[1,2,3], color:'#123abc', visible:true, group:'Parts'};
 const document = {...createDocument('doc', 'Example'), items:[item]};
+const sourceBody = {id:'assembly-source',name:'Assembly body',brep:'CASCADE Topology V1 test',color:'#456789',visible:true};
+const occurrence = {id:'occurrence',sourceBodyId:sourceBody.id,name:'Instance',position:[1,2,3],rotation:[0,0,45]};
+const assemblyDocument = {...document,exactModel:{...document.exactModel,bodies:[sourceBody]},assemblyInstances:[occurrence]};
+assert.deepEqual(plain(parseDocument(serializeDocument(assemblyDocument))).assemblyInstances,[occurrence]);
+assert.ok(!Object.hasOwn(validateDocument({...document,schemaVersion:14}),'assemblyInstances'));
+assert.throws(()=>validateDocument({...assemblyDocument,schemaVersion:14}),/схему 15/);
+for (const instances of [[occurrence,occurrence],[{...occurrence,sourceBodyId:'missing'}],[{...occurrence,rotation:[0,0,361]}]]) {
+ assert.throws(()=>validateDocument({...assemblyDocument,assemblyInstances:instances}));
+}
+const detachedAssembly = validateDocument(assemblyDocument);
+detachedAssembly.assemblyInstances[0].position[0]=99;
+assert.equal(occurrence.position[0],1);
 assert.deepEqual(plain(parseDocument(serializeDocument(document))), plain(document));
-for (const value of [null, [], 42, {}, {...document,schemaVersion:15}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
+for (const value of [null, [], 42, {}, {...document,schemaVersion:16}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
 for (const patch of [{pos:[0,1]}, {pos:[0,NaN,0]}, {pos:[0,Infinity,0]}, {size:[1,0,1]}, {size:[1,-1,1]}, {kind:'unknown'}, {color:'red'}, {visible:'yes'}, {id:' '}, {name:''}, {group:null}]) assert.throws(() => validateDocument({...document,items:[{...item,...patch}]}));
 assert.throws(() => parseDocument('{bad'), /Invalid document JSON/);
 assert.throws(() => parseDocument(JSON.stringify([item])), /Legacy/);
 const migrated = parseDocument(JSON.stringify([item]), {id:'legacy',name:'Imported',modifiedAt:'2026-11-02T00:00:00Z'});
-assert.equal(migrated.schemaVersion,14);
+assert.equal(migrated.schemaVersion,15);
 assert.equal(migrated.id,'legacy');
 assert.deepEqual(plain(migrated.items),[item]);
 assert.deepEqual(plain(parseDocument(serializeDocument(migrated))), plain(migrated));
@@ -39,7 +51,7 @@ console.log('PASS document schema, invalid data, clone isolation and legacy migr
 
 const old = {...document,schemaVersion:1};delete old.drawing;
 const upgrade = parseDocument(JSON.stringify(old));
-assert.equal(upgrade.schemaVersion,14);
+assert.equal(upgrade.schemaVersion,15);
 assert.deepEqual(plain(upgrade.items),[item]);
 assert.ok(upgrade.drawing.sheets.length);
 assert.throws(()=>validateDocument({...document,drawing:undefined}));
@@ -80,7 +92,7 @@ hook.newDocument();hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHist
 hook.activate(first);hook=useEditorDocuments(()=>[]);assert.equal(hook.drawingHistoryCount,1);
 hook.markSaved(initialSnapshot);hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,true);
 state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old.id,tabs:[{document:old,saved:JSON.stringify([old.name,old.items])}]}));
-hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,14);
+hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.document.schemaVersion,15);
 state=undefined;storage.set('bendcore-documents-v1','{corrupt');hook=useEditorDocuments(()=>[]);assert.ok(hook.recoveryError);assert.equal(storage.get('bendcore-documents-v1'),'{corrupt');
 console.log('PASS drawing history, dirty guards, per-tab state, snapshot save and workspace migration');
 
@@ -158,7 +170,7 @@ console.log('PASS native dimension roundtrip, strict future schemas, arc persist
 const detachedFrozen=plain(frozen);detachedFrozen.drawing.sheets[0].entities[0].dimension.refs=[];assert.deepEqual(plain(parseDocument(serializeDocument(detachedFrozen))),detachedFrozen);
 
 // Native v3 requires annotation state; old versions migrate without losing drawing/items.
-assert.equal(document.schemaVersion,14);
+assert.equal(document.schemaVersion,15);
 assert.deepEqual(plain(document.modelAnnotations),{version:1,annotations:[]});
 const v2=plain(complex);v2.schemaVersion=2;delete v2.modelAnnotations;
 const fromV2=plain(parseDocument(JSON.stringify(v2)));
@@ -169,7 +181,7 @@ assert.throws(()=>validateDocument({...document,modelAnnotations:{version:2,anno
 assert.throws(()=>validateDocument({...document,modelAnnotations:{version:1,annotations:[{}]}}));
 for(const dirty of [false,true]){
  state=undefined;storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:v2.id,tabs:[{document:v2,saved:JSON.stringify([dirty?'Unsaved name':v2.name,v2.items,v2.drawing])}]}));
- hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,14);
+ hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.document.schemaVersion,15);
 }
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);
 const sceneId=hook.activeId;
@@ -332,7 +344,7 @@ assert.deepEqual(plain(parseDocument(serializeDocument(curvedDoc))),plain(curved
 const clonedCurves=validateDocument(curvedDoc);clonedCurves.sketchModel.sketches[0].geometry.rim='changed';assert.equal(curvedSources.sketches[0].geometry.rim,'rim');
 for(const patch of [{kind:'circle',center:'center',rim:'missing'},{kind:'circle',center:'center',rim:'rim',extra:true},{kind:'arc',center:'center',start:'rim',end:'rim',ccw:'yes'}]){const bad=plain(curvedDoc);bad.sketchModel.sketches[0].geometry=patch;assert.throws(()=>validateDocument(bad));}
 const old5=plain(validateDocument(sourceDocument));old5.schemaVersion=5;assert.ok(!Object.hasOwn(old5.sketchModel.sketches[0],'geometry'));
-const migrated5=plain(parseDocument(JSON.stringify(old5)));assert.equal(migrated5.schemaVersion,14);assert.deepEqual(migrated5.sketchModel,old5.sketchModel);assert.deepEqual(migrated5.exactModel,old5.exactModel);
+const migrated5=plain(parseDocument(JSON.stringify(old5)));assert.equal(migrated5.schemaVersion,15);assert.deepEqual(migrated5.sketchModel,old5.sketchModel);assert.deepEqual(migrated5.exactModel,old5.exactModel);
 for(const dirty of [false,true]){state=undefined;const marker=[dirty?'Unsaved legacy':old5.name,old5.items,old5.drawing,old5.modelAnnotations,old5.exactModel,old5.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old5.id,tabs:[{document:old5,saved:JSON.stringify(marker)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel.sketches[0],'geometry'));}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(curvedSources,cylinderExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.exactModel.bodies[0].brep,cylinderBrep);assert.equal(hook.sketchModel.sketches[1].geometry.ccw,true);
 hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches.length,0);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.tabs[0].dirty,false);hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.sketches[0].geometry.kind,'circle');assert.equal(hook.exactModel.bodies[0].brep,cylinderBrep);
@@ -348,7 +360,7 @@ const mixedDocument={...document,sketchModel:mixedState,exactModel:mixedExact};
 const nativeMixed=plain(parseDocument(serializeDocument(mixedDocument)));assert.deepEqual(nativeMixed,plain(mixedDocument));assert.deepEqual(nativeMixed.sketchModel.sketches[0].geometry.segments.map(edge=>edge.id),['arc-edge','diameter-edge']);
 const copiedMixed=validateDocument(mixedDocument);copiedMixed.sketchModel.sketches[0].geometry.segments[0].center='changed';assert.equal(mixedSource.geometry.segments[0].center,'center');
 for(const mutation of [s=>s.geometry.segments[0].center='missing',s=>s.geometry.segments[1].id='arc-edge',s=>s.geometry.segments[0].ccw='yes',s=>s.geometry.segments[1].start='start',s=>s.geometry.segments[0].extra=true]){const bad=plain(mixedDocument);mutation(bad.sketchModel.sketches[0]);assert.throws(()=>validateDocument(bad));}
-const old6=plain(validateDocument(curvedDoc));old6.schemaVersion=6;const migrated6=plain(parseDocument(JSON.stringify(old6)));assert.equal(migrated6.schemaVersion,14);assert.deepEqual(migrated6.sketchModel,old6.sketchModel);assert.deepEqual(migrated6.exactModel,old6.exactModel);
+const old6=plain(validateDocument(curvedDoc));old6.schemaVersion=6;const migrated6=plain(parseDocument(JSON.stringify(old6)));assert.equal(migrated6.schemaVersion,15);assert.deepEqual(migrated6.sketchModel,old6.sketchModel);assert.deepEqual(migrated6.exactModel,old6.exactModel);
 for(const dirty of [false,true]){state=undefined;const saved=[dirty?'Unsaved v6':old6.name,old6.items,old6.drawing,old6.modelAnnotations,old6.exactModel,old6.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old6.id,tabs:[{document:old6,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.equal(hook.sketchModel.sketches[0].geometry.kind,'circle');}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(mixedState,mixedExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);assert.equal(hook.exactModel.bodies.length,0);assert.equal(hook.sketchModel.sketches.length,0);hook.modelRedo();hook=useEditorDocuments(()=>[]);assert.equal(hook.exactModel.bodies[0].brep,mixedBrep);assert.equal(hook.sketchModel.sketches[0].geometry.segments[0].id,'arc-edge');
 console.log('PASS schema7 mixed ordered source+real semicylinder BREP, stable IDs, malformed refs and v6 fingerprint migration with atomic Undo');
@@ -366,7 +378,7 @@ const annulusExact=plain(exactCore.createExactModelState());annulusExact.bodies=
 const annulusDocument={...document,sketchModel:annulusState,exactModel:annulusExact};const annulusNative=plain(parseDocument(serializeDocument(annulusDocument)));assert.deepEqual(annulusNative,plain(annulusDocument));assert.deepEqual(annulusNative.sketchModel.sketches[0].holes,['inner-circle']);
 const annulusClone=validateDocument(annulusDocument);annulusClone.sketchModel.sketches[0].holes[0]='mutated';assert.equal(annulusOuter.holes[0],'inner-circle');
 for(const mutation of [s=>s.sketches[0].holes=['missing'],s=>s.sketches[0].holes=['inner-circle','inner-circle'],s=>s.sketches[0].holes=['outer-circle'],s=>s.sketches[1].holes=['outer-circle'],s=>s.sketches[1].plane='XZ',s=>s.sketches[1].closed=false,s=>s.sketches[1].origin=[0,0,1]]){const bad=plain(annulusDocument);mutation(bad.sketchModel);assert.throws(()=>validateDocument(bad));}
-const old7=plain(validateDocument(mixedDocument));old7.schemaVersion=7;assert.ok(!Object.hasOwn(old7.sketchModel.sketches[0],'holes'));const migrated7=plain(parseDocument(JSON.stringify(old7)));assert.equal(migrated7.schemaVersion,14);assert.deepEqual(migrated7.sketchModel,old7.sketchModel);
+const old7=plain(validateDocument(mixedDocument));old7.schemaVersion=7;assert.ok(!Object.hasOwn(old7.sketchModel.sketches[0],'holes'));const migrated7=plain(parseDocument(JSON.stringify(old7)));assert.equal(migrated7.schemaVersion,15);assert.deepEqual(migrated7.sketchModel,old7.sketchModel);
 for(const dirty of [false,true]){state=undefined;const saved=[dirty?'Unsaved v7':old7.name,old7.items,old7.drawing,old7.modelAnnotations,old7.exactModel,old7.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old7.id,tabs:[{document:old7,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel.sketches[0],'holes'));}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(annulusState,annulusExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.exactModel.bodies[0].brep,perforatedBrep);
 const withoutBore=sketchCore.removeSketch(hook.sketchModel,'inner-circle');assert.equal(withoutBore.sketches.length,1);assert.ok(!withoutBore.sketches[0].holes?.includes('inner-circle'));assert.equal(withoutBore.extrusions[0].bodyId,'annulus-body');
@@ -384,7 +396,7 @@ const cutExact=plain(exactCore.createExactModelState());cutExact.bodies=[{id:'st
 const cutDocument={...document,sketchModel:cutState,exactModel:cutExact};assert.deepEqual(plain(parseDocument(serializeDocument(cutDocument))),plain(cutDocument));
 const cutCloned=validateDocument(cutDocument);cutCloned.sketchModel.cuts[0].targetBodyId='changed';assert.equal(cutState.cuts[0].targetBodyId,'static-box');
 for(const mutation of [s=>s.cuts[0].targetBodyId='missing',s=>s.cuts[0].targetBodyId='pocket-output',s=>s.cuts.push({...s.cuts[0]}),s=>s.cuts[0].sketchId='missing',s=>s.cuts[0].depth=0]){const bad=plain(cutDocument);mutation(bad.sketchModel);assert.throws(()=>validateDocument(bad));}
-const old8=plain(validateDocument(annulusDocument));old8.schemaVersion=8;assert.ok(!Object.hasOwn(old8.sketchModel,'cuts'));const migrated8=plain(parseDocument(JSON.stringify(old8)));assert.equal(migrated8.schemaVersion,14);assert.deepEqual(migrated8.sketchModel,old8.sketchModel);
+const old8=plain(validateDocument(annulusDocument));old8.schemaVersion=8;assert.ok(!Object.hasOwn(old8.sketchModel,'cuts'));const migrated8=plain(parseDocument(JSON.stringify(old8)));assert.equal(migrated8.schemaVersion,15);assert.deepEqual(migrated8.sketchModel,old8.sketchModel);
 for(const dirty of [false,true]){state=undefined;const saved=[dirty?'Unsaved v8':old8.name,old8.items,old8.drawing,old8.modelAnnotations,old8.exactModel,old8.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old8.id,tabs:[{document:old8,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel,'cuts'));}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);const cutTab=hook.activeId;hook.setSketchModel(cutState,cutExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.exactModel.bodies[1].brep,blindPocketBrep);
 const changedTarget=plain(hook.exactModel);changedTarget.bodies[0].brep+='\n';assert.throws(()=>hook.setExactModel(changedTarget),/эскиз/);const changedResult=plain(hook.exactModel);changedResult.bodies[1].brep+='\n';assert.throws(()=>hook.setExactModel(changedResult),/эскиз/);
@@ -422,7 +434,7 @@ const revolutionExact=plain(exactCore.createExactModelState());revolutionExact.b
 const revolutionDocument={...document,sketchModel:revolutionState,exactModel:revolutionExact};assert.deepEqual(plain(parseDocument(serializeDocument(revolutionDocument))),plain(revolutionDocument));
 const revolutionCopy=validateDocument(revolutionDocument);revolutionCopy.sketchModel.revolutions[0].offset=-1;assert.equal(revolutionState.revolutions[0].offset,0);
 for(const mutation of [s=>s.revolutions[0].axis='z',s=>s.revolutions[0].angle=0,s=>s.revolutions[0].angle=361,s=>s.revolutions[0].offset=Infinity,s=>s.revolutions[0].sketchId='missing',s=>s.revolutions.push({...s.revolutions[0]}),s=>s.revolutions[0].bodyId='revolution-output']){const bad=plain(revolutionDocument);mutation(bad.sketchModel);assert.throws(()=>validateDocument(bad));}
-const old9=plain(validateDocument(cutDocument));old9.schemaVersion=9;assert.ok(!Object.hasOwn(old9.sketchModel,'revolutions'));const migrated9=plain(parseDocument(JSON.stringify(old9)));assert.equal(migrated9.schemaVersion,14);assert.deepEqual(migrated9.sketchModel,old9.sketchModel);
+const old9=plain(validateDocument(cutDocument));old9.schemaVersion=9;assert.ok(!Object.hasOwn(old9.sketchModel,'revolutions'));const migrated9=plain(parseDocument(JSON.stringify(old9)));assert.equal(migrated9.schemaVersion,15);assert.deepEqual(migrated9.sketchModel,old9.sketchModel);
 for(const dirty of [false,true]){state=undefined;const saved=[dirty?'Unsaved v9':old9.name,old9.items,old9.drawing,old9.modelAnnotations,old9.exactModel,old9.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:old9.id,tabs:[{document:old9,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel,'revolutions'));assert.equal(hook.sketchModel.cuts[0].id,'pocket-feature');}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[item]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(revolutionState,revolutionExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);
 const changedRevolutionCache=plain(hook.exactModel);changedRevolutionCache.bodies[0].brep+='\n';assert.throws(()=>hook.setExactModel(changedRevolutionCache),/эскиз/);
@@ -435,7 +447,7 @@ const revolutionUBrep="\nCASCADE Topology V3, (c) Open Cascade\nLocations 0\nCur
 const axisState=plain(hook.sketchModel);axisState.revolutions[0].axis='u';axisState.cuts=[];const axisExact=plain(hook.exactModel);axisExact.bodies=axisExact.bodies.filter(body=>body.id!=='revolution-output');axisExact.bodies[0].brep=revolutionUBrep;axisExact.bodies[0].visible=true;hook.setSketchModel(axisState,axisExact);hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.revolutions[0].axis,'u');assert.equal(hook.exactModel.bodies[0].brep,revolutionUBrep);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.revolutions[0].axis,'v');assert.equal(hook.exactModel.bodies[0].brep,revolutionFullBrep);assert.equal(hook.sketchModel.cuts.length,1);
 console.log('PASS revolution axis change atomically persists source+actual rebuilt BREP and Undo restores previous cut graph');
 
-const legacy10=plain(validateDocument(revolutionDocument));legacy10.schemaVersion=10;assert.ok(!Object.hasOwn(legacy10.sketchModel,'fusions'));const migrated10=plain(parseDocument(JSON.stringify(legacy10)));assert.equal(migrated10.schemaVersion,14);assert.deepEqual(migrated10.sketchModel,legacy10.sketchModel);assert.deepEqual(migrated10.exactModel,legacy10.exactModel);
+const legacy10=plain(validateDocument(revolutionDocument));legacy10.schemaVersion=10;assert.ok(!Object.hasOwn(legacy10.sketchModel,'fusions'));const migrated10=plain(parseDocument(JSON.stringify(legacy10)));assert.equal(migrated10.schemaVersion,15);assert.deepEqual(migrated10.sketchModel,legacy10.sketchModel);assert.deepEqual(migrated10.exactModel,legacy10.exactModel);
 for(const version of [10,11])for(const dirty of [false,true]){state=undefined;const source=plain(legacy10);source.schemaVersion=version;const saved=[dirty?'Unsaved v10':source.name,source.items,source.drawing,source.modelAnnotations,source.exactModel,source.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:source.id,tabs:[{document:source,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel,'fusions'));assert.equal(hook.sketchModel.revolutions[0].id,'revolution-feature');assert.equal(hook.sketchModel.cuts[0].id,'revolution-cut');}
 console.log('PASS schema11 v10 migration preserves absent fusions, full source/cache state and v10/v11 clean/dirty fingerprints');
 
@@ -467,7 +479,7 @@ for(const dirty of [false,true]){
  const saved=JSON.stringify([dirty?'Unsaved v12':name,items,drawing,modelAnnotations,exactModel,sketchModel]);
  storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:id,tabs:[{document:legacy12,saved}]}));
  hook=useEditorDocuments(()=>[]);
- assert.equal(hook.document.schemaVersion,14);
+ assert.equal(hook.document.schemaVersion,15);
  assert.equal(hook.tabs[0].dirty,dirty);
  assert.ok(!Object.hasOwn(hook.sketchModel,'suppressedFeatures'));
 }
@@ -505,9 +517,9 @@ hook=useEditorDocuments(()=>[]);
 assert.deepEqual(plain(hook.sketchModel.suppressedFeatures),suppressedFusion.sketchModel.suppressedFeatures);
 console.log('PASS schema13 v12 clean/dirty migration and native suppression ownership, cascade and Undo');
 
-const legacy11=plain(validateDocument(fusionDocument));legacy11.schemaVersion=11;const migrated11=plain(parseDocument(JSON.stringify(legacy11)));assert.equal(migrated11.schemaVersion,14);assert.deepEqual(migrated11.sketchModel,legacy11.sketchModel);assert.ok(!Object.hasOwn(migrated11.sketchModel,'bodyBooleans'));console.log('PASS schema12 v11 absence-preserving source migration');
+const legacy11=plain(validateDocument(fusionDocument));legacy11.schemaVersion=11;const migrated11=plain(parseDocument(JSON.stringify(legacy11)));assert.equal(migrated11.schemaVersion,15);assert.deepEqual(migrated11.sketchModel,legacy11.sketchModel);assert.ok(!Object.hasOwn(migrated11.sketchModel,'bodyBooleans'));console.log('PASS schema12 v11 absence-preserving source migration');
 
-for(const dirty of [false,true]){state=undefined;const source=plain(legacy11);const saved=[dirty?'Unsaved v11':source.name,source.items,source.drawing,source.modelAnnotations,source.exactModel,source.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:source.id,tabs:[{document:source,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.document.schemaVersion,14);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel,'bodyBooleans'));}console.log('PASS schema12 v11 workspace clean/dirty fingerprints preserved');
+for(const dirty of [false,true]){state=undefined;const source=plain(legacy11);const saved=[dirty?'Unsaved v11':source.name,source.items,source.drawing,source.modelAnnotations,source.exactModel,source.sketchModel];storage.set('bendcore-documents-v1',JSON.stringify({version:1,activeId:source.id,tabs:[{document:source,saved:JSON.stringify(saved)}]}));hook=useEditorDocuments(()=>[]);assert.equal(hook.document.schemaVersion,15);assert.equal(hook.tabs[0].dirty,dirty);assert.ok(!Object.hasOwn(hook.sketchModel,'bodyBooleans'));}console.log('PASS schema12 v11 workspace clean/dirty fingerprints preserved');
 (async()=>{const{OcctKernel}=await import('occt-wasm'),kernel=await OcctKernel.init();try{const a=kernel.makeBox(2,2,2),b=kernel.translate(kernel.makeBox(2,2,2),1,0,0),common=kernel.common(a,b),cut=kernel.cut(a,b),source={version:1,units:'mm',sketches:[],extrusions:[],bodyBooleans:[{id:'bc',bodyId:'bc-out',aBodyId:'ba',bBodyId:'bb',operation:'common'},{id:'bd',bodyId:'bd-out',aBodyId:'ba',bBodyId:'bb',operation:'cut'}]},native={version:1,kernel:'occt-wasm',kernelVersion:'5.15.0',units:'mm',bodies:[{id:'ba',name:'A',brep:kernel.toBREP(a),color:'#123456',visible:false},{id:'bb',name:'B',brep:kernel.toBREP(b),color:'#abcdef',visible:false},{id:'bc-out',name:'Common',brep:kernel.toBREP(common),color:'#123456',visible:true},{id:'bd-out',name:'Difference',brep:kernel.toBREP(cut),color:'#123456',visible:true}]},nativeDoc={...document,id:'body-bool-document',sketchModel:source,exactModel:native};assert.deepEqual(plain(parseDocument(serializeDocument(nativeDoc))),plain(nativeDoc));for(const id of ['ba','bb','bc-out','bd-out']){const missing=plain(nativeDoc);missing.exactModel.bodies=missing.exactModel.bodies.filter(b=>b.id!==id);assert.throws(()=>validateDocument(missing));}
 state=undefined;storage.clear();hook=useEditorDocuments(()=>[]);hook.markSaved(hook.exportDocument());hook=useEditorDocuments(()=>[]);hook.setSketchModel(source,native);hook=useEditorDocuments(()=>[]);assert.equal(hook.modelHistoryCount,1);assert.equal(hook.sketchModel.bodyBooleans.length,2);assert.equal(hook.tabs[0].dirty,true);const before=plain(hook.document);const mutated=plain(hook.exactModel);mutated.bodies[0].brep+='\n';assert.throws(()=>hook.setExactModel(mutated),/эскиз/);assert.deepEqual(plain(hook.document),before);
 const branch=plain(hook.exactModel);branch.bodies=branch.bodies.filter(b=>b.id!=='bc-out');hook.setExactModel(branch);hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.bodyBooleans.length,1);assert.equal(hook.exactModel.bodies.find(b=>b.id==='ba').visible,false);const deletedInput=plain(hook.exactModel);deletedInput.bodies=deletedInput.bodies.filter(b=>b.id!=='ba');hook.setExactModel(deletedInput);hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.bodyBooleans.length,0);assert.ok(!hook.exactModel.bodies.some(b=>b.id==='bd-out'));assert.equal(hook.exactModel.bodies.find(b=>b.id==='bb').visible,true);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.bodyBooleans.length,1);const restored=kernel.fromBREP(hook.exactModel.bodies.find(b=>b.id==='bd-out').brep);assert.ok(Math.abs(kernel.getVolume(restored)-4)<1e-7);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.sketchModel.bodyBooleans.length,2);hook.modelUndo();hook=useEditorDocuments(()=>[]);assert.equal(hook.tabs[0].dirty,false);console.log('PASS schema12 actual OCCT common/difference persistence, guards, shared operands, cascading deletion and unified Undo');}finally{kernel[Symbol.dispose]();}})().catch(error=>{console.error(error);process.exitCode=1;});
