@@ -48,7 +48,7 @@ export function AssemblyInstancesPanel({instances,bodies,onChange}:Props) {
   {error&&!draft&&<p role="alert">{error}</p>}
   {draft&&<Dialog open title="Вхождение детали" confirmDisabled={!current()} onConfirm={submit} onCancel={()=>setDraft(null)}>
    <label>Имя вхождения<input value={draft.name} maxLength={200} onChange={event=>setDraft({...draft,name:event.target.value})}/></label>
-   <label>Исходное тело<select value={draft.sourceBodyId} onChange={event=>setDraft({...draft,sourceBodyId:event.target.value})}>
+   <label>Исходное тело<select aria-label="Исходное тело" value={draft.sourceBodyId} onChange={event=>setDraft({...draft,sourceBodyId:event.target.value})}>
     {bodies.map(body=><option key={body.id} value={body.id}>{body.name}</option>)}
    </select></label>
    {draft.values.map((value,index)=>{
