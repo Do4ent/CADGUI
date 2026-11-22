@@ -44,7 +44,7 @@ const detachedAssembly = validateDocument(assemblyDocument);
 detachedAssembly.assemblyInstances[0].position[0]=99;
 assert.equal(occurrence.position[0],1);
 assert.deepEqual(plain(parseDocument(serializeDocument(document))), plain(document));
-for (const value of [null, [], 42, {}, {...document,schemaVersion:22}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
+for (const value of [null, [], 42, {}, {...document,schemaVersion:23}, {...document,name:' '}, {...document,id:''}, {...document,modifiedAt:'bad'}, {...document,items:[item,item]}]) assert.throws(() => validateDocument(value));
 const group = {id:'module',name:'Module',position:[10,0,0],rotation:[0,0,90]};
 const subgroup = {id:'stage',name:'Stage',parentId:group.id,position:[2,0,0],rotation:[0,0,90]};
 const nestedPart = {...occurrence,parentId:subgroup.id,position:[3,0,0],rotation:[0,0,0]};
