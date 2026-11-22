@@ -52,7 +52,7 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Viewport planar face picking
 
-- [PR #66](https://github.com/Do4ent/CADGUI/pull/66), branch `feat/viewport-plane-picking`, worktree `/tmp/wt-viewport-plane-picking`, initial head `883e67f`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45062475467) was in progress.
+- [PR #66](https://github.com/Do4ent/CADGUI/pull/66), branch `feat/viewport-plane-picking`, worktree `/tmp/wt-viewport-plane-picking`, head `2529eb0`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45062735152) was in progress.
 - The mate dialog enters an explicit picking mode. Same-snapshot OCCT native face ordinals are mapped onto rendered mesh ranges, rejecting ambiguous hashes, curved faces and stale occurrence identities. Exact catalog selection is available. Native schema is unchanged.
 - Kernel checks passed 1,097 assertions, including creation and inspect paths, planar versus curved geometry and collision rejection. Production browser QA was underway. Overall readiness remains approximately 40%.
 
