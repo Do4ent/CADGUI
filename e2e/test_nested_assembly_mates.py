@@ -76,7 +76,7 @@ def test_nested_fixed_mate_follows_local_leader_and_parent(page, tmp_path):
     assert_world_pose(page, outside, [0, 0, 0], 0)
 
     saved = save_document(page, tmp_path, 'linked.json')
-    assert saved['schemaVersion'] == 20
+    assert saved['schemaVersion'] == 21
     assert saved['exactModel'] == source
     (mate,) = saved['assemblyFixedMates']
     assert (mate['leaderId'], mate['followerId']) == (leader, follower)

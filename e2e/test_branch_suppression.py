@@ -45,7 +45,7 @@ def test_suppress_and_resume_extrusion_fusion_branch_atomically(page, tmp_path):
     expect(body_row(page, base_id)).to_have_count(0)
     expect(body_row(page, output_id)).to_have_count(0)
     suppressed = save_document(page, tmp_path, 'suppressed-branch.json')
-    assert suppressed['schemaVersion'] == 20
+    assert suppressed['schemaVersion'] == 21
     records = suppressed['sketchModel']['suppressedFeatures']
     assert {record['featureId'] for record in records} == {extrusion['id'], fusion['id']}
     assert {record['groupId'] for record in records} == {extrusion['id']}
