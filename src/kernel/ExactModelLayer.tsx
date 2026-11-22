@@ -72,13 +72,15 @@ function Occurrence({instance,body,runtime,wire,section,sectionOffset}:{
    <div role="status">{instance.name}: {record.error} <button type="button" onClick={()=>runtime.retryInspection(body)}>Повторить расчёт</button></div>
   </Html>:null;
  const [x,y,z]=instance.rotation.map(angle=>angle*Math.PI/180);
+ const worldQuaternion=new THREE.Quaternion().setFromEuler(new THREE.Euler(x,y,z,'XYZ')).toArray();
  return <group position={instance.position} rotation={[x,y,z,'XYZ']} userData={{modelGeometry:true}}>
   <mesh geometry={geometry} dispose={null} raycast={()=>{}} castShadow receiveShadow>
    <meshStandardMaterial color={body.color} wireframe={wire} clippingPlanes={exactClippingPlanes(section,sectionOffset)} side={THREE.DoubleSide}/>
   </mesh>
   <Html style={{pointerEvents:'none'}}><span hidden data-assembly-instance={instance.id}
    data-assembly-mesh-generation={record?.generation} data-assembly-position={JSON.stringify(instance.position)}
-   data-assembly-rotation={JSON.stringify(instance.rotation)}/></Html>
+   data-assembly-rotation={JSON.stringify(instance.rotation)} data-assembly-world-position={JSON.stringify(instance.position)}
+   data-assembly-world-quaternion={JSON.stringify(worldQuaternion)}/></Html>
  </group>;
 }
 export function ExactModelLayer({state,instances=[],...props}:ExactModelLayerProps & {instances?:readonly AssemblyInstance[]}){

@@ -2,19 +2,27 @@ import {useEffect, useState} from 'react';
 import {Dialog} from '../components/dialog/Dialog';
 import {ParameterField} from '../components/dialog/ParameterField';
 import type {ExactBody,Vec3} from '../kernel/types';
+import type {FixedAssemblyMate} from './assemblyMates';
 import {validateAssemblyInstances,type AssemblyInstance} from './assemblyInstances';
 
 type Props = {
  instances: readonly AssemblyInstance[];
+ displayInstances: readonly AssemblyInstance[];
+ mates: readonly FixedAssemblyMate[];
  bodies: readonly ExactBody[];
+ canCreateMate: boolean;
+ onCreateMate: () => void;
+ onDetach: (followerId: string) => void;
  onChange: (next: AssemblyInstance[]) => void;
 };
 
-export function AssemblyInstancesPanel({instances,bodies,onChange}:Props) {
+export function AssemblyInstancesPanel({instances,displayInstances,mates,bodies,canCreateMate,onCreateMate,onDetach,onChange}:Props) {
  const [draft,setDraft]=useState<{id:string;sourceBodyId:string;name:string;values:string[]}|null>(null);
  const [removing,setRemoving]=useState<AssemblyInstance|null>(null);
  const [error,setError]=useState('');
- useEffect(()=>{setDraft(null);setRemoving(null);setError('');},[instances,bodies]);
+ const [detaching,setDetaching]=useState<AssemblyInstance|null>(null);
+ const followers=new Map(mates.map(mate=>[mate.followerId,mate.leaderId]));
+ useEffect(()=>{setDraft(null);setRemoving(null);setDetaching(null);setError('');},[instances,bodies,mates]);
  const open=(instance?:AssemblyInstance)=>{
   if(!instance&&!bodies[0])return;
   setError('');
@@ -36,16 +44,20 @@ export function AssemblyInstancesPanel({instances,bodies,onChange}:Props) {
  return <section aria-label="Вхождения деталей">
   <h3>Вхождения деталей</h3>
   <button type="button" disabled={!bodies.length||instances.length>=100} onClick={()=>open()}>Добавить вхождение</button>
-  <ul>{instances.map(instance=>{
+  <button type="button" disabled={!canCreateMate} onClick={onCreateMate}>Создать сопряжение</button>
+  <ul>{displayInstances.map(instance=>{
+   const leaderId=followers.get(instance.id);
+   const leader=leaderId&&instances.find(item=>item.id===leaderId);
    const source=bodies.find(body=>body.id===instance.sourceBodyId);
    return <li key={instance.id} data-assembly-occurrence={instance.id}>
     <strong>{instance.name}</strong> · {source?.name??'Исходное тело подавлено'}
-    <p>{instance.position.join(' / ')} мм · {instance.rotation.join(' / ')}°</p>
-    <button type="button" disabled={!source} onClick={()=>open(instance)}>Изменить вхождение</button>
+    <p>{instance.position.map(value=>Number(value.toFixed(6))).join(' / ')} мм · {instance.rotation.map(value=>Number(value.toFixed(6))).join(' / ')}°</p>
+    <button type="button" disabled={!source||!!leader} onClick={()=>open(instance)}>Изменить вхождение</button>
+    {leader&&<><p>Фиксированное сопряжение · {leader.name}</p><button type="button" onClick={()=>{setError('');setDetaching(instance);}}>Отсоединить сопряжение</button></>}
     <button type="button" onClick={()=>setRemoving(instance)}>Удалить вхождение</button>
    </li>;
   })}</ul>
-  {error&&!draft&&<p role="alert">{error}</p>}
+  {error&&!draft&&!detaching&&<p role="alert">{error}</p>}
   {draft&&<Dialog open title="Вхождение детали" confirmDisabled={!current()} onConfirm={submit} onCancel={()=>setDraft(null)}>
    <label>Имя вхождения<input value={draft.name} maxLength={200} onChange={event=>setDraft({...draft,name:event.target.value})}/></label>
    <label>Исходное тело<select aria-label="Исходное тело" value={draft.sourceBodyId} onChange={event=>setDraft({...draft,sourceBodyId:event.target.value})}>
@@ -60,6 +72,9 @@ export function AssemblyInstancesPanel({instances,bodies,onChange}:Props) {
    {!current()&&<p role="status">Введите имя и конечные значения в пределах ±1 000 000 мм и ±360°.</p>}
    {error&&<p role="alert">{error}</p>}
   </Dialog>}
+  {detaching&&<Dialog open title="Отсоединить сопряжение" onCancel={()=>setDetaching(null)} onConfirm={()=>{
+   try{onDetach(detaching.id);setDetaching(null);}catch(e){setError(String(e));}
+  }}><p>Вхождение «{detaching.name}» сохранит текущее положение.</p>{error&&<p role="alert">{error}</p>}</Dialog>}
   {removing&&<Dialog open title="Удаление вхождения" confirmLabel="Удалить" onCancel={()=>setRemoving(null)} onConfirm={()=>{
    try{onChange(instances.filter(instance=>instance.id!==removing.id));setRemoving(null);}catch(e){setError(String(e));}
   }}><p>Удалить вхождение «{removing.name}»?</p></Dialog>}

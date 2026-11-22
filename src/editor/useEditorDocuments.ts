@@ -1,3 +1,4 @@
+import {createFixedAssemblyMate,materializeAssemblyPlacement,pruneAssemblyMates,resolveAssemblyPoses,validateFixedAssemblyMates,type FixedAssemblyMate} from '../documents/assemblyMates';
 import {validateAssemblyInstances,type AssemblyInstance} from '../documents/assemblyInstances';
 import {readWorkspaceRecovery,saveWorkspaceRecovery,resumeWorkspaceRecovery} from './workspaceRecovery';
 import {createSketchModelState,validateSketchModelState,validateSketchReferences,pruneSketchExtrusions,ownedSketchBodyIds} from '../sketch/model';
@@ -10,10 +11,10 @@ import {validateDrawingDocument} from '../drawing/model';
 import {type DrawingDocument} from '../drawing/types';
 import {type SelectionState} from '../selection/selectionModel';
 
-type SceneSnapshot={assemblyInstances?:AssemblyInstance[];items:CadItem[];modelAnnotations:ModelAnnotationState;exactModel:ExactModelState;sketchModel:SketchModelState};
+type SceneSnapshot={assemblyFixedMates?:FixedAssemblyMate[];assemblyInstances?:AssemblyInstance[];items:CadItem[];modelAnnotations:ModelAnnotationState;exactModel:ExactModelState;sketchModel:SketchModelState};
 type EditorTab={document:CadDocument;saved:string|null;history:SceneSnapshot[];future:SceneSnapshot[];selection:SelectionState;drawingHistory:DrawingDocument[];drawingFuture:DrawingDocument[];drawingSelection:string[]};
 type Workspace={tabs:EditorTab[];activeId:string;recoveryError:string|null;recoveryCanResume:boolean};
-const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items,doc.drawing,doc.modelAnnotations,doc.exactModel,doc.sketchModel,...(doc.assemblyInstances===undefined?[]:[doc.assemblyInstances])]);
+const fingerprint=(doc:CadDocument)=>JSON.stringify([doc.name,doc.items,doc.drawing,doc.modelAnnotations,doc.exactModel,doc.sketchModel,...(doc.assemblyInstances===undefined?[]:[doc.assemblyInstances]),...(doc.assemblyFixedMates===undefined?[]:[{assemblyFixedMates:doc.assemblyFixedMates}])]);
 const makeTab=(document:CadDocument,saved:string|null=null):EditorTab=>({document,saved,history:[],future:[],drawingHistory:[],drawingFuture:[],drawingSelection:[],selection:{selectedIds:[],anchorId:null}});
 
 /** Upgrade old clean fingerprints while leaving old dirty tabs dirty. */
@@ -55,25 +56,56 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   return value=>updateActive(tab=>({...tab,[key]:typeof value==='function'?(value as (v:EditorTab[K])=>EditorTab[K])(tab[key]):value}));
  }
 
- const sceneSnapshot=(document:CadDocument):SceneSnapshot=>({assemblyInstances:document.assemblyInstances,items:document.items,modelAnnotations:document.modelAnnotations,exactModel:document.exactModel,sketchModel:document.sketchModel});
+ const sceneSnapshot=(document:CadDocument):SceneSnapshot=>({assemblyFixedMates:document.assemblyFixedMates,assemblyInstances:document.assemblyInstances,items:document.items,modelAnnotations:document.modelAnnotations,exactModel:document.exactModel,sketchModel:document.sketchModel});
  const guardScene=(update:(tab:EditorTab)=>EditorTab)=>setWorkspace(workspace=>{
   if(workspace.activeId!==active.document.id)return workspace;
   const source=workspace.tabs.find(tab=>tab.document.id===active.document.id);
-  if(!source||source.document.assemblyInstances!==active.document.assemblyInstances||source.document.items!==active.document.items||source.document.modelAnnotations!==active.document.modelAnnotations||source.document.exactModel!==active.document.exactModel||source.document.sketchModel!==active.document.sketchModel)return workspace;
+  if(!source||source.document.assemblyFixedMates!==active.document.assemblyFixedMates||source.document.assemblyInstances!==active.document.assemblyInstances||source.document.items!==active.document.items||source.document.modelAnnotations!==active.document.modelAnnotations||source.document.exactModel!==active.document.exactModel||source.document.sketchModel!==active.document.sketchModel)return workspace;
   const next=update(source);if(next===source)return workspace;
   return {...workspace,tabs:workspace.tabs.map(tab=>tab===source?next:tab)};
  });
- const commitScene=(items:CadItem[],modelAnnotations:ModelAnnotationState,exactModel:ExactModelState=active.document.exactModel,sketchModel:SketchModelState=active.document.sketchModel,requested=active.document.assemblyInstances)=>guardScene(tab=>{
-  const sources = assemblySources(exactModel,sketchModel);
-  const assemblyInstances=requested?.filter(instance=>sources.has(instance.sourceBodyId));
-  if(JSON.stringify([tab.document.items,tab.document.modelAnnotations,tab.document.exactModel,tab.document.sketchModel,tab.document.assemblyInstances])===JSON.stringify([items,modelAnnotations,exactModel,sketchModel,assemblyInstances]))return tab;
-  const {assemblyInstances: _oldInstances,...document}=tab.document;
-  return {...tab,document:{...document,items,modelAnnotations,exactModel,sketchModel,...(assemblyInstances===undefined?{}:{assemblyInstances}),modifiedAt:new Date().toISOString()},history:[...tab.history.slice(-49),sceneSnapshot(tab.document)],future:[]};
- });
  const assemblySources=(exact:ExactModelState,sketch:SketchModelState)=>new Set([...exact.bodies.map(body=>body.id),...ownedSketchBodyIds(sketch)]);
+ const commitScene=(items:CadItem[],modelAnnotations:ModelAnnotationState,exactModel:ExactModelState=active.document.exactModel,sketchModel:SketchModelState=active.document.sketchModel,requested=active.document.assemblyInstances,requestedMates=active.document.assemblyFixedMates)=>{
+  const sources=assemblySources(exactModel,sketchModel);
+  let assemblyInstances=requested?.filter(instance=>sources.has(instance.sourceBodyId));
+  let assemblyFixedMates=requestedMates;
+  if(assemblyFixedMates!==undefined){
+   if(assemblyFixedMates===active.document.assemblyFixedMates){
+    const pruned=pruneAssemblyMates(active.document.assemblyInstances??[],assemblyInstances??[],assemblyFixedMates);
+    assemblyInstances=assemblyInstances===undefined?undefined:pruned.placements;
+    assemblyFixedMates=pruned.mates;
+   }
+   validateFixedAssemblyMates(assemblyInstances??[],assemblyFixedMates);
+  }
+  guardScene(tab=>{
+   const {assemblyInstances:oldInstances,assemblyFixedMates:oldMates,...document}=tab.document;
+   if(JSON.stringify([document.items,document.modelAnnotations,document.exactModel,document.sketchModel,oldInstances,oldMates])===JSON.stringify([items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates]))return tab;
+   return {...tab,document:{...document,items,modelAnnotations,exactModel,sketchModel,...(assemblyInstances===undefined?{}:{assemblyInstances}),...(assemblyFixedMates===undefined?{}:{assemblyFixedMates}),modifiedAt:new Date().toISOString()},history:[...tab.history.slice(-49),sceneSnapshot(tab.document)],future:[]};
+  });
+ };
  const setAssemblyInstances=(next:AssemblyInstance[])=>{
-  const {items,modelAnnotations,exactModel,sketchModel}=active.document;
-  commitScene(items,modelAnnotations,exactModel,sketchModel,validateAssemblyInstances(next,assemblySources(exactModel,sketchModel)));
+  const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates}=active.document;
+  const validated=validateAssemblyInstances(next,assemblySources(exactModel,sketchModel));
+  const followers=new Set(assemblyFixedMates?.map(mate=>mate.followerId));
+  for(const instance of validated){
+   if(!followers.has(instance.id))continue;
+   const previous=assemblyInstances?.find(item=>item.id===instance.id);
+   if(previous&&JSON.stringify([previous.position,previous.rotation])!==JSON.stringify([instance.position,instance.rotation]))throw Error('Сначала отсоедините ведомое вхождение');
+  }
+  commitScene(items,modelAnnotations,exactModel,sketchModel,validated);
+ };
+ const attachAssemblyMate=(leaderId:string,followerId:string)=>{
+  const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates=[]}=active.document;
+  const mate=createFixedAssemblyMate(assemblyInstances??[],assemblyFixedMates,leaderId,followerId);
+  commitScene(items,modelAnnotations,exactModel,sketchModel,assemblyInstances,[...assemblyFixedMates,mate]);
+ };
+ const detachAssemblyMate=(followerId:string)=>{
+  const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates=[]}=active.document;
+  if(!assemblyInstances||!assemblyFixedMates.some(mate=>mate.followerId===followerId))throw Error('Сопряжение не найдено');
+  const pose=resolveAssemblyPoses(assemblyInstances,assemblyFixedMates).get(followerId)!;
+  const placement=materializeAssemblyPlacement(followerId,pose);
+  const instances=assemblyInstances.map(instance=>instance.id===followerId?{...instance,...placement}:instance);
+  commitScene(items,modelAnnotations,exactModel,sketchModel,instances,assemblyFixedMates.filter(mate=>mate.followerId!==followerId));
  };
  const changeScene=(nextItems:CadItem[],_label?:string)=>{
   const items=validateItems(nextItems);validateSceneAnnotationReferences(items,active.document.modelAnnotations);commitScene(items,active.document.modelAnnotations);
@@ -122,14 +154,14 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   return value=>guardScene(tab=>{
    const old=tab[key].map(snapshot=>snapshot.items);
    const items=typeof value==='function'?value(old):value;
-   const snapshots=items.map(list=>tab[key].find(snapshot=>snapshot.items===list)??{assemblyInstances:tab.document.assemblyInstances,items:validateItems(list),modelAnnotations:tab.document.modelAnnotations,exactModel:tab.document.exactModel,sketchModel:tab.document.sketchModel});
+   const snapshots=items.map(list=>tab[key].find(snapshot=>snapshot.items===list)??{assemblyFixedMates:tab.document.assemblyFixedMates,assemblyInstances:tab.document.assemblyInstances,items:validateItems(list),modelAnnotations:tab.document.modelAnnotations,exactModel:tab.document.exactModel,sketchModel:tab.document.sketchModel});
    return {...tab,[key]:snapshots};
   });
  }
  const restoreScene=(document:CadDocument,snapshot:SceneSnapshot):CadDocument=>{
-  const {assemblyInstances: _oldInstances,...previous}=document;
-  const {assemblyInstances,...replacement}=snapshot;
-  return {...previous,...replacement,...(assemblyInstances===undefined?{}:{assemblyInstances}),modifiedAt:new Date().toISOString()};
+  const {assemblyInstances: _oldInstances,assemblyFixedMates: _oldMates,...previous}=document;
+  const {assemblyInstances,assemblyFixedMates,...replacement}=snapshot;
+  return {...previous,...replacement,...(assemblyInstances===undefined?{}:{assemblyInstances}),...(assemblyFixedMates===undefined?{}:{assemblyFixedMates}),modifiedAt:new Date().toISOString()};
  };
  const modelUndo=()=>guardScene(tab=>{
   const previous=tab.history.at(-1);if(!previous)return tab;
@@ -196,5 +228,5 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  });
  const exportDocument=()=>({id:active.document.id,json:serializeDocument(active.document),fingerprint:fingerprint(active.document)});
  const markSaved=(snapshot:{id:string;fingerprint:string})=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===snapshot.id?{...t,saved:snapshot.fingerprint}:t)}));
- return {assemblyInstances:active.document.assemblyInstances,setAssemblyInstances,sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,recoveryCanResume:workspace.recoveryCanResume,resumeRecovery,activate,open,newDocument,close,exportDocument,markSaved};
+ return {assemblyInstances:active.document.assemblyInstances,assemblyFixedMates:active.document.assemblyFixedMates,attachAssemblyMate,detachAssemblyMate,setAssemblyInstances,sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,recoveryCanResume:workspace.recoveryCanResume,resumeRecovery,activate,open,newDocument,close,exportDocument,markSaved};
 }

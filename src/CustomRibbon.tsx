@@ -31,7 +31,7 @@ const catalog:Entry[]=[
 {id:'shell',label:'Оболочка',icon:'shell',group:'Построение',action:'shell',demo:true},
 {id:'pattern',label:'Массив',icon:'pattern',group:'Построение',action:'pattern',demo:true},
 {id:'mirror',label:'Зеркало',icon:'mirror',group:'Построение',action:'mirror',demo:true},
-{id:'mate',label:'Сопряжение',icon:'mate',group:'Сборка',action:'mate',demo:true},
+{id:'mate',label:'Сопряжение',icon:'mate',group:'Сборка',action:'mate'},
 {id:'section',label:'Сечение',icon:'section',group:'Сборка',action:'section',demo:true},
 {id:'dimension',label:'Размер',icon:'dimension',group:'Эскиз',action:'dimension',demo:true},
 {id:'sheet',label:'Лист',icon:'sheet',group:'Чертёж',action:'sheet',demo:true},
