@@ -21,12 +21,12 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Fixed mates across subassemblies
 
-- [PR #60](https://github.com/Do4ent/CADGUI/pull/60), branch `feat/cross-parent-fixed-mates`, worktree `/tmp/wt-cross-fixed-mates`, head `41475d5`. [CI](https://github.com/Do4ent/CADGUI/actions/runs/45027156645) was in progress.
+- [PR #60](https://github.com/Do4ent/CADGUI/pull/60), branch `feat/cross-parent-fixed-mates`, worktree `/tmp/wt-cross-fixed-mates`, head `41475d5`. It passed [full CI](https://github.com/Do4ent/CADGUI/actions/runs/45027156645) and merged as `1d6804c`.
 - Cross-parent mates store the leader-relative rigid transform and solve the follower in world coordinates. Detach or leader removal converts that solved pose to the follower’s own parent frame. Native schema v19 adds cross-parent endpoints.
-- The focused document suite passed schema v18 compatibility, boundary detach and prune, and atomic rejection. Independent checks passed 128 rotated chains with parent motion and cycle rejection.
+- All 70 local suites, the production build and 13 focused Chromium tests passed. The document suite covered schema v18 compatibility, boundary detach and prune, and atomic rejection. Independent checks passed 128 rotated chains with parent motion and cycle rejection.
 
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Check PR #60 at its current head and merge after passing same-head CI and review. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the main baseline and its CI before starting additional mate types. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
