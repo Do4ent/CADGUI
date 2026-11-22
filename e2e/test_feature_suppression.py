@@ -51,7 +51,7 @@ def test_leaf_extrusion_suppression_undo_native_reopen_and_resume(page, tmp_path
     confirm_action(page, 'Подавить операцию', 'Подавление операции', 'Подавить')
     expect(body_row(page, body_id)).to_have_count(0, timeout=120000)
     suppressed = save_document(page, tmp_path, 'suppressed-extrusion.json')
-    assert suppressed['schemaVersion'] == 16
+    assert suppressed['schemaVersion'] == 17
     assert suppressed['sketchModel']['extrusions'] == source['sketchModel']['extrusions']
     assert suppressed['sketchModel']['suppressedFeatures'] == [{
         'featureId': feature['id'],
