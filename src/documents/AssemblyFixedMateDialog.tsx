@@ -1,3 +1,4 @@
+import type {AssemblyViewportFacePick} from './assemblyViewportFacePick';
 import type {ExactBody,PlanarFaceInspection} from '../kernel/types';
 import type {InspectPlanarFaces} from './assemblyFaceReferences';
 import {useEffect,useRef,useState} from 'react';
@@ -33,6 +34,7 @@ type Props = {
  onAttachPlanar: (leaderId:string,followerId:string,leaderFaceIndex:number,followerFaceIndex:number,inspect:InspectPlanarFaces,signal:AbortSignal)=>Promise<void>;
  onAttach: (leaderId: string, followerId: string, parameter?: MateParameter) => void;
  onClose: () => void;
+ onViewportPick: (request:AssemblyViewportFacePick|null) => void;
 };
 
 type FaceSelection = {sourceBodyId:string; brep:string; index:string};
@@ -54,7 +56,7 @@ function usePlanarFaces(brep:string|undefined,inspect:InspectPlanarFaces) {
  return {faces:activeInspection?.faces,error,loading:!!brep&&!activeInspection&&!error};
 }
 
-export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectPlanarFaces,onAttachPlanar,onAttach,onClose}:Props){
+export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectPlanarFaces,onAttachPlanar,onAttach,onClose,onViewportPick}:Props){
  const [leaderId,setLeaderId]=useState('');
  const [followerId,setFollowerId]=useState('');
  const [kind,setKind]=useState<'fixed'|'planar'|MateParameter['kind']>('fixed');
@@ -63,6 +65,12 @@ export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectP
  const [leaderFace,setLeaderFace]=useState<FaceSelection>();
  const [followerFace,setFollowerFace]=useState<FaceSelection>();
  const [busy,setBusy]=useState(false);
+ const [pickSide,setPickSide]=useState<'leader'|'follower'>();
+ const [pickError,setPickError]=useState('');
+ const pickToken=useRef<symbol|null>(null);
+ const cancelPickButton=useRef<HTMLButtonElement>(null);
+ useEffect(()=>()=>{pickToken.current=null;onViewportPick(null);},[onViewportPick]);
+ useEffect(()=>{if(pickSide)cancelPickButton.current?.focus();},[pickSide]);
  const pending=useRef<AbortController|null>(null);
  useEffect(()=>()=>pending.current?.abort(),[]);
  const groupNames = new Map(groups.map(group => [group.id, group.name]));
@@ -88,7 +96,47 @@ export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectP
  const canConfirm=!busy&&followerValid&&(kind==='planar'?selectedFaces:kind==='fixed'||target!==undefined);
  const title=kind==='fixed'?'Фиксированное сопряжение':kind==='planar'?'Совмещение плоских граней':mateParameterDetails[kind].title;
  const close=()=>{pending.current?.abort();onClose();};
- return <Dialog open title={title} confirmDisabled={!canConfirm} onCancel={close} onConfirm={()=>{
+ const endPick=()=>{
+  pickToken.current=null;
+  onViewportPick(null);
+  setPickSide(undefined);
+ };
+ useEffect(()=>{
+  if(!pickSide)return;
+  const cancelWithEscape=(event:KeyboardEvent)=>{
+   if(event.key!=='Escape')return;
+   event.preventDefault();
+   event.stopImmediatePropagation();
+   endPick();
+  };
+  window.addEventListener('keydown',cancelWithEscape,true);
+  return ()=>window.removeEventListener('keydown',cancelWithEscape,true);
+ },[pickSide,onViewportPick]);
+ const beginPick=(side:'leader'|'follower')=>{
+  const occurrence=side==='leader'?leader:follower;
+  const body=side==='leader'?leaderBody:followerBody;
+  const catalog=side==='leader'?leaderCatalog:followerCatalog;
+  if(!occurrence||!body||!catalog.faces?.length||busy)return;
+  const token=Symbol('viewport face pick');
+  pickToken.current=token;
+  setPickError('');
+  setPickSide(side);
+  onViewportPick({
+   occurrenceId:occurrence.id,sourceBodyId:body.id,brep:body.brep,
+   report:message=>{if(pickToken.current===token)setPickError(message);},
+   accept:faceIndex=>{
+    if(pickToken.current!==token)return;
+    if(!catalog.faces?.some(face=>face.faceIndex===faceIndex)){
+     setPickError('Грань недоступна в точном каталоге.');return;
+    }
+    const selection={sourceBodyId:body.id,brep:body.brep,index:String(faceIndex)};
+    if(side==='leader')setLeaderFace(selection);else setFollowerFace(selection);
+    setError('');
+    endPick();
+   },
+  });
+ };
+ return <><Dialog open={!pickSide} title={title} confirmDisabled={!canConfirm} onCancel={close} onConfirm={()=>{
   if(!canConfirm||pending.current)return;
   if(kind==='planar'){
    const controller=new AbortController();
@@ -123,8 +171,8 @@ export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectP
    {followers.map(instance=><option key={instance.id} value={instance.id}>{displayPath(instance)}</option>)}
   </select></label>
   {kind==='planar'&&<>
-   <PlanarFaceField label="Ведущая грань" value={leaderIndex} catalog={leaderCatalog} disabled={busy} onSelect={index=>setLeaderFace(leaderBody&&{sourceBodyId:leaderBody.id,brep:leaderBody.brep,index})}/>
-   <PlanarFaceField label="Ведомая грань" value={followerIndex} catalog={followerCatalog} disabled={busy} onSelect={index=>setFollowerFace(followerBody&&{sourceBodyId:followerBody.id,brep:followerBody.brep,index})}/>
+   <PlanarFaceField label="Ведущая грань" value={leaderIndex} catalog={leaderCatalog} disabled={busy} onSelect={index=>setLeaderFace(leaderBody&&{sourceBodyId:leaderBody.id,brep:leaderBody.brep,index})} onPick={()=>beginPick('leader')} pickLabel="Выбрать ведущую грань в 3D"/>
+   <PlanarFaceField label="Ведомая грань" value={followerIndex} catalog={followerCatalog} disabled={busy} onSelect={index=>setFollowerFace(followerBody&&{sourceBodyId:followerBody.id,brep:followerBody.brep,index})} onPick={()=>beginPick('follower')} pickLabel="Выбрать ведомую грань в 3D"/>
   </>}
   {kind!=='fixed'&&kind!=='planar'&&<MateParameterField kind={kind} value={value} onChange={value=>{setValue(value);setError('');}}/>}
   {kind==='fixed'
@@ -135,16 +183,25 @@ export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectP
       ? <p>Плоскости совмещаются, а внешние нормали направляются навстречу друг другу.</p>
       : <p>Расстояние измеряется между началами координат вхождений. Сопряжение сохраняет направление и относительный поворот. Для совпадающих начал используется ось +X ведущего вхождения.</p>}
   {error&&<p role="alert">{error}</p>}
- </Dialog>;
+ </Dialog>
+ {pickSide&&<aside className="bc-dialog assembly-face-pick" aria-label="Выбор грани в 3D">
+  <div role="status">Выбор грани в 3D · {pickSide==='leader'?leader?.name:follower?.name}
+   {pickError&&<div>{pickError}</div>}
+  </div>
+  <button type="button" ref={cancelPickButton} onClick={endPick}>Отмена выбора грани</button>
+ </aside>}
+ </>;
 }
 
 
-function PlanarFaceField({label,value,catalog,disabled,onSelect}:{
+function PlanarFaceField({label,value,catalog,disabled,onSelect,onPick,pickLabel}:{
  label:string;
  value:string;
  catalog:ReturnType<typeof usePlanarFaces>;
  disabled:boolean;
  onSelect:(value:string)=>void;
+ onPick:()=>void;
+ pickLabel:string;
 }) {
  const {faces,error,loading}=catalog;
  return <>
@@ -154,6 +211,7 @@ function PlanarFaceField({label,value,catalog,disabled,onSelect}:{
     №{face.faceIndex+1} · n({face.normal.map(axis=>axis.toFixed(3)).join(', ')}) · p({face.origin.map(axis=>axis.toFixed(3)).join(', ')})
    </option>)}
   </select></label>
+  <button type="button" disabled={disabled||!faces?.length} onClick={onPick}>{pickLabel}</button>
   {error&&<p role="alert">{error}</p>}
   {loading&&<p role="status">Загрузка плоских граней…</p>}
   {faces?.length===0&&<p>Плоских граней нет.</p>}
