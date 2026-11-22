@@ -38,8 +38,14 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - Set a signed heading within ±180° about the leader’s local +Z using the projected follower +X. Heading changes retain the captured tilt and roll and the leader-local offset. Singular projections are rejected. Native schema v21 preserves the mate.
 - Focused solver and document tests and 128 independent cross-parent angular/distance chains passed. The production build, all 70 local suites and 15 focused Chromium tests passed. The overall readiness estimate remains 41.25%, published as about 40%.
 
+## Snapshot-bound planar face references
+
+- [PR #64](https://github.com/Do4ent/CADGUI/pull/64), branch `feat/planar-face-references`, worktree `/tmp/wt-planar-reference`, head `ceb41e9`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45039987435) was in progress.
+- OCCT returns exact planar surface descriptors. Occurrence references use the source ID, exact snapshot SHA-256 and native face ordinal. Geometry changes mark a reference stale. This foundation has no native schema change and requires a later assembly command to consume the references.
+- Kernel checks covered exact box and cylinder geometry, worker provenance and allocation cleanup. Independent review covered rotated face normals and cross-module reference resolution. The overall readiness estimate remains approximately 40%.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the current main baseline and CI before adding geometric assembly references. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Check PR #64 on its current head. Merge after same-head CI and review. The next package uses these references in an assembly face picker and mate command. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
