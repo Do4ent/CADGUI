@@ -50,8 +50,14 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - Exact OCCT face catalogs drive opposite-normal, zero-gap alignment. The solver keeps the in-plane translation of the follower origin and uses the shortest rotation. Schema v22 persists refs and a solved relative pose. Explicit native import verifies the stored face ordinals and pose against OCCT. Workspace recovery checks BRep identity and structure synchronously.
 - 128 local rotation samples plus parallel/antiparallel limits passed. Independent review passed 8,192 varied orientations. All 72 local suites, the production build and 16 focused Chromium tests passed. Overall readiness remains approximately 40%.
 
+## Viewport planar face picking
+
+- [PR #66](https://github.com/Do4ent/CADGUI/pull/66), branch `feat/viewport-plane-picking`, worktree `/tmp/wt-viewport-plane-picking`, initial head `883e67f`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45062475467) was in progress.
+- The mate dialog enters an explicit picking mode. Same-snapshot OCCT native face ordinals are mapped onto rendered mesh ranges, rejecting ambiguous hashes, curved faces and stale occurrence identities. Exact catalog selection is available. Native schema is unchanged.
+- Kernel checks passed 1,097 assertions, including creation and inspect paths, planar versus curved geometry and collision rejection. Production browser QA was underway. Overall readiness remains approximately 40%.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the current main baseline and CI before extending face selection to the viewport. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect PR #66 and its latest head. Merge after same-head review and CI pass. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
