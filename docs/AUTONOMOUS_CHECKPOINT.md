@@ -13,8 +13,14 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - The stage adds named groups, local transforms and occurrence paths in native schema v17. Reparenting preserves the world transform. Fixed mates apply to root occurrences. The viewport uses world transforms and the local values are retained in the document.
 - Independent review checked cyclic and missing parents, identifier collisions, migration, history, viewport wiring and 1,000 rotated reparenting scenarios. The PR passed 70 local suites, the production build and 11 focused Chromium tests.
 
+## Fixed mates inside subassemblies
+
+- [PR #59](https://github.com/Do4ent/CADGUI/pull/59), branch `feat/nested-fixed-mates`, worktree `/tmp/wt-nested-fixed-mates`, head `1b03800`. [Full CI](https://github.com/Do4ent/CADGUI/actions/runs/45008262772) was in progress.
+- The mate solver supports same-parent occurrences. Relative transforms remain local to the shared parent and move with the whole subassembly. Native schema v18 distinguishes documents with nested mates.
+- The production build and 70 local suites passed. Independent checks exercised 128 rotated nested chains, no-jump attachment, source removal and invalid cross-parent endpoints.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect main CI for `2708f8e` before extending mate support beyond root occurrences. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Check PR #59 and the linked CI run on its current head. Merge after passing same-head CI and review. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
