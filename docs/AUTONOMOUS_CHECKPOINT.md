@@ -25,8 +25,15 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - Cross-parent mates store the leader-relative rigid transform and solve the follower in world coordinates. Detach or leader removal converts that solved pose to the follower’s own parent frame. Native schema v19 adds cross-parent endpoints.
 - All 70 local suites, the production build and 13 focused Chromium tests passed. The document suite covered schema v18 compatibility, boundary detach and prune, and atomic rejection. Independent checks passed 128 rotated chains with parent motion and cycle rejection.
 
+## Distance mates and product completion
+
+- [PR #61](https://github.com/Do4ent/CADGUI/pull/61) at `eeac1ef` updates the v1 product completion ledger. The same nine packages and weights yield 41.25%, published as approximately 40% (35–45%). Its [same-head CI](https://github.com/Do4ent/CADGUI/actions/runs/45030254039) was in progress.
+- [PR #62](https://github.com/Do4ent/CADGUI/pull/62), branch `feat/distance-mate`, worktree `/tmp/wt-distance-mate`, head `28ac6f3`. [Full CI](https://github.com/Do4ent/CADGUI/actions/runs/45030357398) was in progress.
+- The new mate drives distance between occurrence origins along the captured bearing and maintains relative orientation. It supports edit, detach, Undo and schema v20 persistence. The assembly maturity tier remains 50% while broader geometric mates and BOM are pending.
+- Focused solver and document checks, production build and 128 independent mixed distance/fixed chains passed. Targeted Chromium acceptance is underway.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the main baseline and its CI before starting additional mate types. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Check PRs #61 and #62 on their current heads. Merge after review and passing same-head CI, then update the status and quote the v1 weighted estimate. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
