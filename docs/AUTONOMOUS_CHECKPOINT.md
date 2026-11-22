@@ -19,8 +19,14 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - The mate solver supports same-parent occurrences. Relative transforms remain local to the shared parent and move with the whole subassembly. Native schema v18 distinguishes documents with nested mates.
 - The production build, 70 local suites and 12 focused Chromium tests passed. Independent checks exercised 128 rotated nested chains, no-jump attachment, source removal and invalid cross-parent endpoints.
 
+## Fixed mates across subassemblies
+
+- [PR #60](https://github.com/Do4ent/CADGUI/pull/60), branch `feat/cross-parent-fixed-mates`, worktree `/tmp/wt-cross-fixed-mates`, head `41475d5`. [CI](https://github.com/Do4ent/CADGUI/actions/runs/45027156645) was in progress.
+- Cross-parent mates store the leader-relative rigid transform and solve the follower in world coordinates. Detach or leader removal converts that solved pose to the follower’s own parent frame. Native schema v19 adds cross-parent endpoints.
+- The focused document suite passed schema v18 compatibility, boundary detach and prune, and atomic rejection. Independent checks passed 128 rotated chains with parent motion and cycle rejection.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the current main baseline and its CI before expanding mates to occurrences with different parents. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Check PR #60 at its current head and merge after passing same-head CI and review. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
