@@ -65,10 +65,11 @@ def test_pick_planar_mate_faces_from_same_source_occurrences(page, tmp_path):
     cancel_pick = page.get_by_role('button', name='Отмена выбора грани', exact=True)
     pick_leader.click()
     expect(dialog).not_to_be_visible()
-    expect(cancel_pick).to_be_visible()
+    expect(cancel_pick).to_be_focused()
     page.keyboard.press('Escape')
     expect(dialog).to_be_visible()
     expect(cancel_pick).not_to_be_visible()
+    expect(pick_leader).to_be_focused()
     expect(leader_face).to_have_value('')
 
     left_half = [.25, .33, .17, .41, .1]
@@ -79,6 +80,7 @@ def test_pick_planar_mate_faces_from_same_source_occurrences(page, tmp_path):
     expect(cancel_pick).to_be_visible()
 
     click_face(page, canvas, left_half, dialog)
+    expect(pick_leader).to_be_focused()
     expect(leader_face).to_have_value('5')
     expect(follower_face).to_have_value('')
     expect(dialog.get_by_role('button', name='ОК', exact=True)).to_be_disabled()
