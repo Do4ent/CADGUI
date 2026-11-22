@@ -78,7 +78,7 @@ def test_nested_subassembly_move_undo_and_reopen(page, tmp_path):
     expect(group_edit).not_to_be_visible()
 
     nested = save_document(page, tmp_path, 'nested-saved.json')
-    assert nested['schemaVersion'] == 20
+    assert nested['schemaVersion'] == 21
     assert nested['exactModel'] == source
     assert nested['assemblyGroups'] == before['assemblyGroups']
     assert nested['assemblyInstances'] == [{**occurrence, 'parentId': child}]

@@ -6,7 +6,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
   {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}},
 ).outputText, file);
 
-const {createFixedAssemblyMate, distanceAssemblyMateFromPoses, resolveAssemblyPoses, materializeAssemblyPlacement} = require('./assemblyMates.ts');
+const {angularAssemblyMateFromPoses,createFixedAssemblyMate, distanceAssemblyMateFromPoses, resolveAssemblyPoses, materializeAssemblyPlacement} = require('./assemblyMates.ts');
 const make = (id, position, rotation = [0, 0, 0]) => ({id, position, rotation});
 const near = (actual, expected) => {
   assert.equal(actual.length, expected.length);
@@ -64,3 +64,28 @@ near(resolveAssemblyPoses(coincident,[{...coincidentMate,distance:0}]).get('b').
 assert.throws(()=>resolveAssemblyPoses(source,[{...distanceMate,distance:-1}]), /relative pose/);
 assert.throws(()=>resolveAssemblyPoses(source,[{...distanceMate,direction:[0,0,0]}]), /relative pose/);
 console.log('PASS distance mates, zero and coincident origins, rotated direction and fixed descendants');
+
+
+const {Euler, Quaternion, Vector3} = require('three');
+const radians = Math.PI / 180;
+const angularLeader = make('leader', [42, -11, 3], [34, -12, 65]);
+const angularFollower = make('follower', [-10, 42, -8], [-8, 76, 11]);
+const angularPlacements = [angularLeader, angularFollower];
+const free = resolveAssemblyPoses(angularPlacements, []);
+const intoLeader = new Quaternion(...free.get('leader').quaternion).invert();
+const captured = intoLeader.clone().multiply(new Quaternion(...free.get('follower').quaternion));
+const originalAxis = new Vector3(1, 0, 0).applyQuaternion(captured);
+const originalHeading = Math.atan2(originalAxis.y, originalAxis.x);
+for (const angle of [-180, -37, 0, 55, 180]) {
+  const mate = angularAssemblyMateFromPoses(free, 'leader', 'follower', angle);
+  const solved = resolveAssemblyPoses(angularPlacements, [mate]).get('follower');
+  near(solved.position, free.get('follower').position);
+  const solvedLocal = intoLeader.clone().multiply(new Quaternion(...solved.quaternion));
+  const expected = captured.clone().premultiply(new Quaternion().setFromEuler(new Euler(0, 0, angle * radians - originalHeading)));
+  sameOrientation(solvedLocal.toArray(), expected.toArray());
+  assert.throws(() => resolveAssemblyPoses(angularPlacements, [{...mate, angle: 180.01}]), /угол/);
+  assert.throws(() => resolveAssemblyPoses(angularPlacements, [{...mate, quaternion: captured.toArray()}]), /угол/);
+}
+const vertical = resolveAssemblyPoses([make('leader', [0, 0, 0]), make('follower', [0, 0, 0], [0, 90, 0])], []);
+assert.throws(() => angularAssemblyMateFromPoses(vertical, 'leader', 'follower', 20), /параллельна/);
+console.log('PASS signed angular mates retain offset and captured tilt/roll, reject vertical projected axes');

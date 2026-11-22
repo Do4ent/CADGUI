@@ -20,7 +20,13 @@ export interface DistanceAssemblyMate {
   distance: number;
   quaternion: Rotation;
 }
-export type AssemblyMate = FixedAssemblyMate | DistanceAssemblyMate;
+export interface AngularAssemblyMate extends FixedAssemblyMate {
+  angle: number;
+}
+export type AssemblyMate = FixedAssemblyMate | DistanceAssemblyMate | AngularAssemblyMate;
+export type MateParameter = {kind: 'distance' | 'angular'; value: number};
+export const MAX_MATE_ANGLE = 180;
+export const validMateAngle = (angle: number) => Number.isFinite(angle) && Math.abs(angle) <= MAX_MATE_ANGLE;
 export const MAX_MATE_DISTANCE = Math.hypot(2e6, 2e6, 2e6);
 export const validMateDistance = (distance: number) =>
   Number.isFinite(distance) && distance >= 0 && distance <= MAX_MATE_DISTANCE;
@@ -30,6 +36,12 @@ export interface AssemblyWorldPose {
   quaternion: Rotation;
 }
 const radians = Math.PI / 180;
+const zAxis = new Vector3(0, 0, 1);
+const zRotation = (degrees: number) => new Quaternion().setFromAxisAngle(zAxis, degrees * radians);
+const heading = (orientation: Quaternion) => {
+  const axis = new Vector3(1, 0, 0).applyQuaternion(orientation);
+  return Math.hypot(axis.x, axis.y) < 1e-9 ? undefined : Math.atan2(axis.y, axis.x) / radians;
+};
 const finite = (values: readonly number[], size: number) =>
   Array.isArray(values) && values.length === size && Array.from(values).every(Number.isFinite);
 
@@ -60,6 +72,12 @@ export function resolveAssemblyPoses(
     if (!validOffset || !finite(quaternion, 4) || Math.abs(Math.hypot(...quaternion) - 1) > 1e-9) {
       throw new Error('Invalid relative pose');
     }
+    if ('angle' in mate) {
+      const capturedHeading = heading(new Quaternion(...quaternion).normalize());
+      if (!validMateAngle(mate.angle) || capturedHeading === undefined || Math.abs(capturedHeading) > 1e-4) {
+        throw new Error('Некорректный угол сопряжения');
+      }
+    }
     incoming.set(followerId, mate);
     const siblings = children.get(leaderId) ?? [];
     siblings.push(mate);
@@ -78,7 +96,9 @@ export function resolveAssemblyPoses(
       const position = offset.applyQuaternion(orientation)
         .add(new Vector3(...leader.position)).toArray();
       if (!finite(position, 3)) throw new Error('Invalid resolved position');
-      const quaternion = orientation.clone().multiply(new Quaternion(...mate.quaternion)).normalize().toArray();
+      const relative = new Quaternion(...mate.quaternion);
+      if ('angle' in mate) relative.premultiply(zRotation(mate.angle));
+      const quaternion = orientation.clone().multiply(relative).normalize().toArray();
       resolved.set(mate.followerId, {position, quaternion});
       order.push(mate.followerId);
     }
@@ -116,6 +136,19 @@ export function distanceAssemblyMateFromPoses(
   return {leaderId, followerId, direction, distance, quaternion};
 }
 
+/** Capture relative position and remove the heading while preserving tilt and roll. */
+export function angularAssemblyMateFromPoses(
+  world: ReadonlyMap<string, AssemblyWorldPose>, leaderId: string, followerId: string, angle: number,
+): AngularAssemblyMate {
+  const fixed = fixedAssemblyMateFromPoses(world, leaderId, followerId);
+  const orientation = new Quaternion(...fixed.quaternion);
+  const capturedHeading = heading(orientation);
+  if (capturedHeading === undefined) {
+    throw Error('Ось +X ведомого вхождения параллельна оси Z ведущего. Задайте исходное направление.');
+  }
+  return {...fixed, angle, quaternion: orientation.premultiply(zRotation(-capturedHeading)).normalize().toArray()};
+}
+
 export function createFixedAssemblyMate(
   placements: readonly AssemblyPlacement[],
   mates: readonly AssemblyMate[],
@@ -150,8 +183,10 @@ export function validateAssemblyMates(value: unknown): AssemblyMate[] {
   return Array.from(value, raw => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw Error('Некорректное сопряжение');
     const isDistance = Object.hasOwn(raw, 'distance');
+    const isAngular = Object.hasOwn(raw, 'angle');
     const keys = ['leaderId', 'followerId', 'quaternion', ...(isDistance ? ['direction', 'distance'] : ['translation'])];
-    if (Object.keys(raw).length !== keys.length || !keys.every(key => Object.hasOwn(raw, key)) ||
+    if (isAngular) keys.push('angle');
+    if ((isDistance && isAngular) || Object.keys(raw).length !== keys.length || !keys.every(key => Object.hasOwn(raw, key)) ||
         typeof raw.leaderId !== 'string' || typeof raw.followerId !== 'string' || !finite(raw.quaternion, 4)) {
       throw Error('Некорректное сопряжение');
     }
@@ -159,6 +194,7 @@ export function validateAssemblyMates(value: unknown): AssemblyMate[] {
       if (!validMateDistance(raw.distance) || !finite(raw.direction, 3)) throw Error('Некорректное расстояние сопряжения');
       return {...raw, direction: [...raw.direction], quaternion: [...raw.quaternion]};
     }
+    if (isAngular && !validMateAngle(raw.angle)) throw Error('Некорректный угол сопряжения');
     if (!finite(raw.translation, 3)) throw Error('Некорректное фиксированное сопряжение');
     return {...raw, translation: [...raw.translation], quaternion: [...raw.quaternion]};
   });

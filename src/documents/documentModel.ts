@@ -8,7 +8,7 @@ import {createExactModelState,validateExactModelState,type ExactModelState} from
 import {createModelAnnotationState,validateModelAnnotationState,resolveModelAnnotation,type ModelAnnotationState} from '../modelAnnotations/model';
 import {createDrawingDocument, validateDrawingDocument} from '../drawing/model';
 import {type DrawingDocument} from '../drawing/types';
-export const DOCUMENT_SCHEMA_VERSION = 20;
+export const DOCUMENT_SCHEMA_VERSION = 21;
 export type CadItem = {
   id: string; name: string; kind: 'box' | 'cylinder' | 'shaft' | 'gear' | 'pipe';
   pos: [number, number, number]; size: [number, number, number];
@@ -73,6 +73,9 @@ export function validateDocument(value: unknown): CadDocument {
   }
   if (value.schemaVersion < 20 && assemblyFixedMates?.some(mate => 'distance' in mate)) {
     throw Error('Сопряжение по расстоянию требует схему 20');
+  }
+  if (value.schemaVersion < 21 && assemblyFixedMates?.some(mate => 'angle' in mate)) {
+    throw Error('Угловое сопряжение требует схему 21');
   }
   resolveAssemblyHierarchy(assemblyInstances??[],assemblyGroups??[],assemblyFixedMates??[]);
   return {schemaVersion: DOCUMENT_SCHEMA_VERSION, ...(hasGroups ? {assemblyGroups}:{}), ...(hasMates ? {assemblyFixedMates}:{}), ...(hasAssembly ? {assemblyInstances}:{}), sketchModel, exactModel, modelAnnotations, drawing: value.schemaVersion === 1 ? createDrawingDocument() : validateDrawingDocument(value.drawing), id: value.id, name: value.name, items, modifiedAt: value.modifiedAt};
