@@ -1,3 +1,5 @@
+import {sha256} from '@noble/hashes/sha256';
+import {bytesToHex} from '@noble/hashes/utils';
 import type {ExactBody, PlanarFaceDescriptor, PlanarFaceInspection} from '../kernel/types';
 import type {AssemblyInstance} from './assemblyInstances';
 
@@ -13,7 +15,7 @@ type FaceSources = {
   instances: readonly AssemblyInstance[];
   bodies: readonly ExactBody[];
 };
-type InspectPlanarFaces = (brep: string) => Promise<PlanarFaceInspection>;
+export type InspectPlanarFaces = (brep: string) => Promise<PlanarFaceInspection>;
 type Resolution =
   | {status: 'resolved'; face: PlanarFaceDescriptor}
   | {status: 'broken' | 'stale' | 'unavailable'};
@@ -39,11 +41,24 @@ export function validateAssemblyPlanarFaceReference(value: unknown): AssemblyPla
   };
 }
 
-async function snapshotDigest(brep: string): Promise<string> {
+const bodyDigests = new WeakMap<ExactBody, {brep: string; digest: string}>();
+
+export function exactBodySnapshotDigest(body: ExactBody): string {
+  const {brep} = body;
+  const cached = bodyDigests.get(body);
+  if (cached?.brep === brep) return cached.digest;
   if (/[\ud800-\udfff]/u.test(brep)) throw Error('Снимок тела содержит некорректный Unicode');
-  if (!globalThis.crypto?.subtle) throw Error('Для проверки снимка грани требуется HTTPS или localhost');
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(brep));
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2,'0')).join('');
+  const digest = bytesToHex(sha256(brep));
+  bodyDigests.set(body, {brep,digest});
+  return digest;
+}
+
+export function assertAssemblyPlanarFaceSource(sources: FaceSources, reference: AssemblyPlanarFaceReference): void {
+  const occurrence = sources.instances.find(item => item.id === reference.occurrenceId);
+  const body = sources.bodies.find(item => item.id === reference.sourceBodyId);
+  if (!body || occurrence?.sourceBodyId !== reference.sourceBodyId || exactBodySnapshotDigest(body) !== reference.snapshotDigest) {
+    throw Error('Геометрия плоской грани изменилась. Сначала отсоедините сопряжение.');
+  }
 }
 
 async function planarFace(brep: string, faceIndex: number, inspect: InspectPlanarFaces): Promise<PlanarFaceDescriptor | undefined> {
@@ -70,9 +85,10 @@ export async function captureAssemblyPlanarFaceReference(
   const body = sources.bodies.find(item => item.id === instance?.sourceBodyId);
   if (!body) throw Error('Исходное тело вхождения не найдено');
   const {brep, id: sourceBodyId} = body;
+  const snapshotDigest = exactBodySnapshotDigest(body);
   if (!await planarFace(brep, faceIndex, inspect)) throw Error('Плоская грань не найдена');
   return validateAssemblyPlanarFaceReference({
-    version: 1, occurrenceId, sourceBodyId, snapshotDigest: await snapshotDigest(brep), faceIndex,
+    version: 1, occurrenceId, sourceBodyId, snapshotDigest, faceIndex,
   });
 }
 
@@ -87,7 +103,7 @@ export async function resolveAssemblyPlanarFaceReference(
   const body = sources.bodies.find(item => item.id === reference.sourceBodyId);
   if (!body) return {status: 'broken'};
   const {brep} = body;
-  if (await snapshotDigest(brep) !== reference.snapshotDigest) return {status: 'stale'};
+  if (exactBodySnapshotDigest(body) !== reference.snapshotDigest) return {status: 'stale'};
   const face = await planarFace(brep, reference.faceIndex, inspect);
   return face ? {status:'resolved', face} : {status:'unavailable'};
 }

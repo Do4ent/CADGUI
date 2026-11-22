@@ -68,7 +68,7 @@ def test_cross_parent_mate_tracks_leader_and_detaches_in_follower_frame(page, tm
 
     file_name = 'cross-parent.json'
     saved = save_document(page, tmp_path, file_name)
-    assert saved['schemaVersion'] == 21
+    assert saved['schemaVersion'] == 22
     assert saved['exactModel'] == source
     (mate,) = saved['assemblyFixedMates']
     assert (mate['leaderId'], mate['followerId']) == (leader, follower)

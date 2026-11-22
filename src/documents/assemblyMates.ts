@@ -1,3 +1,4 @@
+import {validateAssemblyPlanarFaceReference,type AssemblyPlanarFaceReference} from './assemblyFaceReferences';
 import {Euler, Matrix4, Quaternion, Vector3} from 'three';
 
 type Triple = readonly [number, number, number];
@@ -23,7 +24,11 @@ export interface DistanceAssemblyMate {
 export interface AngularAssemblyMate extends FixedAssemblyMate {
   angle: number;
 }
-export type AssemblyMate = FixedAssemblyMate | DistanceAssemblyMate | AngularAssemblyMate;
+export interface PlanarAssemblyMate extends FixedAssemblyMate {
+  leaderFace: AssemblyPlanarFaceReference;
+  followerFace: AssemblyPlanarFaceReference;
+}
+export type AssemblyMate = FixedAssemblyMate | DistanceAssemblyMate | AngularAssemblyMate | PlanarAssemblyMate;
 export type MateParameter = {kind: 'distance' | 'angular'; value: number};
 export const MAX_MATE_ANGLE = 180;
 export const validMateAngle = (angle: number) => Number.isFinite(angle) && Math.abs(angle) <= MAX_MATE_ANGLE;
@@ -186,7 +191,9 @@ export function validateAssemblyMates(value: unknown): AssemblyMate[] {
     const isAngular = Object.hasOwn(raw, 'angle');
     const keys = ['leaderId', 'followerId', 'quaternion', ...(isDistance ? ['direction', 'distance'] : ['translation'])];
     if (isAngular) keys.push('angle');
-    if ((isDistance && isAngular) || Object.keys(raw).length !== keys.length || !keys.every(key => Object.hasOwn(raw, key)) ||
+    const isPlanar = Object.hasOwn(raw, 'leaderFace') || Object.hasOwn(raw, 'followerFace');
+    if (isPlanar) keys.push('leaderFace','followerFace');
+    if ((Number(isDistance) + Number(isAngular) + Number(isPlanar) > 1) || Object.keys(raw).length !== keys.length || !keys.every(key => Object.hasOwn(raw, key)) ||
         typeof raw.leaderId !== 'string' || typeof raw.followerId !== 'string' || !finite(raw.quaternion, 4)) {
       throw Error('Некорректное сопряжение');
     }
@@ -196,6 +203,14 @@ export function validateAssemblyMates(value: unknown): AssemblyMate[] {
     }
     if (isAngular && !validMateAngle(raw.angle)) throw Error('Некорректный угол сопряжения');
     if (!finite(raw.translation, 3)) throw Error('Некорректное фиксированное сопряжение');
+    if (isPlanar) {
+      const leaderFace = validateAssemblyPlanarFaceReference(raw.leaderFace);
+      const followerFace = validateAssemblyPlanarFaceReference(raw.followerFace);
+      if (leaderFace.occurrenceId !== raw.leaderId || followerFace.occurrenceId !== raw.followerId) {
+        throw Error('Ссылки на грани не соответствуют вхождениям сопряжения');
+      }
+      return {...raw, leaderFace, followerFace, translation: [...raw.translation], quaternion: [...raw.quaternion]};
+    }
     return {...raw, translation: [...raw.translation], quaternion: [...raw.quaternion]};
   });
 }
