@@ -4,6 +4,12 @@ Open **Сборка** and use **Подсборки → Добавить подс
 
 Each row shows its path and world position. Editing a parent pose moves its descendants as a rigid assembly. Changing the parent of an existing subassembly or occurrence recomputes its local coordinates to preserve its world placement. A user can then edit the recomputed local coordinates before confirming. The source body's geometry and placements of unrelated occurrences are independent.
 
-Undo and Redo cover subassembly creation, modification, reparenting and removal together with the rest of the model scene. Documents save in schema 17. Older schemas open with existing occurrence placement and fixed mates intact. Invalid hierarchies are rejected on import, including missing parents, cycles, duplicate IDs and world positions outside ±1,000,000 mm per axis.
+Undo and Redo cover subassembly creation, modification, reparenting and removal together with the rest of the model scene. Documents save in schema 18. Older documents open with existing occurrence placement and fixed mates intact. Invalid hierarchies are rejected on import, including missing parents, cycles, duplicate IDs and world positions outside ±1,000,000 mm per axis.
 
-The editor supports up to 100 subassemblies and 100 occurrences per document. Move or remove a subassembly's children before deleting it. Fixed mates apply to root occurrences. Detach existing mates before moving either endpoint into a subassembly. Subassemblies are local to the document and represent rigid placements of existing exact-body occurrences.
+The editor supports up to 100 subassemblies and 100 occurrences per document. Move or remove a subassembly's children before deleting it. Subassemblies are local to the document and represent rigid placements of existing exact-body occurrences.
+
+## Fixed mates within a subassembly
+
+In **Сборка**, open **Фиксированное сопряжение**. Select two occurrences under the same parent. Two root occurrences also share a parent frame. The follower list excludes incompatible pairs and attachments that would form a cycle. Confirming the mate preserves the current relative pose.
+
+Moving the leader moves its followers. Moving or reparenting the entire subassembly carries all its mated occurrences with it. Detach the mates that involve an occurrence before changing that occurrence’s parent individually. Detaching preserves its solved pose in the current parent frame.
