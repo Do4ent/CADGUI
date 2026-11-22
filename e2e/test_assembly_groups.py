@@ -12,7 +12,7 @@ from test_regression import browser, page
 
 
 def add_subassembly(page, name, position, parent_id=None):
-    panel = page.get_by_role('region', name='Вхождения деталей', exact=True)
+    panel = page.get_by_role('region', name='Подсборки', exact=True)
     panel.get_by_role('button', name='Добавить подсборку', exact=True).click()
     dialog = page.get_by_role('dialog', name='Подсборка', exact=True)
     dialog.get_by_label('Имя подсборки', exact=True).fill(name)
