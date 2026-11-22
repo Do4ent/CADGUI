@@ -27,3 +27,18 @@ export function planarMateTransform(
   position.addScaledVector(leaderNormal, gap);
   return {position: position.toArray(), quaternion: orientation.toArray()};
 }
+
+/** Verify a saved transform against freshly resolved body-space planes. */
+export function planarMateTransformMatches(
+  relative: AssemblyWorldPose,
+  leaderFace: PlanarFaceDescriptor,
+  followerFace: PlanarFaceDescriptor,
+): boolean {
+  const orientation = new Quaternion(...relative.quaternion);
+  const normal = new Vector3(...leaderFace.normal);
+  const opposed = new Vector3(...followerFace.normal).applyQuaternion(orientation).negate();
+  const contact = new Vector3(...followerFace.origin).applyQuaternion(orientation)
+    .add(new Vector3(...relative.position));
+  return normal.distanceTo(opposed) <= 1e-8 &&
+    Math.abs(contact.sub(new Vector3(...leaderFace.origin)).dot(normal)) <= 1e-7;
+}

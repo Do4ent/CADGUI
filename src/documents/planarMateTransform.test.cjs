@@ -7,7 +7,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
   {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}},
 ).outputText, file);
 
-const {planarMateTransform} = require('./planarMateTransform.ts');
+const {planarMateTransform, planarMateTransformMatches} = require('./planarMateTransform.ts');
 const {assemblyPoseRelativeTo} = require('./assemblyMates.ts');
 const quaternion = (x,y,z) => new Quaternion().setFromEuler(new Euler(x,y,z)).toArray();
 const vector = values => new Vector3(...values);
@@ -21,6 +21,9 @@ for (let i=0; i<128; i++) {
   const follower = {position:[42,-17,6], quaternion:quaternion(i*.071,-i*.19,i*.023)};
   const before = assemblyPoseRelativeTo(follower,leader);
   const solved = planarMateTransform(leader,follower,xPlane,yPlane);
+  assert.ok(planarMateTransformMatches(solved,xPlane,yPlane));
+  assert.ok(!planarMateTransformMatches({...solved,position:[solved.position[0]+0.01,...solved.position.slice(1)]},xPlane,yPlane));
+  assert.ok(!planarMateTransformMatches({...solved,quaternion:[0,0,0,1]},xPlane,yPlane));
   const target = vector(xPlane.normal).negate();
   const oldNormal = vector(yPlane.normal).applyQuaternion(rotation(before));
   const orientation = rotation(solved);
