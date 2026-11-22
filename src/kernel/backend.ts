@@ -5,7 +5,7 @@ import {validateMixedEdges} from '../sketch/mixed';
 import {profilePoints,sketchPointToWorld,sketchNormal} from '../sketch/model';
 import {OcctKernel,type ShapeHandle} from 'occt-wasm';
 import {MAX_BREP_LENGTH} from './model';
-import type {KernelBodyResult,KernelOutput,KernelRequest,Vec3} from './types';
+import type {KernelBodyResult,KernelOutput,KernelRequest,PlanarFaceDescriptor,PlanarFaceInspection,Vec3} from './types';
 const MAX_TRIANGLES=200_000,MAX_COORDINATE=1_000_000;
 function number(value:unknown,positive=false):number{if(typeof value!=='number'||!Number.isFinite(value)||Math.abs(value)>MAX_COORDINATE||(positive&&value<1e-5))throw Error('Координаты должны быть конечными в пределах ±1000000 мм; размеры от 0.00001 до 1000000 мм');return value;}
 function vector(value:unknown):Vec3{if(!Array.isArray(value)||value.length!==3)throw Error('Требуются координаты XYZ');return value.map(v=>number(v)) as Vec3;}
@@ -23,6 +23,34 @@ export class ExactKernelBackend{
   return children.reduce((total,child)=>total+this.solidOnly(child,depth+1),0);
  }
  private read(data:string):ShapeHandle{return this.kernel.fromBREP(brep(data));}
+
+ inspectPlanarFaces(brep:string):PlanarFaceInspection{
+  const k=this.kernel,mark=k.checkpoint();
+  try{
+   const shape=this.read(brep);
+   if(k.isNull(shape)||!k.isValid(shape))throw Error('Ядро отклонило некорректное тело');
+   const solids=this.solidOnly(shape);
+   if(!solids||solids>100)throw Error('Операция должна содержать от 1 до 100 объёмных тел');
+   const bounds=k.getBoundingBox(shape,{precise:true,useTriangulation:false});
+   if(!Object.values(bounds).every(value=>Number.isFinite(value)&&Math.abs(value)<=MAX_COORDINATE))throw Error('Некорректные границы тела');
+   if(k.subShapeCount(shape,'face')>MAX_TRIANGLES)throw Error('Слишком много граней для инспекции');
+   const faces:PlanarFaceDescriptor[]=[];
+   for(const [faceIndex,face] of k.getSubShapes(shape,'face').entries()){
+    if(k.surfaceType(face)!=='plane')continue;
+    // Evaluate the analytic surface at its projected area center. OCCT's
+    // surfaceNormal already includes the face orientation and location.
+    const {u,v}=k.uvFromPoint(face,k.getSurfaceCenterOfMass(face));
+    const {x,y,z}=k.pointOnSurface(face,u,v);
+    const {x:nx,y:ny,z:nz}=k.surfaceNormal(face,u,v);
+    const origin=vector([x,y,z]);
+    const normal:Vec3=[nx||0,ny||0,nz||0];
+    if(![nx,ny,nz].every(Number.isFinite)||Math.abs(Math.hypot(...normal)-1)>1e-9)throw Error('Некорректная нормаль плоской грани');
+    faces.push({faceIndex,origin,normal});
+   }
+   return {kind:'planar-faces',brep,faces};
+  }finally{k.releaseSince(mark);}
+ }
+
  execute(request:KernelRequest):KernelOutput{
   const k=this.kernel,mark=k.checkpoint();
   try{

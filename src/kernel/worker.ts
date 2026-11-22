@@ -3,14 +3,18 @@ import {OcctKernel,type OcctModuleFactory} from 'occt-wasm';
 import glueUrl from 'occt-wasm/dist/occt-wasm.js?url';
 import wasmUrl from 'occt-wasm/dist/occt-wasm.wasm?url';
 import {ExactKernelBackend} from './backend';
-import type {KernelRequest,KernelWorkerReply} from './types';
+import type {KernelWorkerRequest,KernelWorkerReply} from './types';
 let initialized:Promise<ExactKernelBackend>|null=null;
 function backend(){return initialized??=import(/* @vite-ignore */ glueUrl).then(async module=>new ExactKernelBackend(await OcctKernel.init({createModule:module.default as OcctModuleFactory,wasm:wasmUrl}))).catch(error=>{initialized=null;throw error;});}
 let queue=Promise.resolve();
-self.onmessage=(event:MessageEvent<{id:number;request:KernelRequest}>)=>{
+self.onmessage=(event:MessageEvent<{id:number;request:KernelWorkerRequest}>)=>{
  const {id,request}=event.data;
  queue=queue.then(async()=>{
-  try{const result=(await backend()).execute(request);self.postMessage({id,result} satisfies KernelWorkerReply);}
+  try{
+   const kernel=await backend();
+   const result=request.op==='planar-faces'?kernel.inspectPlanarFaces(request.brep):kernel.execute(request);
+   self.postMessage({id,result} satisfies KernelWorkerReply);
+  }
   catch(error){self.postMessage({id,error:error instanceof Error?error.message:'Ошибка геометрического ядра'} satisfies KernelWorkerReply);}
  });
 };

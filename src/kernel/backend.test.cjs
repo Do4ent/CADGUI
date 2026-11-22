@@ -11,6 +11,20 @@ function load(file,dependencies){const exports={};vm.runInNewContext(ts.transpil
  try{
  const box=request({op:'box',size:[2,3,4],origin:[0,0,0]});near(box.volume,24);near(box.area,52);equal(box.topology.solids,1);equal(box.topology.faces,6);for(let i=0;i<3;i++){near(box.bounds[0][i],0);near(box.bounds[1][i],[2,3,4][i]);}mesh(box);
  const cylinder=request({op:'cylinder',radius:2,height:5,origin:[0,0,0]});near(cylinder.volume,20*Math.PI);for(let i=0;i<3;i++){near(cylinder.bounds[0][i],[-2,-2,0][i]);near(cylinder.bounds[1][i],[2,2,5][i]);}mesh(cylinder);
+ function planarFaces(brep){const count=kernel.shapeCount;try{return backend.inspectPlanarFaces(brep);}finally{equal(kernel.shapeCount,count);}}
+ const boxPlanes=planarFaces(box.brep);
+ equal(boxPlanes.kind,'planar-faces');equal(boxPlanes.brep,box.brep);equal(planarFaces(box.brep),boxPlanes);
+ equal(boxPlanes.faces.map(face=>face.faceIndex),[0,1,2,3,4,5]);
+ const boxNormals=[[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]];
+ for(const face of boxPlanes.faces){
+  const normal=boxNormals[face.faceIndex];equal(face.normal,normal);
+  const axis=normal.findIndex(Boolean);near(face.origin[axis],normal[axis]<0?0:[2,3,4][axis]);
+ }
+ const cylinderPlanes=planarFaces(cylinder.brep);equal(cylinderPlanes.faces.map(face=>face.faceIndex),[1,2]);
+ for(const face of cylinderPlanes.faces){near(face.origin[0],0);near(face.origin[1],0);near(face.origin[2],face.faceIndex===1?5:0);equal(face.normal,[0,0,face.faceIndex===1?1:-1]);}
+ const translatedPlanes=planarFaces(request({op:'box',size:[2,3,4],origin:[7,-4,5]}).brep);
+ for(const face of translatedPlanes.faces){equal(face.normal,boxNormals[face.faceIndex]);face.origin.forEach((value,i)=>near(value,boxPlanes.faces[face.faceIndex].origin[i]+[7,-4,5][i]));}
+ assert.throws(()=>planarFaces('bad'),/BREP/);
  const tool=request({op:'cylinder',radius:1,height:5,origin:[0,0,0]}),bore=request({op:'boolean',kind:'cut',a:cylinder.brep,b:tool.brep});near(bore.volume,15*Math.PI);equal(bore.topology.solids,1);ok(bore.topology.faces>=4);mesh(bore);
  const shifted=request({op:'box',size:[2,3,4],origin:[1,0,0]});for(const [kind,value] of [['fuse',36],['common',12],['cut',12]]){const result=request({op:'boolean',kind,a:box.brep,b:shifted.brep});near(result.volume,value);mesh(result);}
  const distant=request({op:'box',size:[2,3,4],origin:[10,0,0]}),disjoint=request({op:'boolean',kind:'fuse',a:box.brep,b:distant.brep});near(disjoint.volume,48);equal(disjoint.topology.solids,2);mesh(disjoint);

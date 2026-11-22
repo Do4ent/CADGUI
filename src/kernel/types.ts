@@ -4,6 +4,9 @@ export type ExactBody={id:string;name:string;brep:string;color:string;visible:bo
 export type ExactModelState={version:1;kernel:'occt-wasm';kernelVersion:'5.15.0';units:'mm';bodies:ExactBody[]};
 export type KernelMesh={positions:Float32Array;normals:Float32Array;indices:Uint32Array;faceGroups:Int32Array};
 export type KernelBodyResult={brep:string;mesh:KernelMesh;lines:Float32Array;volume:number;area:number;bounds:[Vec3,Vec3];center:Vec3;topology:{solids:number;faces:number;edges:number;vertices:number}};
+/** Index in the native face traversal of the exact BREP snapshot. */
+export type PlanarFaceDescriptor={faceIndex:number;origin:Vec3;normal:Vec3};
+export type PlanarFaceInspection={kind:'planar-faces';brep:string;faces:PlanarFaceDescriptor[]};
 export type KernelRequest=
  |{op:'revolve-region';region:SketchRegion;plane:SketchPlane;origin:Vec3;axis:'u'|'v';offset:number;angle:number}
  |{op:'cut-region';target:string;region:SketchRegion;plane:SketchPlane;origin:Vec3;depth:number}
@@ -19,6 +22,8 @@ export type KernelRequest=
  |{op:'import-step';text:string}
  |{op:'export-step';brep:string};
 export type KernelOutput=KernelBodyResult|string;
-export type KernelWorkerReply={id:number;result:KernelOutput}|{id:number;error:string};
+export type KernelWorkerRequest=KernelRequest|{op:'planar-faces';brep:string};
+export type KernelWorkerOutput=KernelOutput|PlanarFaceInspection;
+export type KernelWorkerReply={id:number;result:KernelWorkerOutput}|{id:number;error:string};
 /** Transient session-local reference, not persistent topology naming. */
 export type ExactSelection={reference:import('./references').GeometryReference;renderScope:string|null};

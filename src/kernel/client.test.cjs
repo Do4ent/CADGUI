@@ -8,6 +8,10 @@ vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleK
  const a=c.execute(request),b=c.execute(request);assert.equal(a,b);assert.equal(workers[0].messages.length,1);
  workers[0].reply({brep:'a',volume:24});assert.equal((await a).volume,24);assert.equal(await b,await a);
  const box=c.execute({op:'box',size:[2,3,4],origin:[0,0,0]});workers[0].reply({brep:'new',volume:24});await box;const count=workers[0].messages.length;await c.execute({op:'inspect',brep:'new'});assert.equal(workers[0].messages.length,count,'creation result supplies all viewports without remeshing');
+ const planes=c.inspectPlanarFaces('a');assert.equal(workers[0].messages.at(-1).request.op,'planar-faces');
+ const planeResult={kind:'planar-faces',brep:'a',faces:[]};workers[0].reply(planeResult);assert.equal(await planes,planeResult);
+ assert.equal((await c.execute(request)).volume,24,'face inspection does not replace the mesh cache');
+ const wrongPlanes=c.inspectPlanarFaces('a');workers[0].reply({...planeResult,brep:'b'});await assert.rejects(wrongPlanes,/ответ инспекции/);
  const old=c.execute({op:'inspect',brep:'pending'});c.reset();await assert.rejects(old,/отменено/);assert.equal(workers[0].stopped,true);const fresh=c.execute(request);assert.equal(workers.length,2);workers[1].reply({brep:'a',volume:6});assert.equal((await fresh).volume,6,'reset invalidates prior geometry cache');c.reset();
  const timeoutClient=new KernelClient(()=>new FakeWorker(),5);await assert.rejects(timeoutClient.execute(request),/время/);assert.equal(workers.at(-1).stopped,true);
  const errorClient=new KernelClient(()=>new FakeWorker(),1000);const failed=errorClient.execute(request);workers.at(-1).onerror({preventDefault(){}});await assert.rejects(failed,/WebAssembly/);const retry=errorClient.execute(request);workers.at(-1).reply({brep:'a',volume:3});assert.equal((await retry).volume,3);errorClient.reset();
