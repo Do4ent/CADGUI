@@ -32,8 +32,14 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - The new mate drives distance between occurrence origins along the captured bearing and maintains relative orientation. It supports edit, detach, Undo and schema v20 persistence. The assembly maturity tier remains 50% while broader geometric mates and BOM are pending.
 - 70 local suites, the production build, 14 focused Chromium tests, 128 independent mixed distance/fixed chains, and all 224 PR browser tests passed.
 
+## Angular mates
+
+- [PR #63](https://github.com/Do4ent/CADGUI/pull/63), branch `feat/angular-mate`, worktree `/tmp/wt-angle-mate`, head `80bac51`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45037427069) was in progress.
+- Set a signed heading within ±180° about the leader’s local +Z using the projected follower +X. Heading changes retain the captured tilt and roll and the leader-local offset. Singular projections are rejected. Native schema v21 preserves the mate.
+- Focused solver and document tests and 128 independent cross-parent angular/distance chains passed. Build, full tests and browser acceptance were in progress. The overall readiness estimate remains 41.25%, published as about 40%.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify main and CI before starting the next mate type. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect PR #63 on its current head and merge after passing same-head CI and review. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
