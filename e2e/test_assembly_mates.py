@@ -76,7 +76,7 @@ def test_fixed_mate_tracks_leader_preserves_detached_pose_and_reopens(page, tmp_
     assert_world_pose(page, follower, [3, 10, 0], 120)
 
     saved = save_document(page, tmp_path, 'mate-linked.json')
-    assert saved['schemaVersion'] == 16
+    assert saved['schemaVersion'] == 17
     assert saved['exactModel'] == source
     (mate,) = saved['assemblyFixedMates']
     assert (mate['leaderId'], mate['followerId']) == (leader, follower)

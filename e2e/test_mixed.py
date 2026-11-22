@@ -28,7 +28,7 @@ def create_mixed(page, **kwargs):
 
 
 def model(document):
-    assert document['schemaVersion'] == 16
+    assert document['schemaVersion'] == 17
     return document['sketchModel']
 
 

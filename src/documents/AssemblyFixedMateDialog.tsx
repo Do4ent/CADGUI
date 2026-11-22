@@ -6,7 +6,7 @@ import type {FixedAssemblyMate} from './assemblyMates';
 export function fixedMateCandidates(
  instances: readonly AssemblyInstance[], availableSources: ReadonlySet<string>, mates: readonly FixedAssemblyMate[],
 ): Map<AssemblyInstance, AssemblyInstance[]> {
- const available = instances.filter(instance=>availableSources.has(instance.sourceBodyId));
+ const available = instances.filter(instance=>instance.parentId===undefined&&availableSources.has(instance.sourceBodyId));
  const leadersByFollower = new Map(mates.map(mate=>[mate.followerId,mate.leaderId]));
  const roots = available.filter(instance=>!leadersByFollower.has(instance.id));
  const result = new Map<AssemblyInstance, AssemblyInstance[]>();
