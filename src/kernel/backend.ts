@@ -24,6 +24,25 @@ export class ExactKernelBackend{
  }
  private read(data:string):ShapeHandle{return this.kernel.fromBREP(brep(data));}
 
+ /** Join mesh groups to exact faces on the same live shape. OCCT WASM 5.15
+  * generates group hashes in meshShape with the same modulus as hashCode. */
+ private planarMeshFaceIndices(shape:ShapeHandle,groups:Int32Array):Int32Array{
+  const result=new Int32Array(groups.length/3).fill(-1);
+  const k=this.kernel;
+  if(!groups.length||k.subShapeCount(shape,'face')>MAX_TRIANGLES)return result;
+  const faces=k.getSubShapes(shape,'face');
+  const byHash=new Map<number,number>();
+  for(const [index,face] of faces.entries()){
+   const hash=k.hashCode(face,2147483647);
+   byHash.set(hash,byHash.has(hash)?-1:index);
+  }
+  for(let index=0;index<result.length;index++){
+   const face=byHash.get(groups[index*3+2]);
+   if(face!==undefined&&face>=0&&k.surfaceType(faces[face])==='plane')result[index]=face;
+  }
+  return result;
+ }
+
  inspectPlanarFaces(brep:string):PlanarFaceInspection{
   const k=this.kernel,mark=k.checkpoint();
   try{
@@ -119,15 +138,19 @@ export class ExactKernelBackend{
    const volume=k.getVolume(shape),area=k.getSurfaceArea(shape),bounds=k.getBoundingBox(shape,{precise:true,useTriangulation:false}),center=k.getCenterOfMass(shape);
    if(!Number.isFinite(volume)||volume<=0||!Number.isFinite(area)||area<=0||!Object.values(bounds).every(v=>Number.isFinite(v)&&Math.abs(v)<=MAX_COORDINATE)||!Object.values(center).every(Number.isFinite))throw Error('Не удалось получить корректные свойства объёмной геометрии');
    const native=k.toBREP(shape);brep(native);
-   const mesh=k.meshShape(shape,{linearDeflection:.05,angularDeflection:.2,relative:false});
+   // Creation replies are cached under the emitted BREP. Read that snapshot
+   // back before meshing so its native ordinals are the ones the catalog uses.
+   const renderShape=request.op==='inspect'?shape:this.read(native);
+   const mesh=k.meshShape(renderShape,{linearDeflection:.05,angularDeflection:.2,relative:false});
    if(!mesh.triangleCount||mesh.triangleCount>MAX_TRIANGLES||mesh.positions.length!==mesh.normals.length||mesh.positions.length%3||mesh.indices.length!==mesh.triangleCount*3||!mesh.positions.every(Number.isFinite)||!mesh.normals.every(Number.isFinite)||!mesh.indices.every(index=>index<mesh.positions.length/3))throw Error('Неподдерживаемая или слишком сложная сетка отображения');
    const groups=mesh.faceGroups??new Int32Array();
    if(groups.length%3)throw Error('Некорректные группы граней');
    for(let i=0;i<groups.length;i+=3)if(groups[i]<0||groups[i+1]<=0||groups[i]+groups[i+1]>mesh.indices.length||groups[i]%3||groups[i+1]%3)throw Error('Некорректные диапазоны граней');
-   const outline=k.wireframe(shape,{source:'triangulation',deflection:.05}),lines:number[]=[];
+   const planarFaceIndices=this.planarMeshFaceIndices(renderShape,groups);
+   const outline=k.wireframe(renderShape,{source:'triangulation',deflection:.05}),lines:number[]=[];
    for(let i=0;i<outline.edgeGroups.length;i+=3){const start=outline.edgeGroups[i],end=start+outline.edgeGroups[i+1];for(let j=start;j+5<end;j+=3){lines.push(...outline.points.slice(j,j+3),...outline.points.slice(j+3,j+6));if(lines.length>3_000_000)throw Error('Слишком много рёбер отображения');}}
    if(!lines.every(Number.isFinite))throw Error('Некорректные рёбра отображения');
-   return {brep:native,mesh:{positions:mesh.positions,normals:mesh.normals,indices:mesh.indices,faceGroups:groups},lines:new Float32Array(lines),volume,area,bounds:[[bounds.xmin,bounds.ymin,bounds.zmin],[bounds.xmax,bounds.ymax,bounds.zmax]],center:[center.x,center.y,center.z],topology:{solids,faces:k.subShapeCount(shape,'face'),edges:k.subShapeCount(shape,'edge'),vertices:k.subShapeCount(shape,'vertex')}} satisfies KernelBodyResult;
+   return {brep:native,mesh:{positions:mesh.positions,normals:mesh.normals,indices:mesh.indices,faceGroups:groups,planarFaceIndices},lines:new Float32Array(lines),volume,area,bounds:[[bounds.xmin,bounds.ymin,bounds.zmin],[bounds.xmax,bounds.ymax,bounds.zmax]],center:[center.x,center.y,center.z],topology:{solids,faces:k.subShapeCount(shape,'face'),edges:k.subShapeCount(shape,'edge'),vertices:k.subShapeCount(shape,'vertex')}} satisfies KernelBodyResult;
   }finally{k.releaseSince(mark);}
  }
 }
