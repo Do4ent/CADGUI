@@ -1,9 +1,10 @@
 import {useEffect, useState} from 'react';
 import {Dialog} from '../components/dialog/Dialog';
 import type {ExactBody,Vec3} from '../kernel/types';
-import type {AssemblyWorldPose,FixedAssemblyMate} from './assemblyMates';
+import type {AssemblyMate,AssemblyWorldPose} from './assemblyMates';
 import {validateAssemblyInstances,type AssemblyInstance} from './assemblyInstances';
 import {rebaseAssemblyPose,type AssemblyGroup} from './assemblyHierarchy';
+import {MateDistanceField,parseMateDistance} from './AssemblyFixedMateDialog';
 import {AssemblyGroupsEditor,AssemblyParentField,AssemblyPoseFields} from './AssemblyGroupsEditor';
 
 type Props = {
@@ -12,24 +13,27 @@ type Props = {
  groups: readonly AssemblyGroup[];
  paths: ReadonlyMap<string,readonly string[]>;
  world: ReadonlyMap<string,AssemblyWorldPose>;
- mates: readonly FixedAssemblyMate[];
+ mates: readonly AssemblyMate[];
  bodies: readonly ExactBody[];
  canCreateMate: boolean;
  onCreateMate: () => void;
  onDetach: (followerId: string) => void;
+ onEditDistance: (followerId: string,distance: number) => void;
  onChange: (next: AssemblyInstance[]) => void;
  onGroupsChange: (next: AssemblyGroup[]) => void;
 };
 
-export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,world,mates,bodies,canCreateMate,onCreateMate,onDetach,onChange,onGroupsChange}:Props) {
+export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,world,mates,bodies,canCreateMate,onCreateMate,onDetach,onEditDistance,onChange,onGroupsChange}:Props) {
  const [draft,setDraft]=useState<{id:string;sourceBodyId:string;name:string;parentId:string;values:string[]}|null>(null);
  const [removing,setRemoving]=useState<AssemblyInstance|null>(null);
  const [error,setError]=useState('');
  const [detaching,setDetaching]=useState<AssemblyInstance|null>(null);
- const followers=new Map(mates.map(mate=>[mate.followerId,mate.leaderId]));
+ const [editingDistance,setEditingDistance]=useState<{id:string; value:string}|null>(null);
+ const targetDistance=editingDistance?parseMateDistance(editingDistance.value):undefined;
+ const followers=new Map(mates.map(mate=>[mate.followerId,mate]));
  const mated=new Set(mates.flatMap(mate=>[mate.leaderId,mate.followerId]));
  const groupNames=new Map(groups.map(group=>[group.id,group.name]));
- useEffect(()=>{setDraft(null);setRemoving(null);setDetaching(null);setError('');},[instances,bodies,mates,groups]);
+ useEffect(()=>{setDraft(null);setRemoving(null);setDetaching(null);setEditingDistance(null);setError('');},[instances,bodies,mates,groups]);
  const open=(instance?:AssemblyInstance)=>{
   if(!instance&&!bodies[0])return;
   setError('');
@@ -60,19 +64,22 @@ export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,
   <button type="button" disabled={!bodies.length||instances.length>=100} onClick={()=>open()}>Добавить вхождение</button>
   <button type="button" disabled={!canCreateMate} onClick={onCreateMate}>Создать сопряжение</button>
   <ul>{displayInstances.map(instance=>{
-   const leaderId=followers.get(instance.id);
-   const leader=leaderId&&instances.find(item=>item.id===leaderId);
+   const mate=followers.get(instance.id);
+   const leader=mate&&instances.find(item=>item.id===mate.leaderId);
    const source=bodies.find(body=>body.id===instance.sourceBodyId);
    const path=paths.get(instance.id)??[instance.id];
    return <li key={instance.id} data-assembly-occurrence={instance.id} data-assembly-path={JSON.stringify(path)} data-assembly-world-position={JSON.stringify(instance.position)}>
     <strong>{[...path.slice(0,-1).map(id=>groupNames.get(id)),instance.name].join(' / ')}</strong> · {source?.name??'Исходное тело подавлено'}
     <p>{instance.position.map(value=>Number(value.toFixed(6))).join(' / ')} мм · {instance.rotation.map(value=>Number(value.toFixed(6))).join(' / ')}°</p>
     <button type="button" disabled={!source||!!leader} onClick={()=>open(instances.find(item=>item.id===instance.id))}>Изменить вхождение</button>
-    {leader&&<><p>Фиксированное сопряжение · {leader.name}</p><button type="button" onClick={()=>{setError('');setDetaching(instance);}}>Отсоединить сопряжение</button></>}
+    {leader&&mate&&<>
+     <p>{'distance' in mate ? `Сопряжение по расстоянию · ${mate.distance} мм` : 'Фиксированное сопряжение'} · {leader.name}</p>
+     {'distance' in mate&&<button type="button" onClick={()=>{setError('');setEditingDistance({id:instance.id,value:String(mate.distance)});}}>Изменить расстояние</button>}
+     <button type="button" onClick={()=>{setError('');setDetaching(instance);}}>Отсоединить сопряжение</button></>}
     <button type="button" onClick={()=>setRemoving(instance)}>Удалить вхождение</button>
    </li>;
   })}</ul>
-  {error&&!draft&&!detaching&&<p role="alert">{error}</p>}
+  {error&&!draft&&!detaching&&!editingDistance&&<p role="alert">{error}</p>}
   {draft&&<Dialog open title="Вхождение детали" confirmDisabled={!current()} onConfirm={submit} onCancel={()=>setDraft(null)}>
    <label>Имя вхождения<input value={draft.name} maxLength={200} onChange={event=>setDraft({...draft,name:event.target.value})}/></label>
    <label>Исходное тело<select aria-label="Исходное тело" value={draft.sourceBodyId} onChange={event=>setDraft({...draft,sourceBodyId:event.target.value})}>
@@ -80,8 +87,15 @@ export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,
    </select></label>
    <AssemblyParentField groups={groups} paths={paths} value={draft.parentId} disabled={mated.has(draft.id)} onChange={changeParent}/>
    <AssemblyPoseFields values={draft.values} onChange={values=>setDraft({...draft,values})}/>
-   <p>Смещение и повороты XYZ заданы в системе координат родительской подсборки. Для переноса вхождения с фиксированным сопряжением сначала отсоедините сопряжение.</p>
+   <p>Смещение и повороты XYZ заданы в системе координат родительской подсборки. Для переноса вхождения с сопряжением сначала отсоедините сопряжение.</p>
    {!current()&&<p role="status">Введите имя и конечные значения в пределах ±1 000 000 мм и ±360°.</p>}
+   {error&&<p role="alert">{error}</p>}
+  </Dialog>}
+  {editingDistance&&<Dialog open title="Расстояние сопряжения" confirmDisabled={targetDistance===undefined} onCancel={()=>{setEditingDistance(null);setError('');}} onConfirm={()=>{
+   if(targetDistance===undefined)return;
+   try{onEditDistance(editingDistance.id,targetDistance);setEditingDistance(null);}catch(e){setError(String(e));}
+  }}>
+   <MateDistanceField value={editingDistance.value} onChange={value=>{setEditingDistance({...editingDistance,value});setError('');}}/>
    {error&&<p role="alert">{error}</p>}
   </Dialog>}
   {detaching&&<Dialog open title="Отсоединить сопряжение" onCancel={()=>setDetaching(null)} onConfirm={()=>{

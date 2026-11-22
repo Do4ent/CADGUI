@@ -26,7 +26,7 @@ def create_curve(page, kind='circle', radius=2, plane='XY'):
 
 
 def source(document):
-    assert document['schemaVersion'] == 19
+    assert document['schemaVersion'] == 20
     return document['sketchModel']
 
 

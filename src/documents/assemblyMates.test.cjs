@@ -6,7 +6,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
   {compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022}},
 ).outputText, file);
 
-const {createFixedAssemblyMate, resolveAssemblyPoses, materializeAssemblyPlacement} = require('./assemblyMates.ts');
+const {createFixedAssemblyMate, distanceAssemblyMateFromPoses, resolveAssemblyPoses, materializeAssemblyPlacement} = require('./assemblyMates.ts');
 const make = (id, position, rotation = [0, 0, 0]) => ({id, position, rotation});
 const near = (actual, expected) => {
   assert.equal(actual.length, expected.length);
@@ -49,3 +49,18 @@ assert.throws(() => resolveAssemblyPoses(source, [{...ab, quaternion: [0, 0, 0, 
 assert.throws(() => resolveAssemblyPoses(source, [{...ab, translation: new Array(3)}]), /relative pose/);
 assert.deepEqual(source, snapshot);
 console.log('PASS fixed mate graph, no-jump attach, rigid propagation and detach');
+
+const distanceMate = distanceAssemblyMateFromPoses(initial,'a','b',15);
+const distancePoses = resolveAssemblyPoses([make('a',[1,2,3],[0,0,90]),...source.slice(1)], [distanceMate,bc]);
+near(distancePoses.get('b').position,[1,17,3]);
+near(distancePoses.get('c').position,[-4,17,3]);
+sameOrientation(distancePoses.get('b').quaternion,moved.get('b').quaternion);
+
+const coincident = [make('a',[2,3,4],[0,0,90]), make('b',[2,3,4],[10,20,30])];
+const coincidentMate = distanceAssemblyMateFromPoses(resolveAssemblyPoses(coincident,[]),'a','b',2);
+assert.deepEqual(coincidentMate.direction,[1,0,0]);
+near(resolveAssemblyPoses(coincident,[coincidentMate]).get('b').position,[2,5,4]);
+near(resolveAssemblyPoses(coincident,[{...coincidentMate,distance:0}]).get('b').position,[2,3,4]);
+assert.throws(()=>resolveAssemblyPoses(source,[{...distanceMate,distance:-1}]), /relative pose/);
+assert.throws(()=>resolveAssemblyPoses(source,[{...distanceMate,direction:[0,0,0]}]), /relative pose/);
+console.log('PASS distance mates, zero and coincident origins, rotated direction and fixed descendants');

@@ -52,7 +52,7 @@ def edit_note(page, text):
 
 
 def annotations(document):
-    assert document['schemaVersion'] == 19
+    assert document['schemaVersion'] == 20
     assert document['modelAnnotations']['version'] == 1
     return document['modelAnnotations']['annotations']
 
