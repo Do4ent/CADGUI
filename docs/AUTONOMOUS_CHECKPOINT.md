@@ -42,7 +42,7 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 - [PR #64](https://github.com/Do4ent/CADGUI/pull/64), branch `feat/planar-face-references`, worktree `/tmp/wt-planar-reference`, head `ceb41e9`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45039987435) was in progress.
 - OCCT returns exact planar surface descriptors. Occurrence references use the source ID, exact snapshot SHA-256 and native face ordinal. Geometry changes mark a reference stale. This foundation has no native schema change and requires a later assembly command to consume the references.
-- Kernel checks covered exact box and cylinder geometry, worker provenance and allocation cleanup. Independent review covered rotated face normals and cross-module reference resolution. The overall readiness estimate remains approximately 40%.
+- Kernel checks covered exact box and cylinder geometry, worker provenance and allocation cleanup. Independent review covered rotated face normals and cross-module reference resolution. All 71 local suites, the production build and 13 focused Chromium tests passed. The overall readiness estimate remains approximately 40%.
 
 ## Resume
 
