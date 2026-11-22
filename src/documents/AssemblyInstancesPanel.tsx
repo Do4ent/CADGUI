@@ -83,11 +83,11 @@ export function AssemblyInstancesPanel({instances,displayInstances,mates,bodies,
   {mateDraft&&<Dialog open title="Фиксированное сопряжение" confirmDisabled={!mateDraft.leaderId||!mateDraft.followerId} onCancel={()=>setMateDraft(null)} onConfirm={()=>{
    try{onAttach(mateDraft.leaderId,mateDraft.followerId);setMateDraft(null);}catch(e){setError(String(e));}
   }}>
-   <label>Ведущее вхождение<select value={mateDraft.leaderId} onChange={event=>setMateDraft({...mateDraft,leaderId:event.target.value,followerId:''})}>
+   <label>Ведущее вхождение<select aria-label="Ведущее вхождение" value={mateDraft.leaderId} onChange={event=>setMateDraft({...mateDraft,leaderId:event.target.value,followerId:''})}>
     <option value="">Выберите вхождение</option>
     {eligibleLeaders.map(instance=><option key={instance.id} value={instance.id}>{instance.name}</option>)}
    </select></label>
-   <label>Ведомое вхождение<select value={mateDraft.followerId} disabled={!mateDraft.leaderId} onChange={event=>setMateDraft({...mateDraft,followerId:event.target.value})}>
+   <label>Ведомое вхождение<select aria-label="Ведомое вхождение" value={mateDraft.followerId} disabled={!mateDraft.leaderId} onChange={event=>setMateDraft({...mateDraft,followerId:event.target.value})}>
     <option value="">Выберите вхождение</option>
     {eligibleFollowers(mateDraft.leaderId).map(instance=><option key={instance.id} value={instance.id}>{instance.name}</option>)}
    </select></label>
