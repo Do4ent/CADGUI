@@ -27,13 +27,13 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Distance mates and product completion
 
-- [PR #61](https://github.com/Do4ent/CADGUI/pull/61) at `eeac1ef` updates the v1 product completion ledger. The same nine packages and weights yield 41.25%, published as approximately 40% (35–45%). Its [same-head CI](https://github.com/Do4ent/CADGUI/actions/runs/45030354838) was in progress.
-- [PR #62](https://github.com/Do4ent/CADGUI/pull/62), branch `feat/distance-mate`, worktree `/tmp/wt-distance-mate`, head `28ac6f3`. [Full CI](https://github.com/Do4ent/CADGUI/actions/runs/45030357398) was in progress.
+- [PR #61](https://github.com/Do4ent/CADGUI/pull/61) at `eeac1ef` updates the v1 product completion ledger. The same nine packages and weights yield 41.25%, published as approximately 40% (35–45%). It passed [same-head CI](https://github.com/Do4ent/CADGUI/actions/runs/45030354838) and merged as `e86ee40`.
+- [PR #62](https://github.com/Do4ent/CADGUI/pull/62), branch `feat/distance-mate`, worktree `/tmp/wt-distance-mate`, head `28ac6f3`. It passed [full CI](https://github.com/Do4ent/CADGUI/actions/runs/45030357398) and merged as `58e130c`.
 - The new mate drives distance between occurrence origins along the captured bearing and maintains relative orientation. It supports edit, detach, Undo and schema v20 persistence. The assembly maturity tier remains 50% while broader geometric mates and BOM are pending.
-- Focused solver and document checks, production build and 128 independent mixed distance/fixed chains passed. Targeted Chromium acceptance is underway.
+- 70 local suites, the production build, 14 focused Chromium tests, 128 independent mixed distance/fixed chains, and all 224 PR browser tests passed.
 
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Check PRs #61 and #62 on their current heads. Merge after review and passing same-head CI, then update the status and quote the v1 weighted estimate. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify main and CI before starting the next mate type. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
