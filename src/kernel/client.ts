@@ -1,5 +1,5 @@
-import type {KernelOutput,KernelRequest,KernelWorkerReply} from './types';
-type Pending={resolve:(result:KernelOutput)=>void;reject:(error:Error)=>void;timer:ReturnType<typeof setTimeout>};
+import type {KernelOutput,KernelRequest,KernelWorkerOutput,KernelWorkerReply,KernelWorkerRequest,PlanarFaceInspection} from './types';
+type Pending={resolve:(result:KernelWorkerOutput)=>void;reject:(error:Error)=>void;timer:ReturnType<typeof setTimeout>};
 /** One serialized worker; a timeout terminates its WASM instance. Late replies
  * are never delivered to a caller after reset. UI/document revision guards
  * provide the independent protection against committing to another document. */
@@ -17,13 +17,22 @@ export class KernelClient{
  }
  execute(request:KernelRequest):Promise<KernelOutput>{
   if(request.op==='inspect'){const cached=this.inspections.get(request.brep);if(cached)return cached;}
-  const pending=this.dispatch(request);
+  const pending=this.dispatch(request).then(result=>{
+   if(typeof result!=='string'&&'kind' in result)throw Error('Неожиданный ответ геометрического ядра');
+   return result;
+  });
   if(request.op==='inspect')this.remember(request.brep,pending);
   void pending.then(result=>{if(typeof result!=='string'&&request.op!=='inspect')this.remember(result.brep,Promise.resolve(result));},()=>{if(request.op==='inspect'&&this.inspections.get(request.brep)===pending)this.inspections.delete(request.brep);});
   return pending;
  }
+ inspectPlanarFaces(brep:string):Promise<PlanarFaceInspection>{
+  return this.dispatch({op:'planar-faces',brep}).then(result=>{
+   if(typeof result==='string'||!('kind' in result)||result.kind!=='planar-faces'||result.brep!==brep)throw Error('Неожиданный ответ инспекции граней');
+   return result;
+  });
+ }
  private remember(brep:string,result:Promise<KernelOutput>){this.inspections.set(brep,result);while(this.inspections.size>8)this.inspections.delete(this.inspections.keys().next().value!);}
- private dispatch(request:KernelRequest):Promise<KernelOutput>{return new Promise((resolve,reject)=>{
+ private dispatch(request:KernelWorkerRequest):Promise<KernelWorkerOutput>{return new Promise((resolve,reject)=>{
   let worker:Worker;try{worker=this.start();}catch(error){reject(error instanceof Error?error:new Error(String(error)));return;}
   const id=++this.serial,timer=setTimeout(()=>this.reset('Превышено время вычисления геометрии. Ядро перезапущено; документ не изменён.'),this.timeoutMs);
   this.pending.set(id,{resolve,reject,timer});try{worker.postMessage({id,request});}catch(error){clearTimeout(timer);this.pending.delete(id);reject(error instanceof Error?error:new Error(String(error)));}
