@@ -36,7 +36,7 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 - [PR #63](https://github.com/Do4ent/CADGUI/pull/63), branch `feat/angular-mate`, worktree `/tmp/wt-angle-mate`, head `80bac51`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45037427069) was in progress.
 - Set a signed heading within ±180° about the leader’s local +Z using the projected follower +X. Heading changes retain the captured tilt and roll and the leader-local offset. Singular projections are rejected. Native schema v21 preserves the mate.
-- Focused solver and document tests and 128 independent cross-parent angular/distance chains passed. Build, full tests and browser acceptance were in progress. The overall readiness estimate remains 41.25%, published as about 40%.
+- Focused solver and document tests and 128 independent cross-parent angular/distance chains passed. The production build, all 70 local suites and 15 focused Chromium tests passed. The overall readiness estimate remains 41.25%, published as about 40%.
 
 ## Resume
 
