@@ -30,8 +30,10 @@ The follower keeps its position, tilt and roll relative to the leader while the 
 
 ## Planar face coincidence
 
-In **Сборка**, open the mate dialog and choose **Совмещение плоских граней**. Select the leader and follower occurrences, then choose their planar faces from the exact OCCT catalog. Each label shows the native face number, body-local outward normal and plane point. Curved faces are excluded from the lists.
+In **Сборка**, open the mate dialog and choose **Совмещение плоских граней**. Select the leader and follower occurrences, then choose their planar faces from the exact OCCT catalog. Each label shows the native face number, body-local outward normal and plane point. Curved faces are excluded from the lists. Use **Выбрать ведущую грань в 3D** or **Выбрать ведомую грань в 3D** to pick on the corresponding occurrence in the viewport. The dialog resumes after a successful selection. Press Escape or **Отмена выбора грани** to return to it without picking.
 
 The solver aligns the outward normals in opposition with the minimum rotation and translates the follower along the leader normal to close the gap. The follower origin retains its in-plane coordinates in the leader frame. After confirmation the assembly dependency keeps that relative transform. This mate aligns supporting planes even when their trimmed face areas do not overlap.
 
 Native schema 22 records each reference's occurrence ID, source body ID, face index and SHA-256 digest of its exact BRep, alongside the solved relative transform. Opening an explicit native JSON file revalidates both face ordinals and the saved transform with OCCT before opening a tab. Automatic workspace recovery verifies the saved native structure and the exact snapshot digests synchronously. Source geometry changes or a source swap are rejected while they would invalidate a surviving plane mate. Detach it first to edit the source. Deleting an endpoint removes its mates, retaining the solved position of a surviving follower. Undo/Redo restores the entire edit atomically.
+
+Viewport picks bind to the exact rendered BRep snapshot and a unique native planar face identity. If the rendered group is curved or cannot be mapped unambiguously, choose the face from the exact catalog instead.
