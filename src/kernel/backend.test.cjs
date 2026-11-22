@@ -29,6 +29,33 @@ function load(file,dependencies){const exports={};vm.runInNewContext(ts.transpil
  const shifted=request({op:'box',size:[2,3,4],origin:[1,0,0]});for(const [kind,value] of [['fuse',36],['common',12],['cut',12]]){const result=request({op:'boolean',kind,a:box.brep,b:shifted.brep});near(result.volume,value);mesh(result);}
  const distant=request({op:'box',size:[2,3,4],origin:[10,0,0]}),disjoint=request({op:'boolean',kind:'fuse',a:box.brep,b:distant.brep});near(disjoint.volume,48);equal(disjoint.topology.solids,2);mesh(disjoint);
  const restored=request({op:'inspect',brep:bore.brep});near(restored.volume,bore.volume);equal(restored.bounds,bore.bounds);mesh(restored);
+ // Map creation-cache and inspection groups to exact, untranslated BREP ordinals.
+ for(const result of [box,cylinder,request({op:'inspect',brep:box.brep}),request({op:'inspect',brep:cylinder.brep})]){
+  const faces=backend.inspectPlanarFaces(result.brep).faces;
+  const {planarFaceIndices,faceGroups,positions,indices}=result.mesh;
+  equal(planarFaceIndices.length,faceGroups.length/3);
+  equal([...planarFaceIndices].filter(index=>index>=0).sort((a,b)=>a-b),faces.map(face=>face.faceIndex));
+  for(const [group,index] of planarFaceIndices.entries()){
+   if(index<0)continue;
+   const face=faces.find(face=>face.faceIndex===index);
+   const start=faceGroups[group*3],end=start+faceGroups[group*3+1];
+   for(let j=start;j<end;j++){
+    const p=indices[j]*3;
+    near(face.normal.reduce((distance,axis,k)=>distance+axis*(positions[p+k]-face.origin[k]),0),0);
+   }
+  }
+ }
+ // A duplicate native hash is treated as ambiguous, even for a planar box.
+ const originalHash=kernel.hashCode;
+ let firstHash;
+ kernel.hashCode=function(face,bound){
+  firstHash??=originalHash.call(this,face,bound);
+  return firstHash;
+ };
+ try{
+  const collision=request({op:'inspect',brep:box.brep}).mesh.planarFaceIndices;
+  ok(collision.length===6&&collision.every(index=>index===-1));
+ }finally{kernel.hashCode=originalHash;}
  const step=request({op:'export-step',brep:bore.brep});ok(typeof step==='string'&&step.includes('ISO-10303-21'));const imported=request({op:'import-step',text:step});near(imported.volume,bore.volume);mesh(imported);
  // Independent real kernel STEP writer creates both mm and inch inputs; no simulated geometry.
  const handle=kernel.makeBox(25.4,12.7,5.08);try{for(const unit of ['mm','inch']){const input=kernel.exportStep(handle,{unit,schema:'AP214'}),result=request({op:'import-step',text:input});near(result.bounds[1][0],25.4);near(result.bounds[1][1],12.7);near(result.bounds[1][2],5.08);near(result.volume,25.4*12.7*5.08);}}finally{kernel.release(handle);}

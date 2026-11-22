@@ -2,7 +2,7 @@ import type {SketchPlane,SketchCurveProfile,SketchMixedEdge,SketchRegion} from '
 export type Vec3=[number,number,number];
 export type ExactBody={id:string;name:string;brep:string;color:string;visible:boolean};
 export type ExactModelState={version:1;kernel:'occt-wasm';kernelVersion:'5.15.0';units:'mm';bodies:ExactBody[]};
-export type KernelMesh={positions:Float32Array;normals:Float32Array;indices:Uint32Array;faceGroups:Int32Array};
+export type KernelMesh={positions:Float32Array;normals:Float32Array;indices:Uint32Array;faceGroups:Int32Array;planarFaceIndices?:Int32Array};
 export type KernelBodyResult={brep:string;mesh:KernelMesh;lines:Float32Array;volume:number;area:number;bounds:[Vec3,Vec3];center:Vec3;topology:{solids:number;faces:number;edges:number;vertices:number}};
 /** Index in the native face traversal of the exact BREP snapshot. */
 export type PlanarFaceDescriptor={faceIndex:number;origin:Vec3;normal:Vec3};

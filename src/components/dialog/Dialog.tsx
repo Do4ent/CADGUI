@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import '../../styles/dialogs.css';
 
 export interface DialogProps {
@@ -10,16 +10,17 @@ export interface DialogProps {
   confirmDisabled?: boolean;
   confirmLabel?: string;
   onApply?: () => void;
+  returnFocus?: RefObject<HTMLElement | null>;
 }
 
 /** Native modal semantics contain focus and restore it to the invoking control. */
-export function Dialog({ open, title, children, onCancel, onConfirm, confirmDisabled = false, confirmLabel = 'ОК', onApply }: DialogProps) {
+export function Dialog({ open, title, children, onCancel, onConfirm, confirmDisabled = false, confirmLabel = 'ОК', onApply, returnFocus }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    const invoker = document.activeElement;
+    const invoker = returnFocus?.current ?? document.activeElement;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
     return () => {
@@ -29,7 +30,7 @@ export function Dialog({ open, title, children, onCancel, onConfirm, confirmDisa
       // because removal of an open native dialog does not reliably restore focus.
       if (invoker instanceof HTMLElement && invoker.isConnected) invoker.focus();
     };
-  }, [open]);
+  }, [open, returnFocus]);
   return <dialog ref={ref} className="bc-dialog" aria-labelledby={titleId} tabIndex={-1}
     onCancel={event => { event.preventDefault(); onCancel(); }}
     onKeyDown={event => {

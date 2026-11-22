@@ -19,3 +19,4 @@
 .bc-parameter input[aria-invalid="true"] { border-color: #d52e39; }
 [data-theme="dark"] .bc-dialog, .dark .bc-dialog { color: var(--text, #e5e9f0); background: var(--panel, #232b35); }
 [data-theme="dark"] .bc-dialog input, [data-theme="dark"] .bc-dialog button, .dark .bc-dialog input, .dark .bc-dialog button { background: var(--panel, #232b35); }
+.assembly-face-pick { position: fixed; z-index: 50; top: 74px; right: 12px; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px; }
