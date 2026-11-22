@@ -36,9 +36,14 @@ export class ExactKernelBackend{
    const hash=k.hashCode(face,2147483647);
    byHash.set(hash,byHash.has(hash)?-1:index);
   }
+  const groupByHash=new Map<number,number>();
   for(let index=0;index<result.length;index++){
-   const face=byHash.get(groups[index*3+2]);
-   if(face!==undefined&&face>=0&&k.surfaceType(faces[face])==='plane')result[index]=face;
+   const hash=groups[index*3+2];
+   groupByHash.set(hash,groupByHash.has(hash)?-1:index);
+  }
+  for(const [hash,index] of groupByHash){
+   const face=byHash.get(hash);
+   if(index>=0&&face!==undefined&&face>=0&&k.surfaceType(faces[face])==='plane')result[index]=face;
   }
   return result;
  }
