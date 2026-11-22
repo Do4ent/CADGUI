@@ -8,7 +8,7 @@ import {createExactModelState,validateExactModelState,type ExactModelState} from
 import {createModelAnnotationState,validateModelAnnotationState,resolveModelAnnotation,type ModelAnnotationState} from '../modelAnnotations/model';
 import {createDrawingDocument, validateDrawingDocument} from '../drawing/model';
 import {type DrawingDocument} from '../drawing/types';
-export const DOCUMENT_SCHEMA_VERSION = 17;
+export const DOCUMENT_SCHEMA_VERSION = 18;
 export type CadItem = {
   id: string; name: string; kind: 'box' | 'cylinder' | 'shaft' | 'gear' | 'pipe';
   pos: [number, number, number]; size: [number, number, number];
@@ -61,6 +61,10 @@ export function validateDocument(value: unknown): CadDocument {
   const hasGroups = Object.hasOwn(value,'assemblyGroups');
   if ((hasGroups || assemblyInstances?.some(instance => instance.parentId !== undefined)) && value.schemaVersion < 17) throw Error('Подсборки требуют схему 17');
   const assemblyGroups = hasGroups ? validateAssemblyGroups(value.assemblyGroups) : undefined;
+  if (value.schemaVersion < 18 && assemblyFixedMates?.length && assemblyInstances?.some(instance =>
+    instance.parentId !== undefined && assemblyFixedMates.some(mate => mate.leaderId === instance.id || mate.followerId === instance.id))) {
+    throw Error('Сопряжения в подсборках требуют схему 18');
+  }
   resolveAssemblyHierarchy(assemblyInstances??[],assemblyGroups??[],assemblyFixedMates??[]);
   return {schemaVersion: DOCUMENT_SCHEMA_VERSION, ...(hasGroups ? {assemblyGroups}:{}), ...(hasMates ? {assemblyFixedMates}:{}), ...(hasAssembly ? {assemblyInstances}:{}), sketchModel, exactModel, modelAnnotations, drawing: value.schemaVersion === 1 ? createDrawingDocument() : validateDrawingDocument(value.drawing), id: value.id, name: value.name, items, modifiedAt: value.modifiedAt};
 }

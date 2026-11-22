@@ -27,6 +27,7 @@ export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,
  const [error,setError]=useState('');
  const [detaching,setDetaching]=useState<AssemblyInstance|null>(null);
  const followers=new Map(mates.map(mate=>[mate.followerId,mate.leaderId]));
+ const mated=new Set(mates.flatMap(mate=>[mate.leaderId,mate.followerId]));
  const groupNames=new Map(groups.map(group=>[group.id,group.name]));
  useEffect(()=>{setDraft(null);setRemoving(null);setDetaching(null);setError('');},[instances,bodies,mates,groups]);
  const open=(instance?:AssemblyInstance)=>{
@@ -77,7 +78,7 @@ export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,
    <label>Исходное тело<select aria-label="Исходное тело" value={draft.sourceBodyId} onChange={event=>setDraft({...draft,sourceBodyId:event.target.value})}>
     {bodies.map(body=><option key={body.id} value={body.id}>{body.name}</option>)}
    </select></label>
-   <AssemblyParentField groups={groups} paths={paths} value={draft.parentId} onChange={changeParent}/>
+   <AssemblyParentField groups={groups} paths={paths} value={draft.parentId} disabled={mated.has(draft.id)} onChange={changeParent}/>
    <AssemblyPoseFields values={draft.values} onChange={values=>setDraft({...draft,values})}/>
    <p>Смещение и повороты XYZ заданы в системе координат родительской подсборки. Для переноса вхождения с фиксированным сопряжением сначала отсоедините сопряжение.</p>
    {!current()&&<p role="status">Введите имя и конечные значения в пределах ±1 000 000 мм и ±360°.</p>}

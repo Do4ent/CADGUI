@@ -14,7 +14,7 @@ from test_cuts import cut
 
 
 def model(document):
-    assert document['schemaVersion'] == 17
+    assert document['schemaVersion'] == 18
     return document['sketchModel']
 
 
