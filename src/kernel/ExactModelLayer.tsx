@@ -29,6 +29,17 @@ export function faceHighlightGeometry(result:KernelBodyResult,indexStart:number,
  geometry.setIndex(new THREE.BufferAttribute(result.mesh.indices.subarray(indexStart,indexStart+indexCount),1));return geometry;
 }
 export function exactClippingPlanes(section='off',offset=0):THREE.Plane[]{return section==='off'?[]:[new THREE.Plane(section==='XY'?new THREE.Vector3(0,0,-1):section==='XZ'?new THREE.Vector3(0,-1,0):new THREE.Vector3(-1,0,0),offset)];}
+/** Raycast the same visible half-space as the viewport material. */
+function visiblePickRaycast(planes:readonly THREE.Plane[]):THREE.Mesh['raycast'] {
+ if(!planes.length)return THREE.Mesh.prototype.raycast;
+ return function(this:THREE.Mesh,raycaster,intersections){
+  const start=intersections.length;
+  THREE.Mesh.prototype.raycast.call(this,raycaster,intersections);
+  for(let i=intersections.length-1;i>=start;i--){
+   if(planes.some(plane=>plane.distanceToPoint(intersections[i].point)<0))intersections.splice(i,1);
+  }
+ };
+}
 export type ExactModelLayerProps={runtime:ExactSelectionRuntime;renderScope:string;state:ExactModelState;facePick?:AssemblyViewportFacePick|null;selected:ExactSelection|null;onSelect:(selection:ExactSelection)=>void;section?:string;sectionOffset?:number;wire?:boolean;edges?:boolean};
 function BodyMesh({runtime,renderScope,body,record,selected,onSelect,facePick,section,sectionOffset,wire,edges}:Omit<ExactModelLayerProps,'state'>&{body:ExactBody;record:CanonicalInspection}){
  const result=record.result!;
@@ -39,8 +50,9 @@ function BodyMesh({runtime,renderScope,body,record,selected,onSelect,facePick,se
  const highlight=useMemo(()=>face?faceHighlightGeometry(result,face.indexStart,face.indexCount):null,[result,face?.indexStart,face?.indexCount]);
  useEffect(()=>()=>geometry.dispose(),[geometry]);useEffect(()=>()=>lines.dispose(),[lines]);useEffect(()=>()=>highlight?.dispose(),[highlight]);
  const planes=useMemo(()=>exactClippingPlanes(section,sectionOffset),[section,sectionOffset]);
+ const pickRaycast=useMemo(()=>visiblePickRaycast(planes),[planes]);
  return <group userData={{modelGeometry:true,exactBodyId:body.id}}>
-  <mesh geometry={geometry} dispose={null} onClick={event=>{event.stopPropagation();if(facePick){facePick.report('Выберите грань вхождения, а не исходного тела.');return}const next=event.faceIndex==null?runtime.inspection(body)===record?runtime.captureBody(body.id):null:runtime.captureFace(body,record,event.faceIndex,renderScope);if(next)onSelect(next)}} castShadow receiveShadow>
+  <mesh geometry={geometry} dispose={null} raycast={facePick?pickRaycast:THREE.Mesh.prototype.raycast} onClick={event=>{event.stopPropagation();if(facePick){facePick.report('Выберите грань вхождения, а не исходного тела.');return}const next=event.faceIndex==null?runtime.inspection(body)===record?runtime.captureBody(body.id):null:runtime.captureFace(body,record,event.faceIndex,renderScope);if(next)onSelect(next)}} castShadow receiveShadow>
    <meshStandardMaterial color={active?'#ffb347':body.color} metalness={.42} roughness={.35} wireframe={wire} side={THREE.DoubleSide} clippingPlanes={planes}/>
   </mesh>
   {highlight&&<mesh geometry={highlight} dispose={null} raycast={()=>{}}><meshBasicMaterial color="#ffd477" side={THREE.DoubleSide} clippingPlanes={planes} polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}/></mesh>}
@@ -66,6 +78,7 @@ function Occurrence({instance,body,runtime,facePick,wire,section,sectionOffset}:
  useEffect(()=>{runtime.ensureInspection(body,true);},[runtime,body,version]);
  const geometry=useMemo(()=>result?createBodyGeometry(result):null,[result]);
  const planes=useMemo(()=>exactClippingPlanes(section,sectionOffset),[section,sectionOffset]);
+ const pickRaycast=useMemo(()=>visiblePickRaycast(planes),[planes]);
  const bounds=useBounds();
  useLayoutEffect(()=>{if(geometry)bounds.refresh().clip().fit();},[bounds,geometry,instance.position,instance.rotation]);
  useEffect(()=>()=>geometry?.dispose(),[geometry]);
@@ -76,7 +89,7 @@ function Occurrence({instance,body,runtime,facePick,wire,section,sectionOffset}:
  const [x,y,z]=instance.rotation.map(angle=>angle*Math.PI/180);
  const worldQuaternion=new THREE.Quaternion().setFromEuler(new THREE.Euler(x,y,z,'XYZ')).toArray();
  return <group position={instance.position} rotation={[x,y,z,'XYZ']} userData={{modelGeometry:true}}>
-  <mesh geometry={geometry} dispose={null} raycast={facePick?THREE.Mesh.prototype.raycast:()=>{}} onClick={facePick?event=>{
+  <mesh geometry={geometry} dispose={null} raycast={facePick?pickRaycast:()=>{}} onClick={facePick?event=>{
    event.stopPropagation();
    if(event.delta>4)return;
    if(!matchesFacePickSource(facePick,instance.id,body)){
@@ -84,9 +97,6 @@ function Occurrence({instance,body,runtime,facePick,wire,section,sectionOffset}:
    }
    if(!record||!result||runtime.inspection(body)!==record||record.sourceBrep!==body.brep){
     facePick.report('Сетка исходного тела обновилась. Повторите выбор.');return;
-   }
-   if(planes.some(plane=>plane.distanceToPoint(event.point)<0)){
-    facePick.report('Эта грань скрыта сечением.');return;
    }
    const faceIndex=event.faceIndex==null?undefined:exactPlaneAtTriangle(result.mesh,event.faceIndex);
    if(faceIndex===undefined){facePick.report('Однозначная плоская грань не найдена.');return;}
