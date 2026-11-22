@@ -1,6 +1,6 @@
-import {createFixedAssemblyMate,materializeAssemblyPlacement,pruneAssemblyMates,resolveAssemblyPoses,validateFixedAssemblyMates,type FixedAssemblyMate} from '../documents/assemblyMates';
+import {fixedAssemblyMateFromPoses,validateFixedAssemblyMates,type FixedAssemblyMate} from '../documents/assemblyMates';
 import {validateAssemblyInstances,type AssemblyInstance} from '../documents/assemblyInstances';
-import {resolveAssemblyHierarchy,validateAssemblyGroups,type AssemblyGroup} from '../documents/assemblyHierarchy';
+import {detachAssemblyInstance,pruneAssemblyMates,resolveAssemblyHierarchy,validateAssemblyGroups,type AssemblyGroup} from '../documents/assemblyHierarchy';
 import {readWorkspaceRecovery,saveWorkspaceRecovery,resumeWorkspaceRecovery} from './workspaceRecovery';
 import {createSketchModelState,validateSketchModelState,validateSketchReferences,pruneSketchExtrusions,ownedSketchBodyIds} from '../sketch/model';
 import type {SketchModelState} from '../sketch/types';
@@ -72,11 +72,11 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   let assemblyFixedMates=requestedMates;
   if(assemblyFixedMates!==undefined){
    if(assemblyFixedMates===active.document.assemblyFixedMates){
-    const pruned=pruneAssemblyMates(active.document.assemblyInstances??[],assemblyInstances??[],assemblyFixedMates);
+    const pruned=pruneAssemblyMates(active.document.assemblyInstances??[],assemblyInstances??[],active.document.assemblyGroups??[],assemblyFixedMates);
     assemblyInstances=assemblyInstances===undefined?undefined:pruned.placements;
     assemblyFixedMates=pruned.mates;
    }
-   validateFixedAssemblyMates(assemblyInstances??[],assemblyFixedMates);
+   validateFixedAssemblyMates(assemblyFixedMates);
   }
   resolveAssemblyHierarchy(assemblyInstances??[],assemblyGroups??[],assemblyFixedMates??[]);
   const snapshot={assemblyGroups,assemblyFixedMates,assemblyInstances,items,modelAnnotations,exactModel,sketchModel};
@@ -101,15 +101,15 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  };
  const attachAssemblyMate=(leaderId:string,followerId:string)=>{
   const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates=[]}=active.document;
-  const mate=createFixedAssemblyMate(assemblyInstances??[],assemblyFixedMates,leaderId,followerId);
+  const {world}=resolveAssemblyHierarchy(assemblyInstances??[],active.document.assemblyGroups??[],assemblyFixedMates);
+  const mate=fixedAssemblyMateFromPoses(world,leaderId,followerId);
   commitScene(items,modelAnnotations,exactModel,sketchModel,assemblyInstances,[...assemblyFixedMates,mate]);
  };
  const detachAssemblyMate=(followerId:string)=>{
   const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates=[]}=active.document;
   if(!assemblyInstances||!assemblyFixedMates.some(mate=>mate.followerId===followerId))throw Error('Сопряжение не найдено');
-  const pose=resolveAssemblyPoses(assemblyInstances,assemblyFixedMates).get(followerId)!;
-  const placement=materializeAssemblyPlacement(followerId,pose);
-  const instances=assemblyInstances.map(instance=>instance.id===followerId?{...instance,...placement}:instance);
+  const {world}=resolveAssemblyHierarchy(assemblyInstances,active.document.assemblyGroups??[],assemblyFixedMates);
+  const instances=assemblyInstances.map(instance=>instance.id===followerId?detachAssemblyInstance(instance,world):instance);
   commitScene(items,modelAnnotations,exactModel,sketchModel,instances,assemblyFixedMates.filter(mate=>mate.followerId!==followerId));
  };
  const changeScene=(nextItems:CadItem[],_label?:string)=>{

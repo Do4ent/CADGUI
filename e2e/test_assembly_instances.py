@@ -38,7 +38,7 @@ def test_assembly_occurrences_share_source_with_independent_placement_and_reopen
     add_occurrence(page, source_id, 'Первая копия', [8, 0, 1], [0, 0, 0])
     add_occurrence(page, source_id, 'Вторая копия', [-6, 7, 2], [15, -30, 90])
     saved = save_document(page, tmp_path, 'assembly-occurrences.json')
-    assert saved['schemaVersion'] == 18
+    assert saved['schemaVersion'] == 19
     assert saved['exactModel'] == before['exactModel']
     occurrences = saved['assemblyInstances']
     assert len(occurrences) == 2

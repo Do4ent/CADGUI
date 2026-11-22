@@ -34,7 +34,7 @@ def test_nested_fixed_mate_follows_local_leader_and_parent(page, tmp_path):
 
     add_sibling('Ведущий вал', 1, 0)
     create_mate = panel.get_by_role('button', name='Создать сопряжение', exact=True)
-    expect(create_mate).to_be_disabled()
+    expect(create_mate).to_be_enabled()
     add_sibling('Ведомый вал', 5, 30)
     before = save_document(page, tmp_path, 'before.json')
     outside, leader, follower = [item['id'] for item in before['assemblyInstances']]
@@ -45,13 +45,13 @@ def test_nested_fixed_mate_follows_local_leader_and_parent(page, tmp_path):
     dialog = page.get_by_role('dialog', name='Фиксированное сопряжение', exact=True)
     leader_picker = dialog.get_by_label('Ведущее вхождение', exact=True)
     follower_picker = dialog.get_by_label('Ведомое вхождение', exact=True)
-    expect(leader_picker.locator(f'option[value="{outside}"]')).to_have_count(0)
+    expect(leader_picker.locator(f'option[value="{outside}"]')).to_have_count(1)
     leader_picker.select_option(leader)
-    expect(follower_picker.locator(f'option[value="{outside}"]')).to_have_count(0)
+    expect(follower_picker.locator(f'option[value="{outside}"]')).to_have_count(1)
     follower_picker.select_option(follower)
     dialog.get_by_role('button', name='ОК', exact=True).click()
     expect(dialog).not_to_be_visible()
-    expect(create_mate).to_be_disabled()
+    expect(create_mate).to_be_enabled()
     assert_world_pose(page, follower, [10, 25, 3], 120)
 
     leader_row = page.locator(f'[data-assembly-occurrence="{leader}"]')
@@ -76,7 +76,7 @@ def test_nested_fixed_mate_follows_local_leader_and_parent(page, tmp_path):
     assert_world_pose(page, outside, [0, 0, 0], 0)
 
     saved = save_document(page, tmp_path, 'linked.json')
-    assert saved['schemaVersion'] == 18
+    assert saved['schemaVersion'] == 19
     assert saved['exactModel'] == source
     (mate,) = saved['assemblyFixedMates']
     assert (mate['leaderId'], mate['followerId']) == (leader, follower)
