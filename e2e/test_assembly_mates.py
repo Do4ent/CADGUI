@@ -85,6 +85,9 @@ def test_fixed_mate_tracks_leader_preserves_detached_pose_and_reopens(page, tmp_
 
     detach = panel.get_by_role('button', name='Отсоединить сопряжение', exact=True)
     detach.click()
+    page.get_by_role('dialog', name='Отсоединить сопряжение', exact=True).get_by_role(
+        'button', name='ОК', exact=True
+    ).click()
     expect(detach).to_have_count(0)
     assert_world_pose(page, follower, [3, 10, 0], 120)
     detached = save_document(page, tmp_path, 'mate-detached.json')

@@ -90,7 +90,7 @@ export function createFixedAssemblyMate(
 }
 
 /** Materialize the solved pose in the existing placement format for detach. */
-export function materializeAssemblyPlacement(id: string, pose: AssemblyWorldPose): AssemblyPlacement {
+export function materializeAssemblyPlacement(id: string, pose: AssemblyWorldPose): {id: string; position: [number, number, number]; rotation: [number, number, number]} {
   const matrix = new Matrix4().makeRotationFromQuaternion(new Quaternion(...pose.quaternion));
   const [m11, m21, , , m12, m22, , , m13, m23, m33] = matrix.elements;
   const cosY = Math.hypot(m11, m12);
@@ -103,5 +103,39 @@ export function materializeAssemblyPlacement(id: string, pose: AssemblyWorldPose
     id,
     position: [...pose.position],
     rotation: [x / radians, y / radians, z / radians],
+  };
+}
+
+/** Strict native document validation and detached storage values. */
+export function validateFixedAssemblyMates(placements: readonly AssemblyPlacement[], value: unknown): FixedAssemblyMate[] {
+  if (!Array.isArray(value) || value.length > 99) throw Error('Некорректные сопряжения');
+  const keys = ['leaderId', 'followerId', 'translation', 'quaternion'];
+  const mates: FixedAssemblyMate[] = Array.from(value, raw => {
+    if (!raw || typeof raw !== 'object' || Object.keys(raw).length !== keys.length ||
+        !keys.every(key => Object.hasOwn(raw, key)) || typeof raw.leaderId !== 'string' ||
+        typeof raw.followerId !== 'string' || !finite(raw.translation, 3) || !finite(raw.quaternion, 4)) {
+      throw Error('Некорректное фиксированное сопряжение');
+    }
+    return {...raw, translation: [...raw.translation], quaternion: [...raw.quaternion]};
+  });
+  for (const pose of resolveAssemblyPoses(placements, mates).values()) {
+    if (pose.position.some(value => Math.abs(value) > 1e6)) throw Error('Размещение выходит за пределы ±1 000 000 мм');
+  }
+  return mates;
+}
+
+/** When sources disappear, preserve world poses of newly detached survivors. */
+export function pruneAssemblyMates<T extends AssemblyPlacement>(
+  previous: readonly T[], survivors: T[], mates: FixedAssemblyMate[],
+): {placements: T[]; mates: FixedAssemblyMate[]} {
+  const ids = new Set(survivors.map(item => item.id));
+  const retained = mates.filter(mate => ids.has(mate.leaderId) && ids.has(mate.followerId));
+  if (retained.length === mates.length) return {placements: survivors, mates};
+  const detached = new Set(mates.filter(mate => !ids.has(mate.leaderId)).map(mate => mate.followerId));
+  const world = resolveAssemblyPoses(previous, mates);
+  return {
+    mates: retained,
+    placements: survivors.map(item => detached.has(item.id) ?
+      {...item, ...materializeAssemblyPlacement(item.id, world.get(item.id)!)} : item),
   };
 }
