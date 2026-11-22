@@ -87,10 +87,11 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates}=active.document;
   const validated=validateAssemblyInstances(next,assemblySources(exactModel,sketchModel));
   const followers=new Set(assemblyFixedMates?.map(mate=>mate.followerId));
+  const mated=new Set(assemblyFixedMates?.flatMap(mate=>[mate.leaderId,mate.followerId]));
   for(const instance of validated){
-   if(!followers.has(instance.id))continue;
    const previous=assemblyInstances?.find(item=>item.id===instance.id);
-   if(previous&&JSON.stringify([previous.position,previous.rotation])!==JSON.stringify([instance.position,instance.rotation]))throw Error('Сначала отсоедините ведомое вхождение');
+   if(previous&&mated.has(instance.id)&&previous.parentId!==instance.parentId)throw Error('Сначала отсоедините сопряжение вхождения');
+   if(previous&&followers.has(instance.id)&&JSON.stringify([previous.position,previous.rotation])!==JSON.stringify([instance.position,instance.rotation]))throw Error('Сначала отсоедините ведомое вхождение');
   }
   commitScene(items,modelAnnotations,exactModel,sketchModel,validated);
  };

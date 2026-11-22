@@ -6,14 +6,14 @@ import type {FixedAssemblyMate} from './assemblyMates';
 export function fixedMateCandidates(
  instances: readonly AssemblyInstance[], availableSources: ReadonlySet<string>, mates: readonly FixedAssemblyMate[],
 ): Map<AssemblyInstance, AssemblyInstance[]> {
- const available = instances.filter(instance=>instance.parentId===undefined&&availableSources.has(instance.sourceBodyId));
+ const available = instances.filter(instance=>availableSources.has(instance.sourceBodyId));
  const leadersByFollower = new Map(mates.map(mate=>[mate.followerId,mate.leaderId]));
  const roots = available.filter(instance=>!leadersByFollower.has(instance.id));
  const result = new Map<AssemblyInstance, AssemblyInstance[]>();
  for(const leader of available){
   const ancestors = new Set<string>();
   for(let id:string|undefined=leader.id;id!==undefined;id=leadersByFollower.get(id))ancestors.add(id);
-  const candidates = roots.filter(instance=>!ancestors.has(instance.id));
+  const candidates = roots.filter(instance=>instance.parentId===leader.parentId&&!ancestors.has(instance.id));
   if(candidates.length)result.set(leader,candidates);
  }
  return result;
@@ -49,7 +49,7 @@ export function AssemblyFixedMateDialog({candidates,onAttach,onClose}:Props){
    <option value="">Выберите вхождение</option>
    {followers.map(instance=><option key={instance.id} value={instance.id}>{instance.name}</option>)}
   </select></label>
-  <p>Ведомое вхождение сохранит текущее положение относительно ведущего.</p>
+  <p>Выберите вхождения с общим родителем. Ведомое вхождение сохранит текущее положение относительно ведущего.</p>
   {error&&<p role="alert">{error}</p>}
  </Dialog>;
 }

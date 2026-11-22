@@ -6,15 +6,16 @@ import {MAX_ASSEMBLY_GROUPS,rebaseAssemblyPose,validateAssemblyGroups,type Assem
 import type {AssemblyInstance} from './assemblyInstances';
 import type {AssemblyWorldPose} from './assemblyMates';
 
-export function AssemblyParentField({groups,paths,value,onChange,exclude}: {
+export function AssemblyParentField({groups,paths,value,onChange,exclude,disabled}: {
  groups: readonly AssemblyGroup[];
  paths: ReadonlyMap<string,readonly string[]>;
  value: string;
  onChange: (value: string) => void;
  exclude?: string;
+ disabled?: boolean;
 }){
  const names=new Map(groups.map(group=>[group.id,group.name]));
- return <label>Родительская подсборка <select aria-label="Родительская подсборка" value={value} onChange={event=>onChange(event.target.value)}>
+ return <label>Родительская подсборка <select aria-label="Родительская подсборка" value={value} disabled={disabled} onChange={event=>onChange(event.target.value)}>
   <option value="">Корень сборки</option>
   {groups.filter(group=>exclude===undefined||!paths.get(group.id)?.includes(exclude)).map(group=>
    <option key={group.id} value={group.id}>{paths.get(group.id)?.map(id=>names.get(id)).join(' / ')}</option>)}

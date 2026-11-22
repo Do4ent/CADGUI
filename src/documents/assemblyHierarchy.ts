@@ -50,15 +50,23 @@ export function resolveAssemblyHierarchy(
   const local = resolveAssemblyPoses(placements, []);
   const groupById = new Map(groups.map(group => [group.id, group]));
   const byId = new Map(placements.map(item => [item.id, item]));
-  const rootInstances = new Set(instances.filter(item => item.parentId === undefined).map(item => item.id));
-  if (mates.some(mate => !rootInstances.has(mate.leaderId) || !rootInstances.has(mate.followerId))) {
-    throw Error('Фиксированное сопряжение доступно только для корневых вхождений. Сначала отсоедините сопряжение.');
+  const instancesById = new Map(instances.map(instance => [instance.id, instance]));
+  const followers = new Set<string>();
+  for (const mate of mates) {
+    const leader = instancesById.get(mate.leaderId);
+    const follower = instancesById.get(mate.followerId);
+    if (!leader || !follower || leader.parentId !== follower.parentId) {
+      throw Error('Фиксированное сопряжение требует общую родительскую подсборку');
+    }
+    followers.add(follower.id);
   }
 
   const hierarchyEdges: FixedAssemblyMate[] = [];
   for (const item of placements) {
     if (item.parentId === undefined) continue;
     if (!groupById.has(item.parentId)) throw Error('Родительская подсборка не найдена');
+    // A mated follower inherits the shared parent frame through its leader.
+    if (followers.has(item.id)) continue;
     const pose = local.get(item.id)!;
     hierarchyEdges.push({leaderId:item.parentId, followerId:item.id, translation:pose.position, quaternion:pose.quaternion});
   }
