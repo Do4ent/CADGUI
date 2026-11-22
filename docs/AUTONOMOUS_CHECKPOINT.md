@@ -46,7 +46,7 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Exact planar coincidence mates
 
-- [PR #65](https://github.com/Do4ent/CADGUI/pull/65), branch `feat/planar-face-mate`, worktree `/tmp/wt-planar-mate`, head `8d206bc`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45059872321) was in progress.
+- [PR #65](https://github.com/Do4ent/CADGUI/pull/65), branch `feat/planar-coincidence-mates`, worktree `/tmp/wt-planar-mate`, head `c387600`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45059965110) was in progress.
 - Exact OCCT face catalogs drive opposite-normal, zero-gap alignment. The solver keeps the in-plane translation of the follower origin and uses the shortest rotation. Schema v22 persists refs and a solved relative pose. Explicit native import verifies the stored face ordinals and pose against OCCT. Workspace recovery checks BRep identity and structure synchronously.
 - 128 local rotation samples plus parallel/antiparallel limits passed. Independent review passed 8,192 varied orientations. Full module, build and browser validation were in progress. Overall readiness remains approximately 40%.
 
