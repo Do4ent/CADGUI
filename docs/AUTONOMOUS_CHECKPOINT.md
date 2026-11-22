@@ -27,7 +27,7 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Distance mates and product completion
 
-- [PR #61](https://github.com/Do4ent/CADGUI/pull/61) at `eeac1ef` updates the v1 product completion ledger. The same nine packages and weights yield 41.25%, published as approximately 40% (35–45%). Its [same-head CI](https://github.com/Do4ent/CADGUI/actions/runs/45030254039) was in progress.
+- [PR #61](https://github.com/Do4ent/CADGUI/pull/61) at `eeac1ef` updates the v1 product completion ledger. The same nine packages and weights yield 41.25%, published as approximately 40% (35–45%). Its [same-head CI](https://github.com/Do4ent/CADGUI/actions/runs/45030354838) was in progress.
 - [PR #62](https://github.com/Do4ent/CADGUI/pull/62), branch `feat/distance-mate`, worktree `/tmp/wt-distance-mate`, head `28ac6f3`. [Full CI](https://github.com/Do4ent/CADGUI/actions/runs/45030357398) was in progress.
 - The new mate drives distance between occurrence origins along the captured bearing and maintains relative orientation. It supports edit, detach, Undo and schema v20 persistence. The assembly maturity tier remains 50% while broader geometric mates and BOM are pending.
 - Focused solver and document checks, production build and 128 independent mixed distance/fixed chains passed. Targeted Chromium acceptance is underway.
