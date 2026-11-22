@@ -1,6 +1,6 @@
 import {Euler,Quaternion,Vector3} from 'three';
 import {assemblyVector, type AssemblyInstance} from './assemblyInstances';
-import {assemblyPoseRelativeTo,materializeAssemblyPlacement,resolveAssemblyPoses,type AssemblyPlacement,type AssemblyWorldPose,type FixedAssemblyMate} from './assemblyMates';
+import {assemblyPoseRelativeTo,materializeAssemblyPlacement,resolveAssemblyPoses,type AssemblyMate,type AssemblyPlacement,type AssemblyWorldPose,type FixedAssemblyMate} from './assemblyMates';
 
 export type AssemblyGroup = AssemblyPlacement & {name: string; parentId?: string};
 export const MAX_ASSEMBLY_GROUPS = 100;
@@ -49,7 +49,7 @@ export function validateAssemblyGroups(value: unknown): AssemblyGroup[] {
 }
 
 export function resolveAssemblyHierarchy(
-  instances: readonly AssemblyInstance[], groups: readonly AssemblyGroup[], mates: readonly FixedAssemblyMate[],
+  instances: readonly AssemblyInstance[], groups: readonly AssemblyGroup[], mates: readonly AssemblyMate[],
 ) {
   const placements = [...groups, ...instances];
   const local = resolveAssemblyPoses(placements, []);
@@ -59,7 +59,7 @@ export function resolveAssemblyHierarchy(
   const followers = new Set<string>();
   for (const mate of mates) {
     if (!instanceIds.has(mate.leaderId) || !instanceIds.has(mate.followerId)) {
-      throw Error('Не найдено вхождение фиксированного сопряжения');
+      throw Error('Не найдено вхождение сопряжения');
     }
     followers.add(mate.followerId);
   }
@@ -112,8 +112,8 @@ export function detachAssemblyInstance(instance: AssemblyInstance, world: Readon
 
 /** Preserve the placement of surviving followers when their leaders are deleted. */
 export function pruneAssemblyMates(
-  previous: readonly AssemblyInstance[], survivors: AssemblyInstance[], groups: readonly AssemblyGroup[], mates: FixedAssemblyMate[],
-): {placements: AssemblyInstance[]; mates: FixedAssemblyMate[]} {
+  previous: readonly AssemblyInstance[], survivors: AssemblyInstance[], groups: readonly AssemblyGroup[], mates: AssemblyMate[],
+): {placements: AssemblyInstance[]; mates: AssemblyMate[]} {
   const ids = new Set(survivors.map(item => item.id));
   const retained = mates.filter(mate => ids.has(mate.leaderId) && ids.has(mate.followerId));
   if (retained.length === mates.length) return {placements: survivors, mates};

@@ -1,4 +1,4 @@
-import {fixedAssemblyMateFromPoses,validateFixedAssemblyMates,type FixedAssemblyMate} from '../documents/assemblyMates';
+import {distanceAssemblyMateFromPoses,fixedAssemblyMateFromPoses,validateAssemblyMates,type AssemblyMate} from '../documents/assemblyMates';
 import {validateAssemblyInstances,type AssemblyInstance} from '../documents/assemblyInstances';
 import {detachAssemblyInstance,pruneAssemblyMates,resolveAssemblyHierarchy,validateAssemblyGroups,type AssemblyGroup} from '../documents/assemblyHierarchy';
 import {readWorkspaceRecovery,saveWorkspaceRecovery,resumeWorkspaceRecovery} from './workspaceRecovery';
@@ -76,7 +76,7 @@ export function useEditorDocuments(initial:()=>CadItem[]){
     assemblyInstances=assemblyInstances===undefined?undefined:pruned.placements;
     assemblyFixedMates=pruned.mates;
    }
-   validateFixedAssemblyMates(assemblyFixedMates);
+   validateAssemblyMates(assemblyFixedMates);
   }
   resolveAssemblyHierarchy(assemblyInstances??[],assemblyGroups??[],assemblyFixedMates??[]);
   const snapshot={assemblyGroups,assemblyFixedMates,assemblyInstances,items,modelAnnotations,exactModel,sketchModel};
@@ -99,11 +99,19 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates}=active.document;
   commitScene(items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates,validateAssemblyGroups(next));
  };
- const attachAssemblyMate=(leaderId:string,followerId:string)=>{
+ const attachAssemblyMate=(leaderId:string,followerId:string,distance?:number)=>{
   const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates=[]}=active.document;
   const {world}=resolveAssemblyHierarchy(assemblyInstances??[],active.document.assemblyGroups??[],assemblyFixedMates);
-  const mate=fixedAssemblyMateFromPoses(world,leaderId,followerId);
+  const mate=distance===undefined
+    ? fixedAssemblyMateFromPoses(world,leaderId,followerId)
+    : distanceAssemblyMateFromPoses(world,leaderId,followerId,distance);
   commitScene(items,modelAnnotations,exactModel,sketchModel,assemblyInstances,[...assemblyFixedMates,mate]);
+ };
+ const setAssemblyMateDistance=(followerId:string,distance:number)=>{
+  const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates=[]}=active.document;
+  if(!assemblyFixedMates.some(mate=>mate.followerId===followerId&&'distance' in mate))throw Error('Сопряжение по расстоянию не найдено');
+  const mates=assemblyFixedMates.map(mate=>mate.followerId===followerId&&'distance' in mate ? {...mate,distance} : mate);
+  commitScene(items,modelAnnotations,exactModel,sketchModel,assemblyInstances,mates);
  };
  const detachAssemblyMate=(followerId:string)=>{
   const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyFixedMates=[]}=active.document;
@@ -233,5 +241,5 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  });
  const exportDocument=()=>({id:active.document.id,json:serializeDocument(active.document),fingerprint:fingerprint(active.document)});
  const markSaved=(snapshot:{id:string;fingerprint:string})=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===snapshot.id?{...t,saved:snapshot.fingerprint}:t)}));
- return {assemblyGroups:active.document.assemblyGroups,setAssemblyGroups,assemblyInstances:active.document.assemblyInstances,assemblyFixedMates:active.document.assemblyFixedMates,attachAssemblyMate,detachAssemblyMate,setAssemblyInstances,sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,recoveryCanResume:workspace.recoveryCanResume,resumeRecovery,activate,open,newDocument,close,exportDocument,markSaved};
+ return {assemblyGroups:active.document.assemblyGroups,setAssemblyGroups,assemblyInstances:active.document.assemblyInstances,assemblyFixedMates:active.document.assemblyFixedMates,attachAssemblyMate,setAssemblyMateDistance,detachAssemblyMate,setAssemblyInstances,sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,recoveryCanResume:workspace.recoveryCanResume,resumeRecovery,activate,open,newDocument,close,exportDocument,markSaved};
 }
