@@ -2,6 +2,7 @@
 
 import json
 import math
+from copy import deepcopy
 
 import pytest
 from playwright.sync_api import expect
@@ -123,11 +124,25 @@ def test_planar_face_mate_align_move_reopen_and_detach(page, tmp_path):
     assert_world_pose(page, follower, [27, 6, 2], 90)
     assert save_document(page, tmp_path, 'planar-undo.json')['assemblyFixedMates'] == [mate]
 
+    def assert_rejected(name, payload, expected_error):
+        importer.set_input_files({
+            'name':name, 'mimeType':'application/json', 'buffer':json.dumps(payload).encode(),
+        })
+        expect(page.get_by_role('alert')).to_contain_text(expected_error, timeout=120000)
+        expect(tabs).to_have_count(tab_count + 1)
+        assert_world_pose(page, follower, [27, 6, 2], 90)
+        page.get_by_role('button', name='Закрыть сообщение об ошибке', exact=True).click()
+        expect(page.get_by_role('alert')).not_to_be_visible()
+
     # A valid alternate BREP with the original source ID must never retarget the mate.
-    saved['exactModel']['bodies'][0]['brep'] = replacement_body['brep']
-    importer.set_input_files({
-        'name':'planar-stale.json', 'mimeType':'application/json', 'buffer':json.dumps(saved).encode(),
-    })
-    expect(page.get_by_role('alert')).to_contain_text('Геометрия плоской грани изменилась')
-    expect(tabs).to_have_count(tab_count + 1)
-    assert_world_pose(page, follower, [27, 6, 2], 90)
+    changed_geometry = deepcopy(saved)
+    changed_geometry['exactModel']['bodies'][0]['brep'] = replacement_body['brep']
+    assert_rejected('planar-stale.json', changed_geometry, 'Геометрия плоской грани изменилась')
+
+    missing_face = deepcopy(saved)
+    missing_face['assemblyFixedMates'][0]['leaderFace']['faceIndex'] = 6
+    assert_rejected('planar-invalid-face.json', missing_face, 'Сохранённое сопряжение не соответствует плоским граням')
+
+    separated_planes = deepcopy(saved)
+    separated_planes['assemblyFixedMates'][0]['translation'][0] += 1
+    assert_rejected('planar-off-plane.json', separated_planes, 'Сохранённое сопряжение не соответствует плоским граням')
