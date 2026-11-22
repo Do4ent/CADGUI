@@ -10,27 +10,19 @@ type Props = {
  displayInstances: readonly AssemblyInstance[];
  mates: readonly FixedAssemblyMate[];
  bodies: readonly ExactBody[];
- onAttach: (leaderId: string, followerId: string) => void;
+ canCreateMate: boolean;
+ onCreateMate: () => void;
  onDetach: (followerId: string) => void;
  onChange: (next: AssemblyInstance[]) => void;
 };
 
-export function AssemblyInstancesPanel({instances,displayInstances,mates,bodies,onAttach,onDetach,onChange}:Props) {
+export function AssemblyInstancesPanel({instances,displayInstances,mates,bodies,canCreateMate,onCreateMate,onDetach,onChange}:Props) {
  const [draft,setDraft]=useState<{id:string;sourceBodyId:string;name:string;values:string[]}|null>(null);
  const [removing,setRemoving]=useState<AssemblyInstance|null>(null);
  const [error,setError]=useState('');
- const [mateDraft,setMateDraft]=useState<{leaderId:string;followerId:string}|null>(null);
  const [detaching,setDetaching]=useState<AssemblyInstance|null>(null);
  const followers=new Map(mates.map(mate=>[mate.followerId,mate.leaderId]));
- const available=instances.filter(instance=>bodies.some(body=>body.id===instance.sourceBodyId));
- const eligibleFollowers=(leaderId:string)=>{
-  if(!leaderId)return [];
-  const ancestors=new Set<string>();
-  for(let id:string|undefined=leaderId;id!==undefined;id=followers.get(id))ancestors.add(id);
-  return available.filter(instance=>!ancestors.has(instance.id)&&!followers.has(instance.id));
- };
- const eligibleLeaders=available.filter(instance=>eligibleFollowers(instance.id).length>0);
- useEffect(()=>{setDraft(null);setRemoving(null);setMateDraft(null);setDetaching(null);setError('');},[instances,bodies,mates]);
+ useEffect(()=>{setDraft(null);setRemoving(null);setDetaching(null);setError('');},[instances,bodies,mates]);
  const open=(instance?:AssemblyInstance)=>{
   if(!instance&&!bodies[0])return;
   setError('');
@@ -52,7 +44,7 @@ export function AssemblyInstancesPanel({instances,displayInstances,mates,bodies,
  return <section aria-label="Вхождения деталей">
   <h3>Вхождения деталей</h3>
   <button type="button" disabled={!bodies.length||instances.length>=100} onClick={()=>open()}>Добавить вхождение</button>
-  <button type="button" disabled={!eligibleLeaders.length} onClick={()=>{setError('');setMateDraft({leaderId:'',followerId:''});}}>Создать сопряжение</button>
+  <button type="button" disabled={!canCreateMate} onClick={onCreateMate}>Создать сопряжение</button>
   <ul>{displayInstances.map(instance=>{
    const leaderId=followers.get(instance.id);
    const leader=leaderId&&instances.find(item=>item.id===leaderId);
@@ -65,7 +57,7 @@ export function AssemblyInstancesPanel({instances,displayInstances,mates,bodies,
     <button type="button" onClick={()=>setRemoving(instance)}>Удалить вхождение</button>
    </li>;
   })}</ul>
-  {error&&!draft&&!mateDraft&&!detaching&&<p role="alert">{error}</p>}
+  {error&&!draft&&!detaching&&<p role="alert">{error}</p>}
   {draft&&<Dialog open title="Вхождение детали" confirmDisabled={!current()} onConfirm={submit} onCancel={()=>setDraft(null)}>
    <label>Имя вхождения<input value={draft.name} maxLength={200} onChange={event=>setDraft({...draft,name:event.target.value})}/></label>
    <label>Исходное тело<select aria-label="Исходное тело" value={draft.sourceBodyId} onChange={event=>setDraft({...draft,sourceBodyId:event.target.value})}>
@@ -78,20 +70,6 @@ export function AssemblyInstancesPanel({instances,displayInstances,mates,bodies,
    })}
    <p>Повороты заданы в порядке Эйлера XYZ, смещение — в координатах сборки.</p>
    {!current()&&<p role="status">Введите имя и конечные значения в пределах ±1 000 000 мм и ±360°.</p>}
-   {error&&<p role="alert">{error}</p>}
-  </Dialog>}
-  {mateDraft&&<Dialog open title="Фиксированное сопряжение" confirmDisabled={!mateDraft.leaderId||!mateDraft.followerId} onCancel={()=>setMateDraft(null)} onConfirm={()=>{
-   try{onAttach(mateDraft.leaderId,mateDraft.followerId);setMateDraft(null);}catch(e){setError(String(e));}
-  }}>
-   <label>Ведущее вхождение<select aria-label="Ведущее вхождение" value={mateDraft.leaderId} onChange={event=>setMateDraft({...mateDraft,leaderId:event.target.value,followerId:''})}>
-    <option value="">Выберите вхождение</option>
-    {eligibleLeaders.map(instance=><option key={instance.id} value={instance.id}>{instance.name}</option>)}
-   </select></label>
-   <label>Ведомое вхождение<select aria-label="Ведомое вхождение" value={mateDraft.followerId} disabled={!mateDraft.leaderId} onChange={event=>setMateDraft({...mateDraft,followerId:event.target.value})}>
-    <option value="">Выберите вхождение</option>
-    {eligibleFollowers(mateDraft.leaderId).map(instance=><option key={instance.id} value={instance.id}>{instance.name}</option>)}
-   </select></label>
-   <p>Ведомое вхождение сохранит текущее положение относительно ведущего.</p>
    {error&&<p role="alert">{error}</p>}
   </Dialog>}
   {detaching&&<Dialog open title="Отсоединить сопряжение" onCancel={()=>setDetaching(null)} onConfirm={()=>{

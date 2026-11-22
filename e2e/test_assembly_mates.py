@@ -42,6 +42,9 @@ def test_fixed_mate_tracks_leader_preserves_detached_pose_and_reopens(page, tmp_
     source_id = source['bodies'][0]['id']
     page.get_by_role('button', name='Сборка', exact=True).click()
     panel = page.get_by_role('region', name='Вхождения деталей', exact=True)
+    ribbon = page.get_by_label('Контекстные команды: Сборка', exact=True)
+    create_mate = ribbon.get_by_role('button', name='Сопряжение', exact=True)
+    expect(create_mate).to_be_disabled()
     add_occurrence(page, source_id, 'Основание', [0, 0, 0], [0, 0, 0])
     add_occurrence(page, source_id, 'Кронштейн', [10, 0, 0], [0, 0, 30])
     before = save_document(page, tmp_path, 'mate-before.json')
@@ -50,10 +53,15 @@ def test_fixed_mate_tracks_leader_preserves_detached_pose_and_reopens(page, tmp_
 
     panel.get_by_role('button', name='Создать сопряжение', exact=True).click()
     dialog = page.get_by_role('dialog', name='Фиксированное сопряжение', exact=True)
+    expect(dialog).to_be_visible()
+    dialog.get_by_role('button', name='Отмена', exact=True).click()
+    create_mate.click()
+    dialog = page.get_by_role('dialog', name='Фиксированное сопряжение', exact=True)
     dialog.get_by_label('Ведущее вхождение', exact=True).select_option(leader)
     dialog.get_by_label('Ведомое вхождение', exact=True).select_option(follower)
     dialog.get_by_role('button', name='ОК', exact=True).click()
     expect(dialog).not_to_be_visible()
+    expect(create_mate).to_be_disabled()
     assert_world_pose(page, leader, [0, 0, 0], 0)
     assert_world_pose(page, follower, [10, 0, 0], 30)
 
