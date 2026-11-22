@@ -30,7 +30,7 @@ export function faceHighlightGeometry(result:KernelBodyResult,indexStart:number,
 }
 export function exactClippingPlanes(section='off',offset=0):THREE.Plane[]{return section==='off'?[]:[new THREE.Plane(section==='XY'?new THREE.Vector3(0,0,-1):section==='XZ'?new THREE.Vector3(0,-1,0):new THREE.Vector3(-1,0,0),offset)];}
 /** Raycast the same visible half-space as the viewport material. */
-function visiblePickRaycast(planes:readonly THREE.Plane[]):THREE.Mesh['raycast'] {
+export function visiblePickRaycast(planes:readonly THREE.Plane[]):THREE.Mesh['raycast'] {
  if(!planes.length)return THREE.Mesh.prototype.raycast;
  return function(this:THREE.Mesh,raycaster,intersections){
   const start=intersections.length;

@@ -13,3 +13,21 @@ console.log('PASS actual indexed BREP geometry, index-range face selection/highl
 
 // Hash collision must select a single ordinal range, never all equal hashes.
 result.mesh.faceGroups=new Int32Array([0,3,47,3,3,47]);const range=faceHighlightGeometry(result,3,3);assert.deepEqual(Array.from(range.index.array),[0,2,3]);range.dispose();
+
+const THREE=require('three');
+const {visiblePickRaycast}=require('./ExactModelLayer.tsx');
+const {exactPlaneAtTriangle}=require('../documents/assemblyViewportFacePick.ts');
+const pickMesh={...result.mesh,planarFaceIndices:new Int32Array([5,-1])};
+assert.equal(exactPlaneAtTriangle(pickMesh,0),5);
+for(const triangle of [1,2,-1,0.1,Infinity])assert.equal(exactPlaneAtTriangle(pickMesh,triangle),undefined);
+assert.equal(exactPlaneAtTriangle(result.mesh,0),undefined);
+assert.equal(exactPlaneAtTriangle({...pickMesh,planarFaceIndices:new Int32Array([5])},0),undefined);
+
+const box=new THREE.Mesh(new THREE.BoxGeometry(2,2,2),new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));
+box.position.z=-0.5;
+box.updateMatrixWorld();
+const ray=new THREE.Raycaster(new THREE.Vector3(0.2,0.1,10),new THREE.Vector3(0,0,-1));
+const visibleHits=[];
+visiblePickRaycast(exactClippingPlanes('XY',0)).call(box,ray,visibleHits);
+assert.deepEqual(visibleHits.map(hit=>hit.point.z),[-1.5]);
+box.geometry.dispose();box.material.dispose();
