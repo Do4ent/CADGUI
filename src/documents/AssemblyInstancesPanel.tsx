@@ -76,7 +76,7 @@ export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,
     <p>{instance.position.map(value=>Number(value.toFixed(6))).join(' / ')} мм · {instance.rotation.map(value=>Number(value.toFixed(6))).join(' / ')}°</p>
     <button type="button" disabled={!source||!!leader} onClick={()=>open(instances.find(item=>item.id===instance.id))}>Изменить вхождение</button>
     {leader&&mate&&<>
-     <p>{details&&parameter ? `${details.title} · ${parameter.value} ${details.unit}` : 'Фиксированное сопряжение'} · {leader.name}</p>
+     <p>{details&&parameter ? `${details.title} · ${parameter.value} ${details.unit}` : 'leaderFace' in mate ? 'Совмещение плоских граней' : 'Фиксированное сопряжение'} · {leader.name}</p>
      {details&&parameter&&<button type="button" onClick={()=>{setError('');setEditingParameter({id:instance.id,kind:parameter.kind,value:String(parameter.value)});}}>{details.editLabel}</button>}
      <button type="button" onClick={()=>{setError('');setDetaching(instance);}}>Отсоединить сопряжение</button></>}
     <button type="button" onClick={()=>setRemoving(instance)}>Удалить вхождение</button>

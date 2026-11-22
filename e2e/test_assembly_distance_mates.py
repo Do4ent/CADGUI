@@ -56,7 +56,7 @@ def test_distance_mate_create_edit_and_reopen(page, tmp_path):
 
     file_name = 'distance-mate.json'
     saved = save_document(page, tmp_path, file_name)
-    assert saved['schemaVersion'] == 21
+    assert saved['schemaVersion'] == 22
     assert saved['exactModel'] == source
     (mate,) = saved['assemblyFixedMates']
     assert (mate['leaderId'], mate['followerId']) == (leader, follower)

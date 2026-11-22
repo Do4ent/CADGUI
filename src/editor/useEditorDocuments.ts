@@ -1,3 +1,5 @@
+import {assertAssemblyPlanarFaceSource,captureAssemblyPlanarFaceReference,resolveAssemblyPlanarFaceReference,type InspectPlanarFaces} from '../documents/assemblyFaceReferences';
+import {planarMateTransform} from '../documents/planarMateTransform';
 import {angularAssemblyMateFromPoses,distanceAssemblyMateFromPoses,fixedAssemblyMateFromPoses,validateAssemblyMates,type AssemblyMate,type MateParameter} from '../documents/assemblyMates';
 import {validateAssemblyInstances,type AssemblyInstance} from '../documents/assemblyInstances';
 import {detachAssemblyInstance,pruneAssemblyMates,resolveAssemblyHierarchy,validateAssemblyGroups,type AssemblyGroup} from '../documents/assemblyHierarchy';
@@ -77,6 +79,12 @@ export function useEditorDocuments(initial:()=>CadItem[]){
     assemblyFixedMates=pruned.mates;
    }
    validateAssemblyMates(assemblyFixedMates);
+   const faceSources = {instances:assemblyInstances??[],bodies:exactModel.bodies};
+   for (const mate of assemblyFixedMates) {
+    if (!('leaderFace' in mate)) continue;
+    assertAssemblyPlanarFaceSource(faceSources,mate.leaderFace);
+    assertAssemblyPlanarFaceSource(faceSources,mate.followerFace);
+   }
   }
   resolveAssemblyHierarchy(assemblyInstances??[],assemblyGroups??[],assemblyFixedMates??[]);
   const snapshot={assemblyGroups,assemblyFixedMates,assemblyInstances,items,modelAnnotations,exactModel,sketchModel};
@@ -104,6 +112,36 @@ export function useEditorDocuments(initial:()=>CadItem[]){
   const {world}=resolveAssemblyHierarchy(assemblyInstances??[],active.document.assemblyGroups??[],assemblyFixedMates);
   const createMate = parameter?.kind === 'angular' ? angularAssemblyMateFromPoses : distanceAssemblyMateFromPoses;
   const mate = parameter ? createMate(world,leaderId,followerId,parameter.value) : fixedAssemblyMateFromPoses(world,leaderId,followerId);
+  commitScene(items,modelAnnotations,exactModel,sketchModel,assemblyInstances,[...assemblyFixedMates,mate]);
+ };
+ const attachAssemblyPlanarMate=async(leaderId:string,followerId:string,leaderFaceIndex:number,followerFaceIndex:number,inspect:InspectPlanarFaces,signal:AbortSignal)=>{
+  const {items,modelAnnotations,exactModel,sketchModel,assemblyInstances,assemblyGroups,assemblyFixedMates=[]}=active.document;
+  const sources = {instances:assemblyInstances??[],bodies:exactModel.bodies};
+  const inspections = new Map<string, ReturnType<InspectPlanarFaces>>();
+  const inspectSnapshot: InspectPlanarFaces = brep => {
+   const cached = inspections.get(brep);
+   if (cached) return cached;
+   const pending = inspect(brep);
+   inspections.set(brep,pending);
+   return pending;
+  };
+  const [leaderFace,followerFace] = await Promise.all([
+   captureAssemblyPlanarFaceReference(sources,leaderId,leaderFaceIndex,inspectSnapshot),
+   captureAssemblyPlanarFaceReference(sources,followerId,followerFaceIndex,inspectSnapshot),
+  ]);
+  const [leaderPlane,followerPlane] = await Promise.all([
+   resolveAssemblyPlanarFaceReference(sources,leaderFace,inspectSnapshot),
+   resolveAssemblyPlanarFaceReference(sources,followerFace,inspectSnapshot),
+  ]);
+  const current = currentWorkspace.current;
+  if (signal.aborted || current.activeId!==active.document.id ||
+      current.tabs.find(tab=>tab.document.id===current.activeId)?.document!==active.document) {
+   throw Error('Документ изменился. Выберите грани заново.');
+  }
+  if (leaderPlane.status!=='resolved' || followerPlane.status!=='resolved') throw Error('Плоская грань недоступна');
+  const {world} = resolveAssemblyHierarchy(sources.instances,assemblyGroups??[],assemblyFixedMates);
+  const pose = planarMateTransform(world.get(leaderId)!,world.get(followerId)!,leaderPlane.face,followerPlane.face);
+  const mate = {leaderId,followerId,translation:pose.position,quaternion:pose.quaternion,leaderFace,followerFace};
   commitScene(items,modelAnnotations,exactModel,sketchModel,assemblyInstances,[...assemblyFixedMates,mate]);
  };
  const setAssemblyMateParameter=(followerId:string,parameter:MateParameter)=>{
@@ -243,5 +281,5 @@ export function useEditorDocuments(initial:()=>CadItem[]){
  });
  const exportDocument=()=>({id:active.document.id,json:serializeDocument(active.document),fingerprint:fingerprint(active.document)});
  const markSaved=(snapshot:{id:string;fingerprint:string})=>setWorkspace(w=>({...w,tabs:w.tabs.map(t=>t.document.id===snapshot.id?{...t,saved:snapshot.fingerprint}:t)}));
- return {assemblyGroups:active.document.assemblyGroups,setAssemblyGroups,assemblyInstances:active.document.assemblyInstances,assemblyFixedMates:active.document.assemblyFixedMates,attachAssemblyMate,setAssemblyMateParameter,detachAssemblyMate,setAssemblyInstances,sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,recoveryCanResume:workspace.recoveryCanResume,resumeRecovery,activate,open,newDocument,close,exportDocument,markSaved};
+ return {assemblyGroups:active.document.assemblyGroups,setAssemblyGroups,assemblyInstances:active.document.assemblyInstances,assemblyFixedMates:active.document.assemblyFixedMates,attachAssemblyMate,attachAssemblyPlanarMate,setAssemblyMateParameter,detachAssemblyMate,setAssemblyInstances,sketchModel:active.document.sketchModel,setSketchModel,exactModel:active.document.exactModel,setExactModel,modelAnnotations:active.document.modelAnnotations,setModelAnnotations,changeScene,modelUndo,modelRedo,modelHistoryCount:active.history.length,modelFutureCount:active.future.length,drawing:active.document.drawing,setDrawing,drawingUndo,drawingRedo,drawingHistoryCount:active.drawingHistory.length,drawingFutureCount:active.drawingFuture.length,drawingSelection:active.drawingSelection,setDrawingSelection:setter('drawingSelection'),items:active.document.items,setItems,history:active.history.map(snapshot=>snapshot.items),setHistory:legacyHistorySetter('history'),future:active.future.map(snapshot=>snapshot.items),setFuture:legacyHistorySetter('future'),selection:active.selection,setSelection:setter('selection'),tabs:workspace.tabs.map(t=>({id:t.document.id,name:t.document.name,dirty:isDirty(t)})),activeId:workspace.activeId,document:active.document,recoveryError:workspace.recoveryError,recoveryCanResume:workspace.recoveryCanResume,resumeRecovery,activate,open,newDocument,close,exportDocument,markSaved};
 }

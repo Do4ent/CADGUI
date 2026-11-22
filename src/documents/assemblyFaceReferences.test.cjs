@@ -1,9 +1,8 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const {createHash, webcrypto} = require('node:crypto');
+const {createHash} = require('node:crypto');
 const ts = require('typescript');
 
-globalThis.crypto ??= webcrypto;
 let occt;
 require.extensions['.ts'] = (module, file) => {
   const baseRequire = module.require.bind(module);
@@ -45,6 +44,11 @@ async function main() {
   const mustNotInspect = async () => { throw Error('Unexpected kernel inspection'); };
   const changed = {...sources, bodies:[{...original,brep:original.brep + '\n'},other]};
   const switched = {...sources, instances:[{...first,sourceBodyId:'copy'}]};
+  const reusedBody = {...original};
+  const reusedSources = {...sources,bodies:[reusedBody,other]};
+  assert.equal((await resolveAssemblyPlanarFaceReference(reusedSources, reference, inspect)).status, 'resolved');
+  reusedBody.brep += '\n';
+  assert.deepEqual(await resolveAssemblyPlanarFaceReference(reusedSources, reference, mustNotInspect), {status:'stale'});
   for (const snapshot of [changed,switched]) {
     assert.deepEqual(await resolveAssemblyPlanarFaceReference(snapshot, reference, mustNotInspect), {status:'stale'});
   }
