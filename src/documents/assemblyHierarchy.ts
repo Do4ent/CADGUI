@@ -1,9 +1,14 @@
 import {Euler,Quaternion,Vector3} from 'three';
 import {assemblyVector, type AssemblyInstance} from './assemblyInstances';
-import {materializeAssemblyPlacement,resolveAssemblyPoses,type AssemblyPlacement,type AssemblyWorldPose,type FixedAssemblyMate} from './assemblyMates';
+import {assemblyPoseRelativeTo,materializeAssemblyPlacement,resolveAssemblyPoses,type AssemblyPlacement,type AssemblyWorldPose,type FixedAssemblyMate} from './assemblyMates';
 
 export type AssemblyGroup = AssemblyPlacement & {name: string; parentId?: string};
 export const MAX_ASSEMBLY_GROUPS = 100;
+const placementLimit = 1e6;
+// Rotating a pose at the coordinate boundary can add a few ulps.
+const placementTolerance = 32 * Number.EPSILON * placementLimit;
+const exceedsPlacementLimit = (pose: AssemblyWorldPose) =>
+  pose.position.some(value => Math.abs(value) > placementLimit + placementTolerance);
 
 /** Express the same draft pose in a different parent's local frame. */
 export function rebaseAssemblyPose(values:string[], from:AssemblyWorldPose|undefined, to:AssemblyWorldPose|undefined):string[] {
@@ -50,22 +55,20 @@ export function resolveAssemblyHierarchy(
   const local = resolveAssemblyPoses(placements, []);
   const groupById = new Map(groups.map(group => [group.id, group]));
   const byId = new Map(placements.map(item => [item.id, item]));
-  const instancesById = new Map(instances.map(instance => [instance.id, instance]));
+  const instanceIds = new Set(instances.map(instance => instance.id));
   const followers = new Set<string>();
   for (const mate of mates) {
-    const leader = instancesById.get(mate.leaderId);
-    const follower = instancesById.get(mate.followerId);
-    if (!leader || !follower || leader.parentId !== follower.parentId) {
-      throw Error('Фиксированное сопряжение требует общую родительскую подсборку');
+    if (!instanceIds.has(mate.leaderId) || !instanceIds.has(mate.followerId)) {
+      throw Error('Не найдено вхождение фиксированного сопряжения');
     }
-    followers.add(follower.id);
+    followers.add(mate.followerId);
   }
 
   const hierarchyEdges: FixedAssemblyMate[] = [];
   for (const item of placements) {
     if (item.parentId === undefined) continue;
     if (!groupById.has(item.parentId)) throw Error('Родительская подсборка не найдена');
-    // A mated follower inherits the shared parent frame through its leader.
+    // A mate determines the follower pose independently of its parent frame.
     if (followers.has(item.id)) continue;
     const pose = local.get(item.id)!;
     hierarchyEdges.push({leaderId:item.parentId, followerId:item.id, translation:pose.position, quaternion:pose.quaternion});
@@ -83,8 +86,41 @@ export function resolveAssemblyHierarchy(
     paths.set(item.id, path.reverse());
   }
   const world = resolveAssemblyPoses(placements, [...mates, ...hierarchyEdges]);
-  if ([...world.values()].some(pose => pose.position.some(value => Math.abs(value) > 1e6))) {
+  if ([...world.values()].some(exceedsPlacementLimit)) {
     throw Error('Размещение выходит за пределы ±1 000 000 мм');
   }
+  for (const instance of instances) {
+    if (followers.has(instance.id)) detachableLocalPose(instance, world);
+  }
   return {paths, world};
+}
+
+function detachableLocalPose(instance: AssemblyInstance, world: ReadonlyMap<string, AssemblyWorldPose>): AssemblyWorldPose {
+  const pose = world.get(instance.id)!;
+  const local = instance.parentId === undefined ? pose : assemblyPoseRelativeTo(pose, world.get(instance.parentId)!);
+  if (exceedsPlacementLimit(local)) {
+    throw Error('Локальное размещение ведомого вхождения выходит за пределы ±1 000 000 мм');
+  }
+  const [x,y,z] = local.position;
+  const clamp = (value: number) => Math.min(placementLimit, Math.max(-placementLimit, value));
+  return {...local, position: [clamp(x), clamp(y), clamp(z)]};
+}
+
+export function detachAssemblyInstance(instance: AssemblyInstance, world: ReadonlyMap<string, AssemblyWorldPose>): AssemblyInstance {
+  return {...instance, ...materializeAssemblyPlacement(instance.id, detachableLocalPose(instance, world))};
+}
+
+/** Preserve the placement of surviving followers when their leaders are deleted. */
+export function pruneAssemblyMates(
+  previous: readonly AssemblyInstance[], survivors: AssemblyInstance[], groups: readonly AssemblyGroup[], mates: FixedAssemblyMate[],
+): {placements: AssemblyInstance[]; mates: FixedAssemblyMate[]} {
+  const ids = new Set(survivors.map(item => item.id));
+  const retained = mates.filter(mate => ids.has(mate.leaderId) && ids.has(mate.followerId));
+  if (retained.length === mates.length) return {placements: survivors, mates};
+  const detached = new Set(mates.filter(mate => !ids.has(mate.leaderId)).map(mate => mate.followerId));
+  const {world} = resolveAssemblyHierarchy(previous, groups, mates);
+  return {
+    mates: retained,
+    placements: survivors.map(item => detached.has(item.id) ? detachAssemblyInstance(item, world) : item),
+  };
 }

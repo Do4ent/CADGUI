@@ -8,7 +8,7 @@ import {createExactModelState,validateExactModelState,type ExactModelState} from
 import {createModelAnnotationState,validateModelAnnotationState,resolveModelAnnotation,type ModelAnnotationState} from '../modelAnnotations/model';
 import {createDrawingDocument, validateDrawingDocument} from '../drawing/model';
 import {type DrawingDocument} from '../drawing/types';
-export const DOCUMENT_SCHEMA_VERSION = 18;
+export const DOCUMENT_SCHEMA_VERSION = 19;
 export type CadItem = {
   id: string; name: string; kind: 'box' | 'cylinder' | 'shaft' | 'gear' | 'pipe';
   pos: [number, number, number]; size: [number, number, number];
@@ -57,13 +57,19 @@ export function validateDocument(value: unknown): CadDocument {
   const assemblyInstances = hasAssembly ? validateAssemblyInstances(value.assemblyInstances,sources) : undefined;
   const hasMates = Object.hasOwn(value,'assemblyFixedMates');
   if(hasMates && Number(value.schemaVersion)<16) throw Error('Сопряжения требуют схему 16');
-  const assemblyFixedMates = hasMates ? validateFixedAssemblyMates(assemblyInstances??[],value.assemblyFixedMates) : undefined;
+  const assemblyFixedMates = hasMates ? validateFixedAssemblyMates(value.assemblyFixedMates) : undefined;
   const hasGroups = Object.hasOwn(value,'assemblyGroups');
   if ((hasGroups || assemblyInstances?.some(instance => instance.parentId !== undefined)) && value.schemaVersion < 17) throw Error('Подсборки требуют схему 17');
   const assemblyGroups = hasGroups ? validateAssemblyGroups(value.assemblyGroups) : undefined;
   if (value.schemaVersion < 18 && assemblyFixedMates?.length && assemblyInstances?.some(instance =>
     instance.parentId !== undefined && assemblyFixedMates.some(mate => mate.leaderId === instance.id || mate.followerId === instance.id))) {
     throw Error('Сопряжения в подсборках требуют схему 18');
+  }
+  if (value.schemaVersion < 19 && assemblyFixedMates?.length) {
+    const parents = new Map(assemblyInstances?.map(instance => [instance.id, instance.parentId]));
+    if (assemblyFixedMates.some(mate => parents.get(mate.leaderId) !== parents.get(mate.followerId))) {
+      throw Error('Сопряжения между подсборками требуют схему 19');
+    }
   }
   resolveAssemblyHierarchy(assemblyInstances??[],assemblyGroups??[],assemblyFixedMates??[]);
   return {schemaVersion: DOCUMENT_SCHEMA_VERSION, ...(hasGroups ? {assemblyGroups}:{}), ...(hasMates ? {assemblyFixedMates}:{}), ...(hasAssembly ? {assemblyInstances}:{}), sketchModel, exactModel, modelAnnotations, drawing: value.schemaVersion === 1 ? createDrawingDocument() : validateDrawingDocument(value.drawing), id: value.id, name: value.name, items, modifiedAt: value.modifiedAt};
