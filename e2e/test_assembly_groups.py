@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from playwright.sync_api import expect
 
 from test_assembly_instances import add_occurrence
@@ -55,6 +56,17 @@ def test_nested_subassembly_move_undo_and_reopen(page, tmp_path):
     edit.get_by_role('button', name='ОК', exact=True).click()
     expect(edit).not_to_be_visible()
     assert_path(row, [parent, child, instance])
+    assert_world_pose(page, instance, [2, 1, 4], 0)
+    reparented = save_document(page, tmp_path, 'nested-reparented.json')['assemblyInstances'][0]
+    assert reparented['parentId'] == child
+    assert reparented['position'] == pytest.approx([8, 24, -1])
+
+    row.get_by_role('button', name='Изменить вхождение', exact=True).click()
+    for axis, value in zip('XYZ', occurrence['position']):
+        edit.get_by_label(f'Смещение {axis}', exact=True).fill(str(value))
+        edit.get_by_label(f'Поворот {axis}', exact=True).fill('0')
+    edit.get_by_role('button', name='ОК', exact=True).click()
+    expect(edit).not_to_be_visible()
     assert_world_pose(page, instance, [8, 24, 9], 180)
 
     parent_row.get_by_role('button', name='Изменить подсборку', exact=True).click()
@@ -77,12 +89,17 @@ def test_nested_subassembly_move_undo_and_reopen(page, tmp_path):
 
     page.evaluate('document.activeElement?.blur()')
     page.keyboard.press('Control+z')
+    assert_world_pose(page, instance, [2, 1, 4], 0)
+    assert_path(row, [parent, child, instance])
+    page.keyboard.press('Control+z')
     assert_path(row, [instance])
     assert_world_pose(page, instance, [2, 1, 4], 0)
     assert save_document(page, tmp_path, 'nested-undo.json')['assemblyInstances'] == [occurrence]
     page.evaluate('document.activeElement?.blur()')
     page.keyboard.press('Control+y')
     assert_path(row, [parent, child, instance])
+    assert_world_pose(page, instance, [2, 1, 4], 0)
+    page.keyboard.press('Control+y')
     assert_world_pose(page, instance, [8, 24, 9], 180)
 
     tabs = page.get_by_role('tablist', name='Документы').get_by_role('tab')
