@@ -106,6 +106,10 @@ export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectP
  const leaderIndex=faceValue(leaderFace,leaderBody);
  const followerIndex=faceValue(followerFace,followerBody);
  useLayoutEffect(()=>{
+  if(leaderFace&&(leaderFace.sourceBodyId!==leaderBody?.id||leaderFace.brep!==leaderBody.brep))setLeaderFace(undefined);
+  if(followerFace&&(followerFace.sourceBodyId!==followerBody?.id||followerFace.brep!==followerBody.brep))setFollowerFace(undefined);
+ },[leaderFace,leaderBody,followerFace,followerBody]);
+ useLayoutEffect(()=>{
   const highlights:AssemblyFaceHighlight[]=[];
   if(kind==='planar'){
    if(leaderId&&leaderBody&&leaderIndex!==''&&leaderCatalog.faces?.some(face=>String(face.faceIndex)===leaderIndex)){
