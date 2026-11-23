@@ -6,6 +6,7 @@ import {validateAssemblyInstances,type AssemblyInstance} from './assemblyInstanc
 import {rebaseAssemblyPose,type AssemblyGroup} from './assemblyHierarchy';
 import {MateParameterField,mateParameterDetails,parseMateParameter} from './AssemblyFixedMateDialog';
 import {AssemblyGroupsEditor,AssemblyParentField,AssemblyPoseFields} from './AssemblyGroupsEditor';
+import {AssemblyBomDialog} from './AssemblyBomDialog';
 
 type Props = {
  instances: readonly AssemblyInstance[];
@@ -26,6 +27,7 @@ type Props = {
 export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,world,mates,bodies,canCreateMate,onCreateMate,onDetach,onEditParameter,onChange,onGroupsChange}:Props) {
  const [draft,setDraft]=useState<{id:string;sourceBodyId:string;name:string;parentId:string;values:string[]}|null>(null);
  const [removing,setRemoving]=useState<AssemblyInstance|null>(null);
+ const [bomOpen,setBomOpen]=useState(false);
  const [error,setError]=useState('');
  const [detaching,setDetaching]=useState<AssemblyInstance|null>(null);
  const [editingParameter,setEditingParameter]=useState<{id:string; kind:MateParameter['kind']; value:string}|null>(null);
@@ -63,6 +65,8 @@ export function AssemblyInstancesPanel({instances,displayInstances,groups,paths,
   <h3>Вхождения деталей</h3>
   <button type="button" disabled={!bodies.length||instances.length>=100} onClick={()=>open()}>Добавить вхождение</button>
   <button type="button" disabled={!canCreateMate} onClick={onCreateMate}>Создать сопряжение</button>
+  <button type="button" onClick={()=>setBomOpen(true)}>Спецификация сборки</button>
+  {bomOpen&&<AssemblyBomDialog instances={instances} groups={groups} bodies={bodies} onClose={()=>setBomOpen(false)}/>}
   <ul>{displayInstances.map(instance=>{
    const mate=followers.get(instance.id);
    const parameter:MateParameter|undefined=mate&&('angle' in mate ? {kind:'angular',value:mate.angle}

@@ -1,0 +1,20 @@
+.assembly-bom-scroll {
+  max-width: min(760px, 80vw);
+  max-height: 62vh;
+  overflow: auto;
+  border: 1px solid var(--line, #8994a3);
+}
+.assembly-bom-table { width: 100%; border-collapse: collapse; }
+.assembly-bom-table th, .assembly-bom-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line, #8994a3);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.assembly-bom-table thead th { position: sticky; top: 0; background: var(--panel, #f4f6f8); }
+.assembly-bom-table small { display: block; margin-top: 3px; font-weight: normal; }
+.assembly-bom-table ul { margin: 0; padding: 0; list-style: none; }
+.assembly-bom-table li + li { margin-top: 3px; }
+.assembly-bom-table .assembly-bom-quantity { text-align: right; font-variant-numeric: tabular-nums; }
+.assembly-bom-placement-quantity { white-space: nowrap; }

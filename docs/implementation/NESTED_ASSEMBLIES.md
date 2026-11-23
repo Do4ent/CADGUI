@@ -37,3 +37,9 @@ The solver aligns the outward normals in opposition with the minimum rotation an
 Native schema 22 records each reference's occurrence ID, source body ID, face index and SHA-256 digest of its exact BRep, alongside the solved relative transform. Opening an explicit native JSON file revalidates both face ordinals and the saved transform with OCCT before opening a tab. Automatic workspace recovery verifies the saved native structure and the exact snapshot digests synchronously. Source geometry changes or a source swap are rejected while they would invalidate a surviving plane mate. Detach it first to edit the source. Deleting an endpoint removes its mates, retaining the solved position of a surviving follower. Undo/Redo restores the entire edit atomically.
 
 Viewport picks bind to the exact rendered BRep snapshot and a unique native planar face identity. If the rendered group is curved or cannot be mapped unambiguously, choose the face from the exact catalog instead. Section planes exclude clipped hits. If the source body covers its occurrence, hide the source body or use the catalog.
+
+## Assembly bill of materials
+
+In **Сборка**, select **Спецификация сборки** in **Вхождения деталей**. The table groups occurrences by source body ID, shows the total quantity for each part, and breaks down quantities by parent subassembly path. An occurrence at the assembly root counts alongside nested occurrences. The table shows when a referenced source body is unavailable.
+
+**Скачать CSV** exports the rows as UTF-8 to `assembly-bom.csv`. The assembly document, its saved schema, and its Undo history are unchanged.
