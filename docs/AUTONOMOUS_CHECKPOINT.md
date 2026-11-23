@@ -60,7 +60,7 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 - [PR #67](https://github.com/Do4ent/CADGUI/pull/67), branch `feat/planar-face-highlights`, worktree `/tmp/wt-planar-highlight`, head `fd9ef3c`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45182982085) was in progress.
 - The leader and follower faces are distinguished in blue and orange while configuring a planar mate. Exact native face ranges are bound to each occurrence and BRep snapshot, follow viewport clipping, and do not receive raycast hits. Stored documents are unchanged.
-- Exact range unit checks passed. Full local suite, build, and browser acceptance were in progress. Overall readiness remains approximately 40%.
+- Exact range unit checks passed. The full 72-suite local test run, production build, and seven focused Chromium tests passed. Overall readiness remains approximately 40%.
 
 ## Resume
 
