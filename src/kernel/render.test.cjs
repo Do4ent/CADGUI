@@ -16,9 +16,17 @@ result.mesh.faceGroups=new Int32Array([0,3,47,3,3,47]);const range=faceHighlight
 
 const THREE=require('three');
 const {visiblePickRaycast}=require('./ExactModelLayer.tsx');
-const {exactPlaneAtTriangle}=require('../documents/assemblyViewportFacePick.ts');
+const {exactPlanarFaceRange,exactPlaneAtTriangle,matchesFacePickSource}=require('../documents/assemblyViewportFacePick.ts');
 const pickMesh={...result.mesh,planarFaceIndices:new Int32Array([5,-1])};
 assert.equal(exactPlaneAtTriangle(pickMesh,0),5);
+assert.deepEqual(exactPlanarFaceRange(pickMesh,5),{start:0,count:3});
+assert.equal(exactPlanarFaceRange(pickMesh,1),undefined);
+assert.equal(exactPlanarFaceRange({...pickMesh,planarFaceIndices:new Int32Array([5,5])},5),undefined);
+assert.equal(exactPlanarFaceRange({...pickMesh,faceGroups:new Int32Array([1,3,47,3,3,91])},5),undefined);
+const selectedOccurrence={occurrenceId:'one',sourceBodyId:'shared',brep:'v1'};
+assert.equal(matchesFacePickSource(selectedOccurrence,'one',{id:'shared',brep:'v1'}),true);
+assert.equal(matchesFacePickSource(selectedOccurrence,'two',{id:'shared',brep:'v1'}),false);
+assert.equal(matchesFacePickSource(selectedOccurrence,'one',{id:'shared',brep:'v2'}),false);
 for(const triangle of [1,2,-1,0.1,Infinity])assert.equal(exactPlaneAtTriangle(pickMesh,triangle),undefined);
 assert.equal(exactPlaneAtTriangle(result.mesh,0),undefined);
 assert.equal(exactPlaneAtTriangle({...pickMesh,planarFaceIndices:new Int32Array([5])},0),undefined);

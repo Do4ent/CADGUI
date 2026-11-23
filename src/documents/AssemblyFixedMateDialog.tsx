@@ -1,4 +1,4 @@
-import type {AssemblyViewportFacePick} from './assemblyViewportFacePick';
+import type {AssemblyFaceHighlight,AssemblyViewportFacePick} from './assemblyViewportFacePick';
 import type {ExactBody,PlanarFaceInspection} from '../kernel/types';
 import type {InspectPlanarFaces} from './assemblyFaceReferences';
 import {useEffect,useLayoutEffect,useRef,useState} from 'react';
@@ -35,6 +35,7 @@ type Props = {
  onAttach: (leaderId: string, followerId: string, parameter?: MateParameter) => void;
  onClose: () => void;
  onViewportPick: (request:AssemblyViewportFacePick|null) => void;
+ onFaceHighlights: (selection:readonly AssemblyFaceHighlight[]) => void;
 };
 
 type FaceSelection = {sourceBodyId:string; brep:string; index:string};
@@ -56,7 +57,7 @@ function usePlanarFaces(brep:string|undefined,inspect:InspectPlanarFaces) {
  return {faces:activeInspection?.faces,error,loading:!!brep&&!activeInspection&&!error};
 }
 
-export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectPlanarFaces,onAttachPlanar,onAttach,onClose,onViewportPick}:Props){
+export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectPlanarFaces,onAttachPlanar,onAttach,onClose,onViewportPick,onFaceHighlights}:Props){
  const [leaderId,setLeaderId]=useState('');
  const [followerId,setFollowerId]=useState('');
  const [kind,setKind]=useState<'fixed'|'planar'|MateParameter['kind']>('fixed');
@@ -104,6 +105,23 @@ export function AssemblyFixedMateDialog({candidates,groups,paths,bodies,inspectP
  );
  const leaderIndex=faceValue(leaderFace,leaderBody);
  const followerIndex=faceValue(followerFace,followerBody);
+ useLayoutEffect(()=>{
+  if(leaderFace&&(leaderFace.sourceBodyId!==leaderBody?.id||leaderFace.brep!==leaderBody.brep))setLeaderFace(undefined);
+  if(followerFace&&(followerFace.sourceBodyId!==followerBody?.id||followerFace.brep!==followerBody.brep))setFollowerFace(undefined);
+ },[leaderFace,leaderBody,followerFace,followerBody]);
+ useLayoutEffect(()=>{
+  const highlights:AssemblyFaceHighlight[]=[];
+  if(kind==='planar'){
+   if(leaderId&&leaderBody&&leaderIndex!==''&&leaderCatalog.faces?.some(face=>String(face.faceIndex)===leaderIndex)){
+    highlights.push({occurrenceId:leaderId,sourceBodyId:leaderBody.id,brep:leaderBody.brep,role:'leader',faceIndex:Number(leaderIndex)});
+   }
+   if(follower&&followerBody&&followerIndex!==''&&followerCatalog.faces?.some(face=>String(face.faceIndex)===followerIndex)){
+    highlights.push({occurrenceId:follower.id,sourceBodyId:followerBody.id,brep:followerBody.brep,role:'follower',faceIndex:Number(followerIndex)});
+   }
+  }
+  onFaceHighlights(highlights);
+ },[kind,leaderId,leaderBody,leaderIndex,leaderCatalog.faces,follower?.id,followerBody,followerIndex,followerCatalog.faces,onFaceHighlights]);
+ useLayoutEffect(()=>()=>onFaceHighlights([]),[onFaceHighlights]);
  const selectedFaces = leaderCatalog.faces?.some(face=>String(face.faceIndex)===leaderIndex) &&
   followerCatalog.faces?.some(face=>String(face.faceIndex)===followerIndex);
  const canConfirm=!busy&&followerValid&&(kind==='planar'?selectedFaces:kind==='fixed'||target!==undefined);
