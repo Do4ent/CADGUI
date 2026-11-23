@@ -52,12 +52,12 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Viewport planar face picking
 
-- [PR #66](https://github.com/Do4ent/CADGUI/pull/66), branch `feat/viewport-plane-picking`, worktree `/tmp/wt-viewport-plane-picking`, head `2529eb0`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45062735152) was in progress.
+- [PR #66](https://github.com/Do4ent/CADGUI/pull/66), branch `feat/viewport-plane-picking`, worktree `/tmp/wt-viewport-plane-picking`, head `2529eb0`. It passed [full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45062735152) and merged as `36002b1`.
 - The mate dialog enters an explicit picking mode. Same-snapshot OCCT native face ordinals are mapped onto rendered mesh ranges, rejecting ambiguous hashes, curved faces and stale occurrence identities. Exact catalog selection is available. Native schema is unchanged.
 - Kernel checks passed 1,097 assertions, including creation and inspect paths, planar versus curved geometry and collision rejection. The production build, all 72 local suites, and six focused Chromium tests passed. Overall readiness remains approximately 40%.
 
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect PR #66 and its latest head. Merge after same-head review and CI pass. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Use the verified viewport picking baseline to add draft highlighting for both mate endpoints. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
