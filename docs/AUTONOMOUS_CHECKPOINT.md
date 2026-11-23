@@ -56,8 +56,14 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - The mate dialog enters an explicit picking mode. Same-snapshot OCCT native face ordinals are mapped onto rendered mesh ranges, rejecting ambiguous hashes, curved faces and stale occurrence identities. Exact catalog selection is available. Native schema is unchanged.
 - Kernel checks passed 1,097 assertions, including creation and inspect paths, planar versus curved geometry and collision rejection. The production build, all 72 local suites, and six focused Chromium tests passed. Overall readiness remains approximately 40%.
 
+## Planar mate draft face highlighting
+
+- [PR #67](https://github.com/Do4ent/CADGUI/pull/67), branch `feat/planar-face-highlights`, worktree `/tmp/wt-planar-highlight`, head `fd9ef3c`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45182982085) was in progress.
+- The leader and follower faces are distinguished in blue and orange while configuring a planar mate. Exact native face ranges are bound to each occurrence and BRep snapshot, follow viewport clipping, and do not receive raycast hits. Stored documents are unchanged.
+- Exact range unit checks passed. Full local suite, build, and browser acceptance were in progress. Overall readiness remains approximately 40%.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Use the verified viewport picking baseline to add draft highlighting for both mate endpoints. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect PR #67 and its exact-head CI. Merge after review and all checks pass. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
