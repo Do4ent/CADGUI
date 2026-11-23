@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import type {ExactBody,ExactModelState,ExactSelection,KernelBodyResult} from './types';
 import {ExactSelectionRuntime,validateInspectionMesh} from './selection';
 import type {CanonicalInspection} from './selection';
-import {exactPlaneAtTriangle,matchesFacePickSource,type AssemblyViewportFacePick} from '../documents/assemblyViewportFacePick';
+import {exactPlanarFaceRange,exactPlaneAtTriangle,matchesFacePickSource,type AssemblyFaceHighlight,type AssemblyViewportFacePick} from '../documents/assemblyViewportFacePick';
 import type {AssemblyInstance} from '../documents/assemblyInstances';
 
 /** OCCT faceGroups describe index ranges, not triangle ranges. IDs are revision-local. */
@@ -40,7 +40,7 @@ export function visiblePickRaycast(planes:readonly THREE.Plane[]):THREE.Mesh['ra
   }
  };
 }
-export type ExactModelLayerProps={runtime:ExactSelectionRuntime;renderScope:string;state:ExactModelState;facePick?:AssemblyViewportFacePick|null;selected:ExactSelection|null;onSelect:(selection:ExactSelection)=>void;section?:string;sectionOffset?:number;wire?:boolean;edges?:boolean};
+export type ExactModelLayerProps={runtime:ExactSelectionRuntime;renderScope:string;state:ExactModelState;facePick?:AssemblyViewportFacePick|null;faceHighlights?:readonly AssemblyFaceHighlight[];selected:ExactSelection|null;onSelect:(selection:ExactSelection)=>void;section?:string;sectionOffset?:number;wire?:boolean;edges?:boolean};
 function BodyMesh({runtime,renderScope,body,record,selected,onSelect,facePick,section,sectionOffset,wire,edges}:Omit<ExactModelLayerProps,'state'>&{body:ExactBody;record:CanonicalInspection}){
  const result=record.result!;
  const geometry=useMemo(()=>createBodyGeometry(result),[result]);const bounds=useBounds();useLayoutEffect(()=>{bounds.refresh().clip().fit();},[bounds,geometry]);
@@ -70,13 +70,22 @@ function InspectedBody(props:Omit<ExactModelLayerProps,'state'>&{body:ExactBody}
  if(record?.status==='ready')return <BodyMesh {...props} record={record}/>;
  return <Html fullscreen style={{pointerEvents:'none'}}><div role="status" data-exact-body-status={body.id} style={{position:'absolute',left:8,top:8,color:record?.error?'#c43a3a':'#456',background:'var(--panel,#fff)',padding:4,fontSize:12}}>{record?.error?`${body.name}: ${record.error}`:`${body.name}: расчёт BREP…`}{record?.status==='error'&&<button type="button" style={{pointerEvents:'auto',borderRadius:0,marginLeft:6}} aria-label={`Повторить расчёт ${body.name}`} onClick={event=>{event.stopPropagation();runtime.retryInspection(body)}}>Повторить расчёт</button>}</div></Html>;
 }
-function Occurrence({instance,body,runtime,facePick,wire,section,sectionOffset}:{
- instance:AssemblyInstance;body:ExactBody;runtime:ExactSelectionRuntime;facePick?:AssemblyViewportFacePick|null;wire?:boolean;section?:string;sectionOffset?:number;
+function Occurrence({instance,body,runtime,facePick,faceHighlights,wire,section,sectionOffset}:{
+ instance:AssemblyInstance;body:ExactBody;runtime:ExactSelectionRuntime;facePick?:AssemblyViewportFacePick|null;faceHighlights?:readonly AssemblyFaceHighlight[];wire?:boolean;section?:string;sectionOffset?:number;
 }){
  const version=useSyncExternalStore(runtime.subscribe,runtime.getSnapshot,runtime.getSnapshot);
  const record=runtime.inspection(body),result=record?.result;
  useEffect(()=>{runtime.ensureInspection(body,true);},[runtime,body,version]);
  const geometry=useMemo(()=>result?createBodyGeometry(result):null,[result]);
+ const selection=faceHighlights?.find(highlight=>matchesFacePickSource(highlight,instance.id,body));
+ const index=selection?.faceIndex;
+ const highlight=useMemo(()=>{
+  if(!result||record?.sourceBrep!==body.brep||index===undefined)return null;
+  const range=exactPlanarFaceRange(result.mesh,index);
+  return range?faceHighlightGeometry(result,range.start,range.count):null;
+ },[result,record?.sourceBrep,body.brep,index]);
+ useEffect(()=>()=>highlight?.dispose(),[highlight]);
+
  const planes=useMemo(()=>exactClippingPlanes(section,sectionOffset),[section,sectionOffset]);
  const pickRaycast=useMemo(()=>visiblePickRaycast(planes),[planes]);
  const bounds=useBounds();
@@ -104,6 +113,14 @@ function Occurrence({instance,body,runtime,facePick,wire,section,sectionOffset}:
   }:undefined} castShadow receiveShadow>
    <meshStandardMaterial color={body.color} wireframe={wire} clippingPlanes={planes} side={THREE.DoubleSide}/>
   </mesh>
+  {highlight&&selection&&<>
+   <mesh geometry={highlight} dispose={null} raycast={()=>{}}>
+    <meshBasicMaterial color={selection.role==='leader'?'#27b3f5':'#f68b36'} side={THREE.DoubleSide} clippingPlanes={planes}
+     polygonOffset polygonOffsetFactor={-1} polygonOffsetUnits={-1}/>
+   </mesh>
+   <Html style={{pointerEvents:'none'}}><span hidden data-assembly-face-highlight={selection.role}
+    data-occurrence-id={instance.id} data-face-index={selection.faceIndex}/></Html>
+  </>}
   <Html style={{pointerEvents:'none'}}><span hidden data-assembly-instance={instance.id}
    data-assembly-mesh-generation={record?.generation} data-assembly-position={JSON.stringify(instance.position)}
    data-assembly-rotation={JSON.stringify(instance.rotation)} data-assembly-world-position={JSON.stringify(instance.position)}
