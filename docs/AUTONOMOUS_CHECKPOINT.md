@@ -58,12 +58,12 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Planar mate draft face highlighting
 
-- [PR #67](https://github.com/Do4ent/CADGUI/pull/67), branch `feat/planar-face-highlights`, worktree `/tmp/wt-planar-highlight`, head `fd9ef3c`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45182982085) was in progress.
+- [PR #67](https://github.com/Do4ent/CADGUI/pull/67), branch `feat/planar-face-highlights`, worktree `/tmp/wt-planar-highlight`, head `fd9ef3c`. It passed [full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/45182982085) and merged as `6496c3a`.
 - The leader and follower faces are distinguished in blue and orange while configuring a planar mate. Exact native face ranges are bound to each occurrence and BRep snapshot, follow viewport clipping, and do not receive raycast hits. Stored documents are unchanged.
 - Exact range unit checks passed. The full 72-suite local test run, production build, and seven focused Chromium tests passed. Overall readiness remains approximately 40%.
 
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect PR #67 and its exact-head CI. Merge after review and all checks pass. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the current main baseline and its CI before the next assembly delivery. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
