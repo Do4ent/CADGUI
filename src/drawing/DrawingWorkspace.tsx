@@ -51,8 +51,8 @@ export function DrawingWorkspace(props:DrawingWorkspaceProps){
    const next=cloneDrawing(doc);
    activeDrawingSheet(next).entities.push(entity);
    commit(next,'Добавлена спецификация сборки',[entity.id]);
-   if(exceedsSheet)setReport([{severity:'warning',code:'assembly-bom-overflow',entityId:entity.id,
-    message:'Спецификация содержит текст или строки за пределами таблицы или листа. Скорректируйте размер и размещение перед печатью.'}]);
+   setReport(exceedsSheet?[{severity:'warning',code:'assembly-bom-overflow',entityId:entity.id,
+    message:'Спецификация содержит текст или строки за пределами таблицы или листа. Скорректируйте размер и размещение перед печатью.'}]:[]);
   } catch(e) {fail(e);}
  };
  const busyTask=async(task:()=>Promise<void>)=>{const request=++epoch.current;setBusy(true);setError('');try{await task();}catch(e){if(alive.current&&epoch.current===request)fail(e);}finally{if(alive.current&&epoch.current===request)setBusy(false);}};

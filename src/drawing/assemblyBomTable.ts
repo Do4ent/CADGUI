@@ -19,10 +19,17 @@ export function createAssemblyBomTable(
   });
   const locations = (row: AssemblyBomRow) => row.placements.map(({path,quantity}) =>
     (path.length ? path.join(' / ') : 'Корень сборки') + ' × ' + quantity).join('\n');
+  const nameCounts = new Map<string,number>();
+  for (const {name} of rows) nameCounts.set(name,(nameCounts.get(name)??0)+1);
+  const part = (row: AssemblyBomRow) => [
+    row.name,
+    ...(nameCounts.get(row.name)!>1 ? [row.sourceBodyId] : []),
+    ...(row.available ? [] : ['Исходное тело недоступно']),
+  ].join('\n');
   entity.rows = [
     ['Деталь','Количество','Размещение'],
     ...rows.map(row => [
-      row.available ? row.name : row.name + '\nИсходное тело недоступно',
+      part(row),
       String(row.quantity),locations(row),
     ]),
   ].map(row => row.map(textParagraphs));
