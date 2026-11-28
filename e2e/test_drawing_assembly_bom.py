@@ -100,8 +100,8 @@ def test_assembly_bom_inserts_snapshot_with_drawing_undo_and_reopen(page, tmp_pa
 
     preview.dblclick()
     editor = page.get_by_role('dialog', name='Редактор текста чертежа', exact=True)
-    editor.get_by_label('Строка таблицы', exact=True).select_option('1')
-    editor.get_by_label('Столбец таблицы', exact=True).select_option('0')
+    editor.get_by_label('Строка таблицы', exact=True).select_option(value='1')
+    editor.get_by_label('Столбец таблицы', exact=True).select_option(value='0')
     cell = editor.get_by_label('Текст ячейки', exact=True)
     expect(cell).to_have_value('Вал Ø10')
     cell.fill('Вал Ø12')
