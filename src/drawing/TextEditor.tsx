@@ -94,6 +94,8 @@ const symbols = [['⌀', 'Диаметр'], ['±', 'Плюс-минус'], ['°'
 
 export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextEditorProps) {
   const [draft, setDraft] = useState(() => copy(entity));
+  const tableRows = draft.kind === 'table' ? draft.rows : undefined;
+  const editingTable = !!tableRows?.length;
   const [rowIndex, setRowIndex] = useState(0);
   const [cellIndex, setCellIndex] = useState(0);
   const [selection, setSelection] = useState({paragraph: 0, start: 0, end: 0});
@@ -122,7 +124,8 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
     if (focus) input.focus(); input.setSelectionRange(selection.start, selection.end);
   });
   const setCharacter = (patch: Partial<TextStyle>, runPatch: Partial<TextRun> = {}) => {
-    if (hasSelection) setDraft(previous => ({...previous, paragraphs: previous.paragraphs.map((paragraph, index) => index === selection.paragraph ? {...paragraph, runs: formatTextRange(paragraph.runs, selection.start, selection.end, runPatch, patch)} : paragraph)}));
+    if (editingTable) setDraft(previous => ({...previous,overrides:{...previous.overrides,...patch}}));
+    else if (hasSelection) setDraft(previous => ({...previous, paragraphs: previous.paragraphs.map((paragraph, index) => index === selection.paragraph ? {...paragraph, runs: formatTextRange(paragraph.runs, selection.start, selection.end, runPatch, patch)} : paragraph)}));
     else if (Object.keys(runPatch).length) setParagraph({runs: activeParagraph.runs.map(run => ({...run, ...runPatch}))});
     else setDraft(previous => ({...previous, overrides: {...previous.overrides, ...patch}, paragraphs: previous.paragraphs.map(paragraph => ({...paragraph, runs: paragraph.runs.map(run => ({...run, format: {...run.format, ...patch}}))}))}));
     restoreSelection();
@@ -139,7 +142,6 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
     setSelection({paragraph, start: cursor, end: cursor});
     requestAnimationFrame(() => {const input = inputs.current[paragraph]; input?.focus(); input?.setSelectionRange(cursor, cursor);});
   };
-  const tableRows = draft.kind === 'table' ? draft.rows : undefined;
   const row = tableRows?.[rowIndex];
   const cell = row?.[cellIndex];
   const plainCell = cell?.every(paragraph => Object.keys(paragraph).length === 1 &&
@@ -204,7 +206,7 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
       </fieldset>
 
       <fieldset><legend><DrawingTextIcon kind="font"/>Шрифт и фрагменты</legend>
-        <p className="drawing-format-scope" role="status">{hasSelection ? `Выделенный фрагмент: ${selection.end - selection.start} знаков, абзац ${selection.paragraph + 1}` : 'Оформление всего объекта; выделите текст для оформления фрагмента'}</p>
+        <p className="drawing-format-scope" role="status">{editingTable ? 'Оформление всей таблицы' : hasSelection ? `Выделенный фрагмент: ${selection.end - selection.start} знаков, абзац ${selection.paragraph + 1}` : 'Оформление всего объекта; выделите текст для оформления фрагмента'}</p>
         <div className="drawing-editor-grid">
           <Field label="Стиль текста" icon="font">{id => <select id={id} value={draft.styleId} onChange={event => setDraft(previous => ({...previous, styleId: event.target.value, overrides: {}}))}>
             {!styles.length && <option value={draft.styleId}>Стандартный</option>}{styles.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -212,23 +214,23 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
           <Field label="Шрифт" icon="font" help="Имя семейства; отсутствующий шрифт подменяется браузером. SHX не поддерживается.">{id => <input id={id} value={character.fontFamily} onChange={event => setCharacter({fontFamily: event.target.value})}/>}</Field>
           {charNumber('height', 'Высота текста', {min: 0, exclusiveMin: true})}
           {charNumber('widthFactor', 'Коэффициент ширины', {min: 0, exclusiveMin: true}, '×')}
-          {charNumber('oblique', 'Наклон символов', {min: -85, max: 85}, '°')}
+          {!editingTable && charNumber('oblique', 'Наклон символов', {min: -85, max: 85}, '°')}
           {charNumber('tracking', 'Межсимвольный интервал', {min: -10, max: 100}, 'мм')}
           <Field label="Цвет текста" icon="color">{id => <input id={id} type="color" value={/^#[0-9a-f]{6}$/i.test(character.color) ? character.color : '#202935'} onChange={event => setCharacter({color: event.target.value})}/>}</Field>
           {(['bold', 'italic', 'underline', 'overline', 'strike'] as const).map((key, index) => <Field key={key} label={['Жирный', 'Курсив', 'Подчёркивание', 'Надчёркивание', 'Зачёркивание'][index]} icon="font">{id => <input id={id} type="checkbox" checked={character[key]} onChange={event => setCharacter({[key]: event.target.checked})}/>}</Field>)}
-          <Field label="Индекс" icon="font">{id => <select id={id} value={script} onChange={event => {const value = event.target.value as typeof script; setScript(value); setCharacter({}, {script: value});}}><option value="normal">Обычный</option><option value="super">Верхний</option><option value="sub">Нижний</option></select>}</Field>
+          {!editingTable && <Field label="Индекс" icon="font">{id => <select id={id} value={script} onChange={event => {const value = event.target.value as typeof script; setScript(value); setCharacter({}, {script: value});}}><option value="normal">Обычный</option><option value="super">Верхний</option><option value="sub">Нижний</option></select>}</Field>}
         </div>
-        <div className="drawing-symbol-palette" aria-label="Инженерные символы">{symbols.map(([symbol, label]) => <button type="button" key={label} title={label} aria-label={`Вставить: ${label}`} onClick={() => insertText(symbol)}><DrawingTextIcon kind="symbol"/>{symbol === '\u00a0' ? 'NBSP' : symbol}</button>)}</div>
+        {!editingTable && <><div className="drawing-symbol-palette" aria-label="Инженерные символы">{symbols.map(([symbol, label]) => <button type="button" key={label} title={label} aria-label={`Вставить: ${label}`} onClick={() => insertText(symbol)}><DrawingTextIcon kind="symbol"/>{symbol === '\u00a0' ? 'NBSP' : symbol}</button>)}</div>
         <div className="drawing-editor-grid">
           <Field label="Числитель / верх" icon="symbol">{id => <input id={id} value={stackTop} onChange={event => setStackTop(event.target.value)}/>}</Field>
           <Field label="Знаменатель / низ" icon="symbol">{id => <input id={id} value={stackBottom} onChange={event => setStackBottom(event.target.value)}/>}</Field>
           <Field label="Тип дроби / допуска" icon="symbol">{id => <select id={id} value={stackKind} onChange={event => setStackKind(event.target.value as typeof stackKind)}><option value="fraction">Горизонтальная дробь</option><option value="diagonal">Диагональная дробь</option><option value="tolerance">Двухстрочный допуск</option></select>}</Field>
           <button type="button" disabled={!stackTop.trim() || !stackBottom.trim()} onClick={() => insertText(`${stackTop}/${stackBottom}`, {top: stackTop, bottom: stackBottom, kind: stackKind})}><DrawingTextIcon kind="symbol"/>Вставить дробь / допуск</button>
-        </div>
+        </div></>}
       </fieldset>
 
-      <fieldset><legend><DrawingTextIcon kind="paragraph"/>Абзац {selection.paragraph + 1} и интервалы</legend><div className="drawing-editor-grid">
-        <Field label="Выравнивание абзаца" icon="paragraph">{id => <select id={id} value={activeParagraph.align || style.paragraphAlign} onChange={event => setParagraph({align: event.target.value as TextParagraph['align']})}><option value="left">Слева</option><option value="center">По центру</option><option value="right">Справа</option><option value="justify">По ширине</option></select>}</Field>
+      <fieldset><legend><DrawingTextIcon kind="paragraph"/>{editingTable ? 'Интервалы таблицы' : `Абзац ${selection.paragraph + 1} и интервалы`}</legend><div className="drawing-editor-grid">
+        {!editingTable && <><Field label="Выравнивание абзаца" icon="paragraph">{id => <select id={id} value={activeParagraph.align || style.paragraphAlign} onChange={event => setParagraph({align: event.target.value as TextParagraph['align']})}><option value="left">Слева</option><option value="center">По центру</option><option value="right">Справа</option><option value="justify">По ширине</option></select>}</Field>
         <Field label="Список" icon="paragraph">{id => <select id={id} value={activeParagraph.list || 'none'} onChange={event => setParagraph({list: event.target.value as TextParagraph['list']})}><option value="none">Нет</option><option value="bullet">Маркированный</option><option value="number">Нумерованный</option><option value="letter">Буквенный</option></select>}</Field>
         <NumericField name="listStart" label="Начальный номер" value={activeParagraph.listStart ?? 1} integer rules={{min: 1, max: 1000000}} unit="" icon="paragraph" validity={validity} change={value => setParagraph({listStart: value})}/>
         <NumericField name="indent" label="Отступ абзаца" value={activeParagraph.indent ?? 0} icon="paragraph" validity={validity} change={value => setParagraph({indent: value})}/>
@@ -237,7 +239,7 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
           const values = event.target.value.trim() ? event.target.value.split(';').map(value => value.trim()) : [];
           const error = values.some(value => Boolean(validateNumber(value, {min: 0}))) ? 'Точки табуляции: неотрицательные числа через ;' : undefined;
           validity('tabs', error); if (!error) setParagraph({tabs: values.map(Number).sort((a, b) => a - b)});
-        }}/>}</Field>
+        }}/>}</Field></>}
         {styleNumber('lineSpacing', 'Межстрочный интервал', {min: 0, exclusiveMin: true}, '×')}
         {styleNumber('spaceBefore', 'Интервал до абзаца')}{styleNumber('spaceAfter', 'Интервал после абзаца')}
       </div></fieldset>
@@ -259,7 +261,7 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
         <Field label="Блокировка" icon="layer">{id => <input id={id} type="checkbox" checked={Boolean(draft.locked)} onChange={event => setEntity('locked', event.target.checked)}/>}</Field>
       </div></fieldset>
       <section className="drawing-editor-preview" data-testid="drawing-text-preview" aria-label="Предпросмотр текста" style={{background: style.mask ? style.maskColor : undefined, padding: 12 + style.maskPadding * 2, borderStyle: style.frame === 'none' ? 'dashed' : 'solid', borderRadius: style.frame === 'circle' || style.frame === 'capsule' ? '50%' : 0}}>
-        {draft.paragraphs.map((paragraph, index) => <p key={index} style={{textAlign: paragraph.align || style.paragraphAlign, lineHeight: style.lineSpacing, marginTop: style.spaceBefore, marginBottom: style.spaceAfter, paddingLeft: paragraph.indent || 0, textIndent: paragraph.firstIndent || 0}}>
+        {(editingTable ? cell??[] : draft.paragraphs).map((paragraph, index) => <p key={index} style={{textAlign: paragraph.align || style.paragraphAlign, lineHeight: style.lineSpacing, marginTop: style.spaceBefore, marginBottom: style.spaceAfter, paddingLeft: paragraph.indent || 0, textIndent: paragraph.firstIndent || 0}}>
           {paragraph.list && paragraph.list !== 'none' && <span>{paragraph.list === 'bullet' ? '• ' : paragraph.list === 'letter' ? `${String.fromCharCode(64 + (paragraph.listStart || 1))}. ` : `${paragraph.listStart || 1}. `}</span>}
           {paragraph.runs.map((run, r) => {const format = {...style, ...run.format}; return <span key={r} title={run.field ? `Поле: ${run.field.kind}.${run.field.key}` : undefined} style={{fontFamily: format.fontFamily, fontSize: `${format.height * 3}px`, fontWeight: format.bold ? 'bold' : 'normal', fontStyle: format.italic ? 'italic' : 'normal', color: format.color, textDecoration: [format.underline && 'underline', format.overline && 'overline', format.strike && 'line-through'].filter(Boolean).join(' ') || 'none', verticalAlign: run.script === 'super' ? 'super' : run.script === 'sub' ? 'sub' : 'baseline', letterSpacing: format.tracking, whiteSpace: 'pre-wrap'}}>{run.stack ? <span className={`drawing-stack ${run.stack.kind}`}><span>{run.stack.top}</span><span>{run.stack.bottom}</span></span> : run.text}</span>;})}
         </p>)}
