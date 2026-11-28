@@ -43,3 +43,5 @@ Viewport picks bind to the exact rendered BRep snapshot and a unique native plan
 In **Сборка**, select **Спецификация сборки** in **Вхождения деталей**. The table groups occurrences by source body ID, shows the total quantity for each part, and breaks down quantities by parent subassembly path. An occurrence at the assembly root counts alongside nested occurrences. The table shows when a referenced source body is unavailable.
 
 **Скачать CSV** exports the rows as UTF-8 to `assembly-bom.csv`. The assembly document, its saved schema, and its Undo history are unchanged.
+
+In **Чертёж**, choose **Спецификация сборки** to insert an editable snapshot on the active sheet. It includes each source's name, total quantity and nested placement breakdown. Double-click the table and select the row and column to edit a plain-text cell. Drawing Undo and Redo apply to insertion and edits. Assembly changes leave existing snapshots intact. A warning flags snapshots with content outside the table or sheet; all rows remain in native JSON, even when a sheet is too small to print the complete table as placed.

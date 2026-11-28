@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Dialog, validateNumber, type NumberRules } from '../components/dialog';
+import {textParagraphs} from './model';
 import type { DrawingEntity, TextParagraph, TextRun, TextStyle } from './types';
 import { DrawingTextIcon, type DrawingTextIconKind } from './DrawingTextIcon';
 import './drawing.css';
@@ -93,6 +94,8 @@ const symbols = [['⌀', 'Диаметр'], ['±', 'Плюс-минус'], ['°'
 
 export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextEditorProps) {
   const [draft, setDraft] = useState(() => copy(entity));
+  const [rowIndex, setRowIndex] = useState(0);
+  const [cellIndex, setCellIndex] = useState(0);
   const [selection, setSelection] = useState({paragraph: 0, start: 0, end: 0});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [stackTop, setStackTop] = useState('1');
@@ -136,7 +139,13 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
     setSelection({paragraph, start: cursor, end: cursor});
     requestAnimationFrame(() => {const input = inputs.current[paragraph]; input?.focus(); input?.setSelectionRange(cursor, cursor);});
   };
-  const contentError = !draft.paragraphs.some(paragraph => paragraph.runs.some(run => run.text.trim() || run.field || run.stack)) ? 'Введите текст: пустой объект не сохраняется' : undefined;
+  const tableRows = draft.kind === 'table' ? draft.rows : undefined;
+  const row = tableRows?.[rowIndex];
+  const cell = row?.[cellIndex];
+  const plainCell = cell?.every(paragraph => Object.keys(paragraph).length === 1 &&
+    paragraph.runs.every(run => Object.keys(run).length === 1));
+  const contentParagraphs = tableRows?.length ? tableRows.flat(2) : draft.paragraphs;
+  const contentError = !contentParagraphs.some(paragraph => paragraph.runs.some(run => run.text.trim() || run.field || run.stack)) ? 'Введите текст: пустой объект не сохраняется' : undefined;
   const nameError = !draft.name.trim() ? 'Введите имя объекта' : undefined;
   const fontError = !character.fontFamily.trim() ? 'Введите имя шрифта' : undefined;
   const layerError = !style.layer.trim() ? 'Введите имя слоя' : undefined;
@@ -157,6 +166,25 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
       <fieldset><legend><DrawingTextIcon/>Содержание</legend>
         <Field label="Имя объекта">{id => <input id={id} value={draft.name} aria-invalid={Boolean(nameError)} onChange={event => setEntity('name', event.target.value)}/>}</Field>
         {nameError && <p className="drawing-editor-error" role="alert">{nameError}</p>}
+        {tableRows?.length ? <>
+          <Field label="Строка таблицы" icon="paragraph">{id => <select id={id} value={rowIndex} onChange={event => {
+            setRowIndex(Number(event.target.value));
+            setCellIndex(0);
+          }}>{tableRows.map((_, index) => <option key={index} value={index}>{index + 1}</option>)}</select>}</Field>
+          <Field label="Столбец таблицы" icon="paragraph">{id => <select id={id} value={cellIndex}
+            onChange={event => setCellIndex(Number(event.target.value))}>
+            {row?.map((_, index) => <option key={index} value={index}>{index + 1}</option>)}
+          </select>}</Field>
+          {cell && <Field label="Текст ячейки" icon="paragraph">{id => <textarea id={id} rows={3}
+            value={cell.map(paragraphText).join('\n')} readOnly={!plainCell}
+            onChange={event => {
+              const replacement = textParagraphs(event.target.value);
+              setEntity('rows', tableRows.map((cells, r) => r === rowIndex
+                ? cells.map((paragraphs, c) => c === cellIndex ? replacement : paragraphs)
+                : cells));
+            }}/>}</Field>}
+          {cell && !plainCell && <p>Ячейка содержит поля или форматирование и доступна для просмотра.</p>}
+        </> : <>
         {draft.paragraphs.map((paragraph, index) => <section key={index} className="drawing-paragraph-editor">
           <Field label={`Абзац ${index + 1}`} icon="paragraph">{id => <textarea id={id} ref={element => {inputs.current[index] = element;}} rows={3} value={paragraphText(paragraph)} spellCheck
             onSelect={event => setSelection({paragraph: index, start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd})}
@@ -171,6 +199,7 @@ export function TextEditor({entity, styles, onConfirm, onCancel, onApply}: TextE
         <button type="button" onClick={() => {
           const index = draft.paragraphs.length; setEntity('paragraphs', [...draft.paragraphs, {runs: [{text: ''}]}]); setSelection({paragraph: index, start: 0, end: 0}); requestAnimationFrame(() => inputs.current[index]?.focus());
         }}><DrawingTextIcon kind="paragraph"/>Добавить абзац</button>
+        </>}
         {contentError && <p className="drawing-editor-error" role="alert">{contentError}</p>}
       </fieldset>
 
