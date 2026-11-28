@@ -1,3 +1,5 @@
+import type {AssemblyBomRow} from '../documents/assemblyBom';
+import {createAssemblyBomTable} from './assemblyBomTable';
 import {useEffect,useRef,useState} from 'react';
 import type {Diagnostic,DrawingCommandInput,DrawingContext,DrawingDocument,DrawingEntity} from './types';
 import {activeDrawingSheet,cloneDrawing,createTextEntity,drawingId,geometryLineEndpoints,plainText,validateDrawingDocument} from './model';
@@ -16,7 +18,7 @@ import {DimensionTools} from './dimensions/DimensionTools';
 import {GeometryEditor} from './dimensions/GeometryEditor';
 import {defaultDimensionDefinition} from './dimensions/defaults';
 import {saveDimension} from './dimensions/operations';
-export type DrawingWorkspaceProps={document:DrawingDocument;context:DrawingContext;selection:string[];onSelect:(ids:string[])=>void;onChange:(doc:DrawingDocument,label:string)=>void;onUndo:()=>void;onRedo:()=>void;historyCount:number;futureCount:number};
+export type DrawingWorkspaceProps={assemblyBom?:readonly AssemblyBomRow[];document:DrawingDocument;context:DrawingContext;selection:string[];onSelect:(ids:string[])=>void;onChange:(doc:DrawingDocument,label:string)=>void;onUndo:()=>void;onRedo:()=>void;historyCount:number;futureCount:number};
 type Edit={command:string;entity:DrawingEntity;selection:string[]};
 type Files='text'|'dxf'|'json'|'ocr'|'outlines'|'table';
 function download(blob:Blob,name:string){const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -27,7 +29,7 @@ const readOnly=new Set(['TXT-073','TXT-082','TXT-094','TXT-095']);
 
 /** All mutations cross the validated document hook once; editors operate on detached drafts. */
 export function DrawingWorkspace(props:DrawingWorkspaceProps){
- const {document:doc,context,selection,onSelect,onChange,onUndo,onRedo,historyCount,futureCount}=props;
+ const {document:doc,context,selection,onSelect,onChange,onUndo,onRedo,historyCount,futureCount,assemblyBom=[]}=props;
  const root=useRef<HTMLDivElement>(null),file=useRef<HTMLInputElement>(null),fileMode=useRef<Files>('text');
  const [toolMode,setToolMode]=useState<'text'|'dimensions'>('text'),[dimensionRequest,setDimensionRequest]=useState(0),[dimensionEdit,setDimensionEdit]=useState<string|undefined>(),[geometryEdit,setGeometryEdit]=useState<DrawingEntity|null>(null);
  const [query,setQuery]=useState(''),[command,setCommand]=useState<DrawingCommand|null>(null),[edit,setEdit]=useState<Edit|null>(null);
@@ -43,6 +45,16 @@ export function DrawingWorkspace(props:DrawingWorkspaceProps){
  const svg=()=>{const element=root.current?.querySelector<SVGSVGElement>('svg[data-drawing-sheet]');if(!element)throw new Error('Лист ещё не отрисован');return element;};
  const commit=(next:DrawingDocument,label:string,ids=selection)=>{if(!alive.current||latest.current!==doc)return;const validated=validateDrawingDocument(next);onChange(validated,label);onSelect(ids);setStatus(label);setError('');};
  const fail=(reason:unknown)=>setError(reason instanceof Error?reason.message:String(reason));
+ const insertAssemblyBom=()=>{
+  try {
+   const {entity,exceedsSheet}=createAssemblyBomTable(doc,assemblyBom);
+   const next=cloneDrawing(doc);
+   activeDrawingSheet(next).entities.push(entity);
+   commit(next,'Добавлена спецификация сборки',[entity.id]);
+   setReport(exceedsSheet?[{severity:'warning',code:'assembly-bom-overflow',entityId:entity.id,
+    message:'Спецификация содержит текст или строки за пределами таблицы или листа. Скорректируйте размер и размещение перед печатью.'}]:[]);
+  } catch(e) {fail(e);}
+ };
  const busyTask=async(task:()=>Promise<void>)=>{const request=++epoch.current;setBusy(true);setError('');try{await task();}catch(e){if(alive.current&&epoch.current===request)fail(e);}finally{if(alive.current&&epoch.current===request)setBusy(false);}};
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;epoch.current++;controller.current?.abort();}},[]);
  useEffect(()=>()=>{if(image)URL.revokeObjectURL(image)},[image]);
@@ -126,7 +138,7 @@ export function DrawingWorkspace(props:DrawingWorkspaceProps){
    {drawingCommandGroups.map(group=><section key={group.id} data-drawing-group={group.id}><h3>{group.label}</h3>{group.commands.filter(filtered).map(definition=>{const reason=blockReason(definition);return <button key={definition.id} type="button" data-drawing-command={definition.id} aria-label={`${definition.id} ${definition.label}`} disabled={busy||Boolean(reason)} title={reason??definition.description} onClick={()=>open(definition.id)}><TechnicalIcon kind={definition.icon} size={18}/><span>{definition.label}<small>{definition.id}</small></span>{unavailable[definition.id]&&<span aria-label="Недоступно">⊘</span>}</button>})}</section>)}
   </div><div hidden={toolMode!=='dimensions'}><DimensionTools document={doc} selection={selection} onSelect={onSelect} onChange={(next,label,ids)=>commit(next,label,ids)} onError={fail} onExport={type=>{if(type==='svg')exportSvg();else if(type==='dxf')exportDxf();else void exportPdf()}} onImport={()=>chooseFile('json')} onUndo={onUndo} onRedo={onRedo} openRequest={dimensionRequest} editEntityId={dimensionEdit} onEditorClose={()=>setDimensionEdit(undefined)}/></div></aside>
   <section className="drawing-studio"><div className="drawing-toolbar" aria-label="Команды листа">
-   <button onClick={()=>open('TXT-002')}>Текст</button><button onClick={()=>open('TXT-005')}>Выноска</button><button onClick={()=>open('TXT-007')}>Таблица</button><button onClick={addReferenceLine}>Опорная линия</button><button onClick={()=>addRound()}>Окружность</button><button onClick={()=>addRound(true)}>Дуга</button><button onClick={()=>openDimension()}>Размеры</button><button onClick={addDimension} disabled={!selected.some(e=>e.geometry?.type==='line')}>Размер линии</button>
+   <button onClick={()=>open('TXT-002')}>Текст</button><button onClick={()=>open('TXT-005')}>Выноска</button><button onClick={()=>open('TXT-007')}>Таблица</button><button onClick={insertAssemblyBom} disabled={busy||!assemblyBom.length} title={assemblyBom.length?'Вставить текущий снимок спецификации':'В сборке пока нет вхождений'}>Спецификация сборки</button><button onClick={addReferenceLine}>Опорная линия</button><button onClick={()=>addRound()}>Окружность</button><button onClick={()=>addRound(true)}>Дуга</button><button onClick={()=>openDimension()}>Размеры</button><button onClick={addDimension} disabled={!selected.some(e=>e.geometry?.type==='line')}>Размер линии</button>
    <button onClick={onUndo} disabled={!historyCount}>Отменить чертёж</button><button onClick={onRedo} disabled={!futureCount}>Повторить чертёж</button><button onClick={duplicate} disabled={!selection.length}>Копия</button><button onClick={remove} disabled={!selection.length}>Удалить текст</button>
    <button onClick={exportSvg}>Экспорт SVG</button><button onClick={exportDxf}>Экспорт DXF</button><button onClick={()=>void exportPdf()} disabled={busy}>Экспорт PDF</button><button onClick={()=>chooseFile('dxf')}>Импорт DXF</button>
    <button onClick={()=>download(new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),'чертёж.json')}>JSON чертежа</button><button onClick={()=>chooseFile('json')}>Импорт чертежа JSON</button>
