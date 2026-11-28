@@ -67,8 +67,14 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - [PR #68](https://github.com/Do4ent/CADGUI/pull/68) passed [full CI](https://github.com/Do4ent/CADGUI/actions/runs/45186686319) at `4ffc690` and merged as `fb857ff`.
 - The assembly workspace aggregates occurrences by source body ID, shows counts per nested placement, and exports CSV. Core and browser tests cover nesting, identical names, CSV quoting, deletion, and Undo. Product readiness remains approximately 40% under the v1 maturity rubric.
 
+## Assembly BOM on a drawing sheet
+
+- [PR #69](https://github.com/Do4ent/CADGUI/pull/69), branch `feat/assembly-bom-drawing`, worktree `/tmp/wt-bom-drawing`, head `637f4ba`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/46121951723) was in progress.
+- The drawing command inserts an editable snapshot on the active sheet. It uses the drawing table schema and history, preserves grouped quantities and placements, distinguishes duplicate names, and warns when the table exceeds the sheet.
+- Full local module, production build, and browser acceptance checks were in progress. Product readiness remains approximately 40%.
+
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the current main baseline and its CI before the next assembly delivery. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect PR #69 at its latest head. Merge only after full CI and review. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
