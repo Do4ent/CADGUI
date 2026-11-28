@@ -62,6 +62,11 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 - The leader and follower faces are distinguished in blue and orange while configuring a planar mate. Exact native face ranges are bound to each occurrence and BRep snapshot, follow viewport clipping, and do not receive raycast hits. Stored documents are unchanged.
 - Exact range unit checks passed. The full 72-suite local test run, production build, and seven focused Chromium tests passed. Overall readiness remains approximately 40%.
 
+## Assembly bill of materials
+
+- [PR #68](https://github.com/Do4ent/CADGUI/pull/68) passed [full CI](https://github.com/Do4ent/CADGUI/actions/runs/45186686319) at `4ffc690` and merged as `fb857ff`.
+- The assembly workspace aggregates occurrences by source body ID, shows counts per nested placement, and exports CSV. Core and browser tests cover nesting, identical names, CSV quoting, deletion, and Undo. Product readiness remains approximately 40% under the v1 maturity rubric.
+
 ## Resume
 
 Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify the current main baseline and its CI before the next assembly delivery. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
