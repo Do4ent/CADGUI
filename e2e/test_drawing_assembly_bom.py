@@ -97,3 +97,25 @@ def test_assembly_bom_inserts_snapshot_with_drawing_undo_and_reopen(page, tmp_pa
     expect(preview).to_contain_text('Вал Ø10')
     expect(preview).to_contain_text('Модуль / Привод × 2')
     assert save_document(page, tmp_path, 'assembly-drawing-bom-reopened.json')['drawing'] == drawing
+
+    preview.dblclick()
+    editor = page.get_by_role('dialog', name='Редактор текста чертежа', exact=True)
+    editor.get_by_label('Строка таблицы', exact=True).select_option('1')
+    editor.get_by_label('Столбец таблицы', exact=True).select_option('0')
+    cell = editor.get_by_label('Текст ячейки', exact=True)
+    expect(cell).to_have_value('Вал Ø10')
+    cell.fill('Вал Ø12')
+    editor.get_by_role('button', name='ОК', exact=True).click()
+    expect(preview).to_contain_text('Вал Ø12')
+    expect(preview).to_contain_text('Модуль / Привод × 2')
+    edited = save_document(page, tmp_path, 'assembly-drawing-bom-edited.json')
+    (edited_table,) = [
+        entity for current_sheet in edited['drawing']['sheets'] for entity in current_sheet['entities']
+        if entity['id'] == table['id']
+    ]
+    assert bom_cells(edited_table) == [header, ['Вал Ø12', *row[1:]]]
+    assert edited['assemblyInstances'] == model['assemblyInstances']
+
+    page.evaluate('document.activeElement?.blur()')
+    page.keyboard.press('Control+z')
+    expect(preview).to_contain_text('Вал Ø10')
