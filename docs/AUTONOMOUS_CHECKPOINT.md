@@ -69,12 +69,12 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 ## Assembly BOM on a drawing sheet
 
-- [PR #69](https://github.com/Do4ent/CADGUI/pull/69), branch `feat/assembly-bom-drawing`, worktree `/tmp/wt-bom-drawing`, head `6cce638`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/46122218488) was in progress.
+- [PR #69](https://github.com/Do4ent/CADGUI/pull/69), branch `feat/assembly-bom-drawing`, worktree `/tmp/wt-bom-drawing`, head `6cce638`. It passed [full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/46122218488) and merged as `958351d`.
 - The drawing command inserts an editable snapshot on the active sheet. It uses the drawing table schema and history, preserves grouped quantities and placements, distinguishes duplicate names, and warns when the table exceeds the sheet.
 - All 74 local suites and the production build passed on 637f4ba, identical product code to the final test-only head. Four focused Chromium tests passed with the final E2E scenario. Product readiness remains approximately 40%.
 
 ## Resume
 
-Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Inspect PR #69 at its latest head. Merge only after full CI and review. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
+Run `git fetch origin` and `git log -1 --oneline origin/main` to verify the starting commit. Verify current main and its CI before extending drawing assembly annotations. For every finished plan item report its name and the current rounded v1 product readiness, even if the maturity level is unchanged. Use the nested assembly and fixed mate browser tests as regression coverage.
 
 The worktrees for this stage use `/tmp` because the workspace overlay ran out of space. Fresh installs can use `npm ci --cache /tmp/cadgui-npm-cache`. Restore a missing worktree from the remote branch using Git. Preserve uncommitted changes and inspect actual agent status when resuming.
