@@ -71,7 +71,7 @@ Updated 2026-11-22. Verify branches, commits, and CI before resuming.
 
 - [PR #69](https://github.com/Do4ent/CADGUI/pull/69), branch `feat/assembly-bom-drawing`, worktree `/tmp/wt-bom-drawing`, head `6cce638`. [Full PR CI](https://github.com/Do4ent/CADGUI/actions/runs/46122218488) was in progress.
 - The drawing command inserts an editable snapshot on the active sheet. It uses the drawing table schema and history, preserves grouped quantities and placements, distinguishes duplicate names, and warns when the table exceeds the sheet.
-- Full local module, production build, and browser acceptance checks were in progress. Product readiness remains approximately 40%.
+- All 74 local suites and the production build passed on 637f4ba, identical product code to the final test-only head. Four focused Chromium tests passed with the final E2E scenario. Product readiness remains approximately 40%.
 
 ## Resume
 
