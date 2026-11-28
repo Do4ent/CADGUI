@@ -9,12 +9,13 @@ export interface DialogProps {
   onConfirm: () => void;
   confirmDisabled?: boolean;
   confirmLabel?: string;
+  cancelLabel?: string;
   onApply?: () => void;
   returnFocus?: RefObject<HTMLElement | null>;
 }
 
 /** Native modal semantics contain focus and restore it to the invoking control. */
-export function Dialog({ open, title, children, onCancel, onConfirm, confirmDisabled = false, confirmLabel = 'ОК', onApply, returnFocus }: DialogProps) {
+export function Dialog({ open, title, children, onCancel, onConfirm, confirmDisabled = false, confirmLabel = 'ОК', cancelLabel = 'Отмена', onApply, returnFocus }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -57,7 +58,7 @@ export function Dialog({ open, title, children, onCancel, onConfirm, confirmDisa
       <div className="bc-dialog-content">{children}</div>
       <footer className="bc-dialog-actions">
         <button type="submit" disabled={confirmDisabled}>{confirmLabel}</button>
-        <button type="button" onClick={onCancel}>Отмена</button>
+        <button type="button" onClick={onCancel}>{cancelLabel}</button>
         {onApply && <button type="button" disabled={confirmDisabled} onClick={onApply}>Применить</button>}
       </footer>
     </form>
